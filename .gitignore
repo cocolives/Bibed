@@ -1,0 +1,37 @@
+# Django's collectstatic
+#/static
+#/media
+.pipcache
+
+# fabfiles for external projects/customers.
+# They are recorded/versionned in external repos.
+*-fabfile.py
+
+# Jenkins reports
+/reports
+
+/config/Gemfile.lock
+/shell_ipynb
+
+/MAINTENANCE_MODE
+/celerybeat-schedule
+/celerybeat.pid
+/celery.states*
+.ipynb_checkpoints
+
+/node_modules
+
+bibed.queue.*
+
+# PIP local installs
+/src
+
+*.mo
+*.pyc
+*.pyo
+*.pye
+*.log
+*~
+
+.sass-cache
+*.css.map
