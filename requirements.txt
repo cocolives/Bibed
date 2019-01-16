@@ -1,0 +1,5 @@
+pybtex
+pyinotify
+pynotify
+git-up
+ipython
