@@ -9,6 +9,15 @@ from bibed.constants import (
     BibAttrs,
 )
 
+from bibed.preferences import (
+    BibedPreferencesDialog,
+    preferences,
+)
+
+# from bibed.foundations import ltrace_function_name
+from bibed.utils import get_user_home_directory
+from bibed.preferences import memories
+
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gio, Gtk, Gdk, Pango  # NOQA
@@ -46,6 +55,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # keep for resize() operations smothing.
         self.current_size = (900, 600)
+
+        # prepared for future references.
+        self.preferences_dialog = None
 
         # ———————————————————————————————————————————————————————— BibEd Window
 
@@ -122,24 +134,27 @@ class BibEdWindow(Gtk.ApplicationWindow):
         hb.set_show_close_button(True)
         self.set_titlebar(hb)
 
+        # This is to connect the headerbar close button to our quit method.
+        self.connect("delete-event", self.application.on_quit)
+
         # ———————————————————————— Left side, from start to end
 
         bbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         Gtk.StyleContext.add_class(bbox.get_style_context(), "linked")
 
-        self.button_file_new = Gtk.Button()
-        self.button_file_new.connect("clicked", self.on_file_new_clicked)
+        self.btn_file_new = Gtk.Button()
+        self.btn_file_new.connect("clicked", self.on_file_new_clicked)
         icon = Gio.ThemedIcon(name="document-new-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.button_file_new.add(image)
-        bbox.add(self.button_file_new)
+        self.btn_file_new.add(image)
+        bbox.add(self.btn_file_new)
 
-        self.button_file_open = Gtk.Button()
-        self.button_file_open.connect("clicked", self.on_file_open_clicked)
+        self.btn_file_open = Gtk.Button()
+        self.btn_file_open.connect("clicked", self.on_file_open_clicked)
         icon = Gio.ThemedIcon(name="document-open-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.button_file_open.add(image)
-        bbox.add(self.button_file_open)
+        self.btn_file_open.add(image)
+        bbox.add(self.btn_file_open)
 
         # button = Gtk.Button()
         # button.add(Gtk.Arrow(arrow_type=Gtk.ArrowType.LEFT,
@@ -166,30 +181,33 @@ class BibEdWindow(Gtk.ApplicationWindow):
         files_combo.set_sensitive(False)
         hb.pack_start(files_combo)
 
-        self.files_combo_renderer = renderer_text
-        self.files_combo = files_combo
+        self.cmb_files_renderer = renderer_text
+        self.cmb_files = files_combo
 
-        self.button_add = Gtk.Button()
+        self.btn_add = Gtk.Button()
         icon = Gio.ThemedIcon(name="list-add-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.button_add.add(image)
-        hb.pack_start(self.button_add)
+        self.btn_add.add(image)
+        hb.pack_start(self.btn_add)
 
-        self.button_file_close = Gtk.Button()
-        self.button_file_close.connect("clicked", self.on_file_close_clicked)
+        self.btn_file_close = Gtk.Button()
+        self.btn_file_close.connect("clicked", self.on_file_close_clicked)
         icon = Gio.ThemedIcon(name="window-close-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.button_file_close.add(image)
-        self.button_file_close_switch_icon(False)
-        hb.pack_start(self.button_file_close)
+        self.btn_file_close.add(image)
+        self.btn_file_close_switch_icon(False)
+        hb.pack_start(self.btn_file_close)
 
         # ————————————————————————————— Right side, from end to start
 
-        self.button_preferences = Gtk.Button()
+        self.btn_preferences = Gtk.Button()
+        self.btn_preferences.connect(
+            "clicked", self.on_preferences_clicked)
+
         icon = Gio.ThemedIcon(name="preferences-system-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.button_preferences.add(image)
-        hb.pack_end(self.button_preferences)
+        self.btn_preferences.add(image)
+        hb.pack_end(self.btn_preferences)
 
         hb.pack_end(self.stack_switcher)
 
@@ -210,7 +228,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.textview_sw = Gtk.ScrolledWindow()
         # scrolledwindow.set_hexpand(True)
-        self.textview_sw.set_vexpand(True)
+        # self.textview_sw.set_vexpand(True)
+        self.textview_sw.set_policy(
+            Gtk.PolicyType.NEVER,
+            Gtk.PolicyType.AUTOMATIC
+        )
 
         self.textview = Gtk.TextView()
         # self.textview.set_buffer('Nothing yet here.')
@@ -221,7 +243,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.treeview_sw = Gtk.ScrolledWindow()
         # scrolledwindow.set_hexpand(True)
-        self.treeview_sw.set_vexpand(True)
+        # self.treeview_sw.set_vexpand(True)
+        self.treeview_sw.set_policy(
+            Gtk.PolicyType.NEVER,
+            Gtk.PolicyType.AUTOMATIC
+        )
 
         self.treeview = Gtk.TreeView(model=self.application.data_store)
 
@@ -258,7 +284,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.treeview_sw.add(self.treeview)
 
         select = self.treeview.get_selection()
-        select.connect("changed", self.on_tree_selection_changed)
+        select.connect("changed", self.on_treeview_selection_changed)
 
         select.unselect_all()
 
@@ -268,6 +294,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             ellipsize = Pango.EllipsizeMode.NONE
 
         column = Gtk.TreeViewColumn(name)
+
+        column.connect('clicked', self.on_treeview_column_clicked)
 
         if xalign is not None:
             cellrender = Gtk.CellRendererText(
@@ -301,15 +329,29 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def update_title(self):
 
-        model = self.treeview.get_model()
-        count = len(model)  # .listfortreeview
+        row_count = len(self.treeview.get_model())
+        file_count = len(self.cmb_files.get_model())
 
-        title_value = '{0}   –   {1} item{2}'.format(
-            APP_NAME, count, 's' if count > 1 else '')
+        # TODO: update the file count if search filtered
+
+        if file_count > 1:
+            # do not count the 'All' item
+            file_count -= 1
+
+        title_value = '{0}'.format(APP_NAME)
+
+        subtitle_value = '{0} item{1} in {2} file{3}'.format(
+            row_count,
+            's' if row_count > 1 else '',
+            file_count,
+            's' if file_count > 1 else '',)
 
         self.headerbar.props.title = title_value
+        self.headerbar.props.subtitle = subtitle_value
 
-        LOGGER.debug('update_title() to {}.', title_value)
+        if __debug__:
+            LOGGER.debug('update_title() to {0} and {1}.'.format(
+                title_value, subtitle_value))
 
     def sync_shown_hidden(self):
         ''' Hide or disable relevant widgets, determined by context. '''
@@ -317,17 +359,17 @@ class BibEdWindow(Gtk.ApplicationWindow):
         how_many_files = len(self.application.files_store)
 
         if how_many_files:
-            self.button_add.show()
-            self.button_file_close.show()
-            self.files_combo.show()
+            self.btn_add.show()
+            self.btn_file_close.show()
+            self.cmb_files.show()
 
-            self.button_file_close_switch_icon(
-                how_many_files > 1 and self.files_combo.get_active() == 0)
+            self.btn_file_close_switch_icon(
+                how_many_files > 1 and self.cmb_files.get_active() == 0)
 
         else:
-            self.button_add.hide()
-            self.button_file_close.hide()
-            self.files_combo.hide()
+            self.btn_add.hide()
+            self.btn_file_close.hide()
+            self.cmb_files.hide()
 
     def on_maximize_toggle(self, action, value):
 
@@ -365,10 +407,31 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # TODO: this doesn't seem to work; on resizes()
         #       the ComboBox width doesn't change.
-        self.files_combo_renderer.props.max_width_chars = \
+        self.cmb_files_renderer.props.max_width_chars = \
             round(column_width / 20)
 
-    def on_tree_selection_changed(self, selection):
+    def on_treeview_column_clicked(self, column):
+
+        coltit = column.props.title
+        colidc = column.props.sort_indicator
+        colord = column.props.sort_order
+
+        if memories.treeview_sort_column is None:
+            memories.treeview_sort_column = coltit
+            memories.treeview_sort_indicator = colidc
+            memories.treeview_sort_order = colord
+
+        else:
+            if memories.treeview_sort_column != coltit:
+                memories.treeview_sort_column = coltit
+
+            if memories.treeview_sort_indicator != colidc:
+                memories.treeview_sort_indicator = colidc
+
+            if memories.treeview_sort_order != colord:
+                memories.treeview_sort_order = colord
+
+    def on_treeview_selection_changed(self, selection):
 
         model, treeiter = selection.get_selected()
 
@@ -416,7 +479,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # if ctrl and keyval_name == 's':
 
         if ctrl and keyval == Gdk.KEY_s:
-            print('Control-S pressed (no action yet).')
+            LOGGER.info('Control-S pressed (no action yet).')
 
         elif ctrl and keyval == Gdk.KEY_r:
             self.application.reload_file(
@@ -427,13 +490,13 @@ class BibEdWindow(Gtk.ApplicationWindow):
             self.search.grab_focus()
 
         elif ctrl and keyval == Gdk.KEY_l:
-            self.files_combo.grab_focus()
+            self.cmb_files.grab_focus()
 
         elif ctrl and keyval == Gdk.KEY_o:
-            self.button_file_open.emit('clicked')
+            self.btn_file_open.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_w:
-            self.button_file_close.emit('clicked')
+            self.btn_file_close.emit('clicked')
 
         elif search_text and (
             keyval in (Gdk.KEY_Down, Gdk.KEY_Up) or (
@@ -487,6 +550,17 @@ class BibEdWindow(Gtk.ApplicationWindow):
             if search_text:
                 self.search.set_text('')
 
+                try:
+                    del memories.search_text
+
+                except Exception:
+                    pass
+
+            else:
+                if len(self.application.files_store):
+                    if self.cmb_files.get_active() != 0:
+                        self.cmb_files.set_active(0)
+
             self.treeview.grab_focus()
 
         else:
@@ -512,6 +586,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
              Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
 
         dialog.set_current_name('Untitled bibliography.bib')
+        dialog.set_current_folder(
+            preferences.working_folder or get_user_home_directory())
 
         dialog.add_filter(self.get_bib_filter())
 
@@ -532,6 +608,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
             Gtk.FileChooserAction.OPEN,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
              Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
+
+        dialog.set_current_folder(
+            preferences.working_folder or get_user_home_directory())
 
         dialog.set_select_multiple(True)
         dialog.add_filter(self.get_bib_filter())
@@ -558,7 +637,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         how_many_files = len(self.application.files_store)
 
-        if how_many_files > 1 and self.files_combo.get_active() == 0:
+        if how_many_files > 1 and self.cmb_files.get_active() == 0:
 
             store = self.application.files_store
 
@@ -577,6 +656,21 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.sync_shown_hidden()
 
+    def on_preferences_clicked(self, button):
+
+        if self.preferences_dialog:
+            self.preferences_dialog.run()
+
+        else:
+            self.preferences_dialog = BibedPreferencesDialog(self)
+            self.preferences_dialog.run()
+        # response = dialog.run()
+
+        # if response == Gtk.ResponseType.OK:
+        #     LOGGER.info("The OK button was clicked")
+
+        self.preferences_dialog.hide()
+
     def get_bib_filter(self):
 
         filter_bib = Gtk.FileFilter()
@@ -588,16 +682,30 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def get_files_combo_filename(self):
 
         filename = self.application.files_store[
-            self.files_combo.get_active_iter()
+            self.cmb_files.get_active_iter()
         ][0]
-
-        # LOGGER.debug('get_files_combo_filename(): {}'.format(filename))
 
         return filename
 
     def get_search_text(self):
 
         return self.search.get_text().strip()
+
+    def do_treeview_column_sort(self):
+
+        if memories.treeview_sort_column is not None:
+            # print('setting column')
+
+            for col in self.treeview.get_columns():
+                if col.props.title == memories.treeview_sort_column:
+
+                    # print('COL', col.props.title)
+                    # print(col.get_sort_order())
+                    col.props.sort_order = memories.treeview_sort_order
+                    # print(col.get_sort_order())
+                    # print(col.get_sort_indicator())
+                    col.props.sort_indicator = memories.treeview_sort_indicator
+                    # print(col.get_sort_indicator())
 
     def do_status_change(self, message):
         self.statusbar.push(
@@ -606,13 +714,29 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def do_filter_data_store(self):
         ''' Filter the data store on filename, search_text, or both. '''
 
+        # print(ltrace_function_name())
+
         try:
             filename = self.get_files_combo_filename()
 
         except TypeError:
             filename = None
 
+        if filename is not None:
+            if memories.combo_filename != filename:
+                memories.combo_filename = filename
+        else:
+            if memories.combo_filename is not None:
+                del memories.combo_filename
+
         search_text = self.get_search_text()
+
+        if search_text:
+            if memories.search_text != search_text:
+                memories.search_text = search_text
+        else:
+            if memories.search_text is not None:
+                del memories.search_text
 
         def refilter():
             self.treeview.set_model(self.application.sorter)
@@ -639,10 +763,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.update_title()
 
-    def button_file_close_switch_icon(self, multiple=False):
+    def btn_file_close_switch_icon(self, multiple=False):
 
         if multiple:
-            self.button_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
+            self.btn_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
 
         else:
-            self.button_file_close.set_relief(Gtk.ReliefStyle.NONE)
+            self.btn_file_close.set_relief(Gtk.ReliefStyle.NONE)

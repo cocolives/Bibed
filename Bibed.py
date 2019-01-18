@@ -2,7 +2,6 @@
 
 import sys
 import logging
-from bibed.app import BibEdApplication
 
 LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +18,12 @@ def setup_logging(level=logging.INFO):
 
 
 if __name__ == "__main__":
-    setup_logging()
+    setup_logging(logging.DEBUG)
+
+    # Needs to be after setup_logging(),
+    # else we miss a lot of message.
+    from bibed.app import BibEdApplication
+
     app = BibEdApplication()
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)
