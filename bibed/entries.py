@@ -4,6 +4,8 @@ from bibed.constants import (
     JABREF_QUALITY_KEYWORDS,
 )
 
+from bibed.preferences import defaults, preferences
+
 
 def entry_get_keywords(entry):
     ''' Return entry keywords without JabRef internals. '''
@@ -91,8 +93,7 @@ bib_entry_format_author = bib_entry_format_author_pybtex
 bib_entry_format_journal = bib_entry_format_journal_pybtex
 
 
-def bib_entry_to_store_row_list_pybtex(
-        global_counter, origin, counter, entry):
+def bib_entry_to_store_row_list_pybtex(global_counter, origin, counter, entry):
     ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''
 
     fields = entry.fields
@@ -118,3 +119,30 @@ def bib_entry_to_store_row_list_pybtex(
 
 
 bib_entry_to_store_row_list = bib_entry_to_store_row_list_pybtex
+
+
+def single_bibkey_to_copy_check(pattern):
+
+    if '@@key@@' in pattern:
+        return pattern
+
+    else:
+        return defaults.accelerators.copy_to_clipboard_single_value
+
+
+def format_single_bibkey_to_copy(bib_key):
+
+    defls = defaults.accelerators.copy_to_clipboard_single_value
+    prefs = preferences.accelerators.copy_to_clipboard_single_value
+
+    if prefs is None:
+        pattern = defls
+
+    else:
+        pattern = prefs
+
+    pattern = single_bibkey_to_copy_check(pattern)
+
+    result = pattern.replace('@@key@@', bib_key)
+
+    return result

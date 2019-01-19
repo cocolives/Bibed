@@ -16,6 +16,7 @@ from bibed.utils import (
 
 from bibed.uihelpers import (
     label_with_markup,
+    widget_expand_align,
     grid_with_common_params,
     vbox_with_icon_and_label,
 )
@@ -42,17 +43,23 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         box = self.get_content_area()
 
-        # label = Gtk.Label("Preferences")
-        # box.add(label)
-
         self.notebook = Gtk.Notebook()
         self.notebook.set_tab_pos(Gtk.PositionType.LEFT)
 
         box.add(self.notebook)
 
+        box.add(widget_expand_align(label_with_markup(
+            '<span foreground="grey">Preferences are automatically saved; '
+            'just hit <span face="monospace">ESC</span> when you are done.'
+            '</span>',
+            xalign=0.5
+        ), expand=True, halign=Gtk.Align.CENTER))
+
         self.setup_page_general()
         self.setup_page_accels()
         self.setup_page_formats()
+
+        self.connect('hide', self.on_preferences_hide)
 
         self.show_all()
 
@@ -73,7 +80,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         def build_swbas():
 
-            switch = Gtk.Switch()
+            switch = widget_expand_align(Gtk.Switch())
+
             switch.connect(
                 'notify::active',
                 self.on_switch_bib_auto_save_activated)
@@ -93,7 +101,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
                 else preferences.keep_recent_files,
                 -1, 20, 1, 10, 0)
 
-            spin = Gtk.SpinButton()
+            spin = widget_expand_align(Gtk.SpinButton())
             spin.set_adjustment(adjustment)
             spin.connect('value-changed',
                          self.on_spin_keep_recent_files_changed)
@@ -106,7 +114,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         def build_swrof():
 
-            switch = Gtk.Switch()
+            switch = widget_expand_align(Gtk.Switch())
+
             switch.connect(
                 'notify::active',
                 self.on_switch_remember_open_files_activated)
@@ -137,7 +146,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
             self.fcb_working_folder,
             self.lbl_working_folder,
             Gtk.PositionType.RIGHT,
-            3, 1)
+            1, 1)
 
         # —————————————————————————————————————————————————— BIB auto save
 
@@ -184,11 +193,11 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         self.swi_remember_open_files = build_swrof()
         self.lbl_remember_open_files = label_with_markup(
-            '<b>Remember open files</b>\n'
+            '<b>Remember session</b>\n'
             '<span foreground="grey" size="small">'
-            'When launching application, re-open automatically files\n'
-            'which were previously opened before quitting last session.'
-            '</span>')
+            'When launching application, automatically re-open files\n'
+            'which were previously opened before quitting last session,\n'
+            'restore search query, filters and sorting.</span>')
 
         pg.attach_next_to(
             self.lbl_remember_open_files,
@@ -216,9 +225,76 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
     def setup_page_accels(self):
 
+        def build_cbtcs():
+
+            prefs = preferences.accelerators.copy_to_clipboard_single
+            defls = defaults.accelerators.copy_to_clipboard_single
+            prefsv = preferences.accelerators.copy_to_clipboard_single_value
+            deflsv = defaults.accelerators.copy_to_clipboard_single_value
+
+            if prefs is not None:
+                options = prefs.copy() + defls.copy()
+
+            else:
+                options = defls.copy()
+
+            combo = Gtk.ComboBoxText.new_with_entry()
+            combo.set_entry_text_column(0)
+            combo.set_size_request(300, 10)
+
+            combo.connect('changed', self.on_combo_single_copy_changed)
+
+            for option in options:
+                combo.append_text(option)
+
+            if prefsv is None:
+                combo.set_active(options.index(deflsv))
+
+            else:
+                combo.set_active(options.index(prefsv))
+
+            return combo
+
         pa = grid_with_common_params()
 
-        pa.add(Gtk.Label('Accelerators preferences'))
+        # —————————————————————————————————————————————— Single Clipboard
+
+        defsigval = defaults.accelerators.copy_to_clipboard_single_value
+
+        self.cbt_copy_single = build_cbtcs()
+        self.lbl_copy_single = label_with_markup(
+            '<b>Single selection copy to clipboard</b>\n'
+            '<span size="small" color="grey">'
+            'When you select only one entry in the list.</span>')
+
+        self.lbl_copy_single_help = label_with_markup(
+            '<span size="small"><span color="grey">'
+            'Type any other pattern to create your own, using '
+            '<span color="lightgrey"><tt>@@key@@</tt></span> '
+            'anywhere inside.</span>\n'
+            '<span color="red">WARNING: </span>'
+            '<span color="grey">any error in your pattern will '
+            'make it replaced with application default, '
+            'aka <span color="lightgrey"><tt>{0}</tt></span>.'
+            '</span></span>'.format(defsigval))
+
+        pa.attach(
+            self.lbl_copy_single,
+            # left, top, width, height
+            0, 0, 1, 1)
+
+        pa.attach_next_to(
+            self.cbt_copy_single,
+            self.lbl_copy_single,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+        pa.attach_next_to(
+            self.lbl_copy_single_help,
+            self.lbl_copy_single,
+            Gtk.PositionType.BOTTOM,
+            2, 1)
+
+        # ———————————————————————————————————————————————————— End widgets
 
         self.page_accels = pa
 
@@ -287,6 +363,39 @@ class BibedPreferencesDialog(Gtk.Dialog):
             if preferences.keep_recent_files != value:
                 preferences.keep_recent_files = value
 
+    def on_combo_single_copy_changed(self, combo):
+
+        # Note: see self.on_preferences_hide()
+
+        option = combo.get_active_text()
+
+        preferences.accelerators.copy_to_clipboard_single_value = option
+        preferences.save()
+
+    def on_preferences_hide(self, window):
+
+        # This operation cannot be done while user is typing new accels,
+        # else every char-typing is saved as a new entry, which makes a
+        # lot of false positives.
+        self.save_accelerators()
+
+    def save_accelerators(self):
+
+        option = preferences.accelerators.copy_to_clipboard_single_value
+
+        defls = defaults.accelerators.copy_to_clipboard_single
+        prefs = preferences.accelerators.copy_to_clipboard_single
+
+        if option not in defls:
+            if prefs is None:
+                preferences.accelerators.copy_to_clipboard_single = [option]
+                preferences.save()
+            else:
+                if option not in prefs:
+                    prefs += [option]
+                    preferences.save()
+
+
 # ————————————————————————————————————————————————— preferences singletons
 
 
@@ -295,4 +404,5 @@ make_bibed_user_dir()
 
 defaults    = ApplicationDefaults()
 preferences = UserPreferences(defaults=defaults)
-memories    = UserMemories(defaults=defaults, preferences=preferences)
+memories    = UserMemories(defaults=defaults,
+                           preferences=preferences)

@@ -14,6 +14,9 @@ from bibed.preferences import (
     preferences,
 )
 
+from bibed.entries import (
+    format_single_bibkey_to_copy,
+)
 # from bibed.foundations import ltrace_function_name
 from bibed.utils import get_user_home_directory
 from bibed.preferences import memories
@@ -442,10 +445,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
             bib_key = model[treeiter][BibAttrs.KEY]
 
             if bib_key:
-                self.clipboard.set_text(bib_key, len=-1)
+                to_copy = format_single_bibkey_to_copy(bib_key)
+
+                self.clipboard.set_text(to_copy, len=-1)
                 self.do_status_change(
                     "“{1}” copied to clipboard (from row {0}).".format(
-                        model[treeiter][BibAttrs.ID], bib_key))
+                        model[treeiter][BibAttrs.ID], to_copy))
             else:
                 self.do_status_change(
                     "Selected row {0}.".format(model[treeiter][BibAttrs.ID]))

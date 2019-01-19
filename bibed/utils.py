@@ -1,6 +1,7 @@
 
 import os
 import logging
+import pyinotify
 
 from bibed.constants import (
     PREFERENCES_FILENAME,
@@ -10,6 +11,7 @@ from bibed.constants import (
 )
 
 from bibed.foundations import (
+    AttributeDict,
     AttributeDictFromYaml,
     Singleton,
 )
@@ -18,6 +20,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 # ————————————————————————————————————————————————————————————— Functions
+
 
 def get_user_home_directory():
 
@@ -66,6 +69,23 @@ def make_bibed_user_dir():
 # ———————————————————————————————————————————————————————————————— Classes
 
 
+class PyinotifyEventHandler(pyinotify.ProcessEvent):
+
+    app = None
+
+    def process_IN_MODIFY(self, event):
+
+        if __debug__:
+            LOGGER.debug('Modify event start ({}).'.format(event.pathname))
+
+        PyinotifyEventHandler.app.on_file_modify(event)
+
+        if __debug__:
+            LOGGER.debug('Modify event end ({}).'.format(event.pathname))
+
+        return True
+
+
 class ApplicationDefaults(AttributeDictFromYaml, metaclass=Singleton):
     filename = os.path.join(os.path.dirname(
                             os.path.abspath(__file__)),
@@ -84,6 +104,9 @@ class UserPreferences(AttributeDictFromYaml, metaclass=Singleton):
         # bypass classic attribute setter
         # to avoid YAML dumping of that.
         self.__dict__['defaults'] = defaults
+
+        if self.accelerators is None:
+            self.accelerators = AttributeDict(default=True)
 
 
 class UserMemories(AttributeDictFromYaml, metaclass=Singleton):

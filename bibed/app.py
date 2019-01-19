@@ -17,6 +17,7 @@ from bibed.constants import (
     BibAttrs,
 )
 
+from bibed.utils import PyinotifyEventHandler
 from bibed.entries import bib_entry_to_store_row_list
 from bibed.gui import BibEdWindow
 from bibed.foundations import (
@@ -32,28 +33,6 @@ from gi.repository import GLib, Gio, Gtk, Notify  # NOQA
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-class EventHandler(pyinotify.ProcessEvent):
-
-    app = None
-
-    def process_IN_MODIFY(self, event):
-
-        if __debug__:
-            LOGGER.debug('Modify event start ({}).'.format(event.pathname))
-
-        EventHandler.app.on_file_modify(event)
-
-        if __debug__:
-            LOGGER.debug('Modify event end ({}).'.format(event.pathname))
-
-        return True
-
-
-def notification_callback(notification, action_name):
-    notification.close()
-    # Gtk.main_quit()
 
 
 class BibEdApplication(Gtk.Application):
@@ -120,11 +99,11 @@ class BibEdApplication(Gtk.Application):
 
     def setup_inotify(self):
 
-        EventHandler.app = self
+        PyinotifyEventHandler.app = self
 
         self.wm = pyinotify.WatchManager()
         self.notifier = pyinotify.ThreadedNotifier(
-            self.wm, EventHandler())
+            self.wm, PyinotifyEventHandler())
         self.notifier.start()
 
         self.wdd = {}
