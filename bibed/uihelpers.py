@@ -11,11 +11,36 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gio, Gtk, Gdk, Pango  # NOQA
 
 
-def label_with_markup(text):
+# ————————————————————————————————————————————————————————————— Functions
+
+
+def notification_callback(notification, action_name):
+    # Unused as of 20190119.
+
+    # Use in conjunction with:
+    #    def do_notification(self, message):
+    #
+    #        notification = Notify.Notification.new('Bibed', message)
+    #        notification.set_timeout(Notify.EXPIRES_NEVER)
+    #        notification.add_action('quit', 'Quit',
+    #                                notification_callback)
+    #        notification.show()
+
+    notification.close()
+
+
+def label_with_markup(text, xalign=None, yalign=None):
+
+    if xalign is None:
+        xalign = 0.0
+
+    if yalign is None:
+        yalign = 0.5
 
     label = Gtk.Label()
     label.set_markup(text)
-    label.set_xalign(0.0)
+    label.set_xalign(xalign)
+    label.set_yalign(yalign)
 
     return label
 
@@ -29,6 +54,21 @@ def grid_with_common_params():
     # grid.set_column_homogeneous(True)
     # grid.set_row_homogeneous(True)
     return grid
+
+
+def widget_expand_align(widget, expand=False, halign=None, valign=None):
+
+    if halign is None:
+        halign = Gtk.Align.START
+
+    if valign is None:
+        valign = Gtk.Align.CENTER
+
+    widget.props.expand = expand
+    widget.props.halign = halign
+    widget.props.valign = valign
+
+    return widget
 
 
 def vbox_with_icon_and_label(icon_name, label_text):
