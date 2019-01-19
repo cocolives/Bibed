@@ -15,6 +15,7 @@ from bibed.styles import (
 
 LOGGER = logging.getLogger(__name__)
 
+
 # ————————————————————————————————————————————————————————————— Functions
 
 
@@ -64,7 +65,7 @@ class AttributeDict(object):
     and https://github.com/databio/pypiper/blob/master/pypiper/AttributeDict.py
     """
 
-    def __init__(self, entries, default=False, *args, **kwargs):
+    def __init__(self, entries=None, default=False, *args, **kwargs):
         """
         :param entries: A dictionary (key-value pairs) to add as
             attributes.
@@ -77,14 +78,18 @@ class AttributeDict(object):
         # Don't forget other classes…
         super().__init__(*args, **kwargs)
 
-        self.add_entries(entries, default)
+        if entries is not None:
+            self.add_entries(entries, default)
 
         # bypass __setattr__ to avoid loop. These 2
         # attributes will not be dumped back to YAML.
         self.__dict__['return_defaults'] = default
         # needs to copy() the keys() to new list else
         # it stores the reference to "dict_keys".
-        self.__dict__['keys_to_dump'] = [x for x in entries]
+        if entries is None:
+            self.__dict__['keys_to_dump'] = []
+        else:
+            self.__dict__['keys_to_dump'] = [x for x in entries]
 
     def add_entries(self, entries, default=False):
         ''' Convert `entries` to attributes, creating
@@ -177,8 +182,6 @@ class AttributeDictFromYaml(AttributeDict):
             LOGGER.debug(
                 '{0} loaded from “{1}”.'.format(
                     self.__class__.__name__, self.filename))
-
-            LOGGER.debug(self)
 
     def __setattr__(self, prop, val):
 
