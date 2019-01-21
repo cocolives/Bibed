@@ -6,9 +6,7 @@ from bibed.constants import (
     BOXES_BORDER_WIDTH,
 )
 
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gio, Gtk, Gdk, Pango  # NOQA
+from bibed.gtk import Gtk, Gdk
 
 
 # ————————————————————————————————————————————————————————————— Functions

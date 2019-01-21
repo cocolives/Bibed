@@ -20,10 +20,8 @@ from bibed.entries import (
 # from bibed.foundations import ltrace_function_name
 from bibed.utils import get_user_home_directory
 from bibed.preferences import memories
+from bibed.gtk import Gio, GLib, Gtk, Gdk, Pango
 
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gio, Gtk, Gdk, Pango  # NOQA
 
 LOGGER = logging.getLogger(__name__)
 

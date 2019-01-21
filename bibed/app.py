@@ -25,12 +25,7 @@ from bibed.foundations import (
     touch_file,
 )
 from bibed.preferences import preferences, memories
-
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version("Notify", "0.7")
-from gi.repository import GLib, Gio, Gtk, Notify  # NOQA
-
+from bibed.gtk import Gio, GLib, Gtk, Notify
 
 LOGGER = logging.getLogger(__name__)
 
@@ -269,6 +264,10 @@ class BibEdApplication(Gtk.Application):
 
         if search_grab_focus:
             self.window.search.grab_focus()
+
+        # TODO: remove
+        # Show preferences immediately to speed up tests / debug.
+        # self.window.btn_preferences.emit('clicked')
 
         self.window.present()
 

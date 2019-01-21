@@ -21,9 +21,7 @@ from bibed.uihelpers import (
     vbox_with_icon_and_label,
 )
 
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gio, Gtk, Gdk, Pango  # NOQA
+from bibed.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
 

@@ -9,6 +9,7 @@ class Anything:
 
 
 BibAttrs = Anything()
+
 BibAttrs.GLOBAL_ID = 0
 BibAttrs.FILENAME  = 1
 BibAttrs.ID        = 2
