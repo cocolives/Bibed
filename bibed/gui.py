@@ -492,6 +492,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
         elif ctrl and keyval == Gdk.KEY_f:
             self.search.grab_focus()
 
+        elif ctrl and keyval == Gdk.KEY_comma:
+            self.btn_preferences.emit('clicked')
+
         elif ctrl and keyval == Gdk.KEY_l:
             self.cmb_files.grab_focus()
 
