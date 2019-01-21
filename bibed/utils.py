@@ -110,6 +110,12 @@ class UserPreferences(AttributeDictFromYaml, metaclass=Singleton):
         if self.accelerators is None:
             self.accelerators = AttributeDict(default=True)
 
+        if self.fields is None:
+            self.fields = AttributeDict(default=True)
+
+        if self.types is None:
+            self.types = AttributeDict(default=True)
+
 
 class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
     filename = os.path.join(get_bibed_user_dir(),
