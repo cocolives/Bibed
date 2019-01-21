@@ -11,15 +11,17 @@ from bibed.constants import (
 
 from bibed.preferences import (
     BibedPreferencesDialog,
+    defaults,
     preferences,
+    memories,
 )
 
 from bibed.entries import (
+    BibEntryDialog,
     format_single_bibkey_to_copy,
 )
 # from bibed.foundations import ltrace_function_name
 from bibed.utils import get_user_home_directory
-from bibed.preferences import memories
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Pango
 
 
@@ -43,7 +45,6 @@ class BibEdWindow(Gtk.ApplicationWindow):
                          GLib.Variant.new_boolean(obj.props.is_maximized)))
 
         self.connect('check-resize', self.on_resize)
-
         self.connect("key-press-event", self.on_key_pressed)
 
         # self.set_icon_name('accessories-dictionary')
@@ -156,16 +157,6 @@ class BibEdWindow(Gtk.ApplicationWindow):
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_open.add(image)
         bbox.add(self.btn_file_open)
-
-        # button = Gtk.Button()
-        # button.add(Gtk.Arrow(arrow_type=Gtk.ArrowType.LEFT,
-        #                      shadow_type=Gtk.ShadowType.NONE))
-        # box.add(button)
-
-        # button = Gtk.Button()
-        # button.add(Gtk.Arrow(arrow_type=Gtk.ArrowType.RIGHT,
-        #                      shadow_type=Gtk.ShadowType.NONE))
-        # box.add(button)
 
         hb.pack_start(bbox)
 
