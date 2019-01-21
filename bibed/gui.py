@@ -17,7 +17,8 @@ from bibed.preferences import (
 )
 
 from bibed.entries import (
-    BibEntryDialog,
+    BibedEntryDialog,
+    BibedEntryTypeDialog,
     format_single_bibkey_to_copy,
 )
 # from bibed.foundations import ltrace_function_name
@@ -180,6 +181,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
         icon = Gio.ThemedIcon(name="list-add-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_add.add(image)
+        self.btn_add.connect('clicked', self.on_entry_add_clicked)
+
         hb.pack_start(self.btn_add)
 
         self.btn_file_close = Gtk.Button()
@@ -489,6 +492,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
         elif ctrl and keyval == Gdk.KEY_l:
             self.cmb_files.grab_focus()
 
+        elif ctrl and keyval == Gdk.KEY_n:
+            self.btn_add.emit('clicked')
+
         elif ctrl and keyval == Gdk.KEY_o:
             self.btn_file_open.emit('clicked')
 
@@ -652,6 +658,19 @@ class BibEdWindow(Gtk.ApplicationWindow):
             self.application.close_file(self.get_files_combo_filename())
 
         self.sync_shown_hidden()
+
+    def on_entry_add_clicked(self, button):
+
+        entry_add_dialog = BibedEntryTypeDialog(parent=self)
+        response = entry_add_dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            entry = entry_add_dialog.get_entry()
+            LOGGER.info('Entry created: {}'.format(entry))
+
+        entry_add_dialog.destroy()
+
+        # entry__edit_dialog = BibedEntryDialog(parent=self, entry=entry)
 
     def on_preferences_clicked(self, button):
 
