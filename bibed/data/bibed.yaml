@@ -3,13 +3,13 @@ accelerators:
   - '@@keys-comma@@'
   - \cite{@@keys-commas@@}
   - \cites@@foreach||{@@key@@}||
-  - "\\footcite{@@keys-comma@@}"
-  - "\\footcites@@foreach||{@@key@@}||"
+  - \footcite{@@keys-comma@@}
+  - \footcites@@foreach||{@@key@@}||
   copy_to_clipboard_multiple_value: \cite{@@keys-commas@@}
   copy_to_clipboard_single:
   - '@@key@@'
   - \cite{@@key@@}
-  - "\\footcite{@@key@@}"
+  - \footcite{@@key@@}
   copy_to_clipboard_single_value: \cite{@@key@@}
 bib_auto_save: true
 fields:
@@ -523,43 +523,49 @@ fields:
 keep_recent_files: 10
 remember_open_files: true
 types:
-- book
-- periodical
-- collection
-- reference
-- proceedings
-- mvbook
-- mvcollection
-- mvreference
-- mvproceedings
-- inbook
-- bookinbook
-- article
-- incollection
-- inreference
-- inproceedings
-- conference
-- suppbook
-- suppperiodical
-- suppcollection
-- artwork
-- audio
-- image
-- movie
-- music
-- performance
-- video
-- software
-- commentary
-- jurisdiction
-- legislation
-- legal
-- letter
-- review
-- standard
-- booklet
-- online
-- misc
-- bibnote
-- set
-- xdata
+  other:
+  - periodical
+  - collection
+  - reference
+  - proceedings
+  - mvbook
+  - mvcollection
+  - mvreference
+  - mvproceedings
+  - inbook
+  - bookinbook
+  - incollection
+  - inreference
+  - inproceedings
+  - conference
+  - suppbook
+  - suppperiodical
+  - suppcollection
+  - phdthesis
+  - mastersthesis
+  - artwork
+  - audio
+  - image
+  - music
+  - performance
+  - software
+  - commentary
+  - jurisdiction
+  - legislation
+  - legal
+  - letter
+  - review
+  - standard
+  - bibnote
+  - set
+  - xdata
+  main:
+  - article
+  - book
+  - booklet
+  - thesis
+  - report
+  - online
+  - misc
+  - movie
+  - video
