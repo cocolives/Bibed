@@ -523,6 +523,61 @@ fields:
 keep_recent_files: 10
 remember_open_files: true
 types:
+  main:
+  - article
+  - book
+  - booklet
+  - thesis
+  - report
+  - online
+  - misc
+  - movie
+  - video
+  mnemonics:
+    article: _Article
+    artwork: Artwork
+    audio: Au_dio
+    bibnote: Bibliographic Note
+    book: _Book
+    bookinbook: Boo_k in book
+    booklet: Book_let
+    collection: _Collection
+    commentary: Commentary
+    conference: Co_nference
+    image: Ima_ge
+    inbook: "In book (C_hapter, part\u2026)"
+    incollection: In collection
+    inproceedings: In proceedings
+    inreference: In reference
+    jurisdiction: _Jurisdiction
+    legal: Legal
+    legislation: Le_gislation
+    letter: Letter
+    mastersthesis: Masters Thes_is
+    misc: _Misc
+    movie: Mov_ie
+    music: M_usic
+    mvbook: Multi-volume book
+    mvcollection: Multi-volume collection
+    mvproceedings: Multi-volume proceedings
+    mvreference: Multi-volume reference
+    online: _Online
+    performance: Performance
+    periodical: _Periodical
+    phdthesis: Ph. _D. Thesis
+    proceedings: Proceedings
+    reference: Re_ference
+    report: _Report
+    review: Review
+    set: Set
+    software: Soft_ware
+    standard: Standard
+    suppbook: Supplement to book
+    suppcollection: Supplement to collection
+    suppperiodical: Supplement to periodical
+    thesis: _Thesis
+    video: _Video
+    xdata: eXtended data
   other:
   - periodical
   - collection
@@ -559,13 +614,3 @@ types:
   - bibnote
   - set
   - xdata
-  main:
-  - article
-  - book
-  - booklet
-  - thesis
-  - report
-  - online
-  - misc
-  - movie
-  - video
