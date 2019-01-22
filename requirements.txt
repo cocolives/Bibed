@@ -1,4 +1,4 @@
-pybtex
+bibtexparser
 pygobject
 pyinotify
 pynotify
