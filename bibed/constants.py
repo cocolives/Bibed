@@ -1,7 +1,10 @@
+import os
 
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
 APP_ID = 'es.cocoliv.bibed'
+BIBED_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
 
 class Anything:
@@ -102,3 +105,7 @@ PANGO_BIG_FONT_SIZES = [
     22528,
     24576,
 ]
+
+GENERIC_HELP_SYMBOL = (
+    '<span color="grey"><sup><small>(?)</small></sup></span>'
+)

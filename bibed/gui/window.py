@@ -4,26 +4,27 @@ import logging
 
 from bibed.constants import (
     APP_NAME,
+    BIBED_ICONS_DIR,
     SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
     BibAttrs,
 )
 
 from bibed.preferences import (
-    BibedPreferencesDialog,
-    defaults,
+    # defaults,
     preferences,
     memories,
 )
 
-from bibed.entries import (
-    BibedEntryDialog,
-    BibedEntryTypeDialog,
-    format_single_bibkey_to_copy,
-)
 # from bibed.foundations import ltrace_function_name
 from bibed.utils import get_user_home_directory
-from bibed.gtk import Gio, GLib, Gtk, Gdk, Pango
+from bibed.entry import BibedEntry
+
+from bibed.gui.helpers import scrolled_textview
+from bibed.gui.preferences import BibedPreferencesDialog
+from bibed.gui.entry_type import BibedEntryTypeDialog
+from bibed.gui.entry import BibedEntryDialog
+from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
 
 
 LOGGER = logging.getLogger(__name__)
@@ -50,11 +51,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # self.set_icon_name('accessories-dictionary')
         self.set_icon_from_file(os.path.join(
-            os.path.dirname(__file__),
-            'data', 'icons', 'accessories-dictionary.png'))
+            BIBED_ICONS_DIR, 'accessories-dictionary.png'))
 
         # self.set_border_width(10)
-        self.set_default_size(900, 600)
+        self.set_default_size(1200, 600)
 
         # keep for resize() operations smothing.
         self.current_size = (900, 600)
@@ -106,8 +106,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         stack.add_titled(
             self.textview_sw,
-            "queue",
-            "Queue"
+            "strings",
+            "BIB Strings"
         )
 
         stack.child_set_property(
@@ -221,18 +221,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def setup_textview(self):
 
-        self.textview_sw = Gtk.ScrolledWindow()
-        # scrolledwindow.set_hexpand(True)
-        # self.textview_sw.set_vexpand(True)
-        self.textview_sw.set_policy(
-            Gtk.PolicyType.NEVER,
-            Gtk.PolicyType.AUTOMATIC
-        )
-
-        self.textview = Gtk.TextView()
-        # self.textview.set_buffer('Nothing yet here.')
-
-        self.textview_sw.add(self.textview)
+        self.textview_sw, self.textview = scrolled_textview()
 
     def setup_treeview(self):
 
@@ -280,6 +269,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         select = self.treeview.get_selection()
         select.connect("changed", self.on_treeview_selection_changed)
+
+        self.treeview.connect('row-activated', self.on_treeview_row_activated)
 
         select.unselect_all()
 
@@ -426,6 +417,31 @@ class BibEdWindow(Gtk.ApplicationWindow):
             if memories.treeview_sort_order != colord:
                 memories.treeview_sort_order = colord
 
+    def on_treeview_row_activated(self, treeview, path, column):
+
+        store = self.application.data_store
+        files = self.application.files
+
+        treeiter = store.get_iter(path)
+
+        # value = store.get_value(treeiter, 1)
+        bib_key = store[treeiter][BibAttrs.KEY]
+        filename = store[treeiter][BibAttrs.FILENAME]
+
+        entry = files[filename].get_entry_by_key(bib_key)
+
+        assert(isinstance(entry, BibedEntry))
+
+        entry_edit_dialog = BibedEntryDialog(
+            parent=self, entry=entry)
+
+        response = entry_edit_dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            pass
+
+        entry_edit_dialog.destroy()
+
     def on_treeview_selection_changed(self, selection):
 
         model, treeiter = selection.get_selected()
@@ -437,9 +453,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
             bib_key = model[treeiter][BibAttrs.KEY]
 
             if bib_key:
-                to_copy = format_single_bibkey_to_copy(bib_key)
+                to_copy = BibedEntry.single_bibkey_format(bib_key)
 
                 self.clipboard.set_text(to_copy, len=-1)
+
                 self.do_status_change(
                     "“{1}” copied to clipboard (from row {0}).".format(
                         model[treeiter][BibAttrs.ID], to_copy))
@@ -665,12 +682,21 @@ class BibEdWindow(Gtk.ApplicationWindow):
         response = entry_add_dialog.run()
 
         if response == Gtk.ResponseType.OK:
-            entry = entry_add_dialog.get_entry()
-            LOGGER.info('Entry created: {}'.format(entry))
+            entry_type = entry_add_dialog.get_entry_type()
+
+            entry_add_dialog.hide()
+
+            entry_edit_dialog = BibedEntryDialog(
+                parent=self, entry=BibedEntry.new_from_type(entry_type))
+
+            response = entry_edit_dialog.run()
+
+            if response == Gtk.ResponseType.OK:
+                pass
+
+            entry_edit_dialog.destroy()
 
         entry_add_dialog.destroy()
-
-        # entry__edit_dialog = BibedEntryDialog(parent=self, entry=entry)
 
     def on_preferences_clicked(self, button):
 

@@ -16,7 +16,6 @@ from bibed.foundations import (
     Singleton,
 )
 
-from bibed.gtk import Gdk
 
 LOGGER = logging.getLogger(__name__)
 
