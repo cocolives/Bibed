@@ -18,7 +18,12 @@ def setup_logging(level=logging.INFO):
 
 
 if __name__ == "__main__":
-    setup_logging(logging.DEBUG)
+    if __debug__:
+        setup_logging(logging.DEBUG)
+    else:
+        setup_logging(logging.INFO)
+
+    logging.getLogger('bibtexparser').setLevel(logging.ERROR)
 
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
