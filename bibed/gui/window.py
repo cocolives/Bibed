@@ -428,14 +428,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def on_treeview_row_activated(self, treeview, path, column):
 
-        store = self.application.data_store
+        # Are we on the list store, or a filter ?
+        model = self.treeview.get_model()
         files = self.application.files
 
-        treeiter = store.get_iter(path)
+        treeiter = model.get_iter(path)
 
         # value = store.get_value(treeiter, 1)
-        bib_key = store[treeiter][BibAttrs.KEY]
-        filename = store[treeiter][BibAttrs.FILENAME]
+        bib_key = model[treeiter][BibAttrs.KEY]
+        filename = model[treeiter][BibAttrs.FILENAME]
 
         entry = files[filename].get_entry_by_key(bib_key)
 
