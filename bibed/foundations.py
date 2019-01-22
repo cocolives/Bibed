@@ -199,6 +199,15 @@ class AttributeDictFromYaml(AttributeDict):
             self.save()
 
     def __delattr__(self, prop):
+
+        if __debug__:
+            # This should not obstruct the
+            # interpreter in normal conditions.
+            LOGGER.debug(
+                '{0}.__detattr__({1}) was {2}.'.format(
+                    self.__class__.__name__, prop,
+                    getattr(self, prop)))
+
         super().__delattr__(prop)
 
         if self.auto_save:

@@ -1,7 +1,10 @@
+import os
 
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
 APP_ID = 'es.cocoliv.bibed'
+BIBED_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
 
 class Anything:
@@ -9,6 +12,7 @@ class Anything:
 
 
 BibAttrs = Anything()
+
 BibAttrs.GLOBAL_ID = 0
 BibAttrs.FILENAME  = 1
 BibAttrs.ID        = 2
@@ -92,3 +96,16 @@ GRID_ROWS_SPACING     = 20
 
 SEARCH_WIDTH_NORMAL   = 10
 SEARCH_WIDTH_EXPANDED = 30
+
+PANGO_BIG_FONT_SIZES = [
+    14336,
+    16384,
+    18432,
+    20480,
+    22528,
+    24576,
+]
+
+GENERIC_HELP_SYMBOL = (
+    '<span color="grey"><sup><small>(?)</small></sup></span>'
+)

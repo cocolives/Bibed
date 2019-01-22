@@ -6,7 +6,6 @@ import logging
 
 from threading import Lock
 from collections import OrderedDict
-from pybtex.database import parse_file as pybtex_parse_file
 
 from bibed.constants import (
     APP_ID,
@@ -17,19 +16,19 @@ from bibed.constants import (
     BibAttrs,
 )
 
-from bibed.utils import PyinotifyEventHandler
-from bibed.entries import bib_entry_to_store_row_list
-from bibed.gui import BibEdWindow
 from bibed.foundations import (
     # ltrace_function_name,
     touch_file,
 )
-from bibed.preferences import preferences, memories
 
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version("Notify", "0.7")
-from gi.repository import GLib, Gio, Gtk, Notify  # NOQA
+# Import Gtk before preferences, to initialize GI.
+from bibed.gui.gtk import Gio, GLib, Gtk, Notify
+
+from bibed.utils import PyinotifyEventHandler
+from bibed.preferences import preferences, memories
+from bibed.database import BibedDatabase
+
+from bibed.gui.window import BibEdWindow
 
 
 LOGGER = logging.getLogger(__name__)
@@ -270,6 +269,10 @@ class BibEdApplication(Gtk.Application):
         if search_grab_focus:
             self.window.search.grab_focus()
 
+        # TODO: remove
+        # Show preferences immediately to speed up tests / debug.
+        # self.window.btn_preferences.emit('clicked')
+
         self.window.present()
 
     def create_file(self, filename):
@@ -343,13 +346,11 @@ class BibEdApplication(Gtk.Application):
                     filename, clear_first, recompute))
 
         try:
-            new_bibdb = pybtex_parse_file(filename)
+            new_bibdb = BibedDatabase(filename)
 
         except Exception as e:
             LOGGER.exception('Cannot load file {0} ({1})'.format(filename, e))
             return False
-
-        counter = 1
 
         if clear_first:
             if __debug__:
@@ -362,12 +363,10 @@ class BibEdApplication(Gtk.Application):
 
         self.files[filename] = new_bibdb
 
-        for key, entry in new_bibdb.entries.items():
+        for entry in new_bibdb.values():
             self.data_store.append(
-                bib_entry_to_store_row_list(
-                    0, filename, counter, entry)
+                entry.to_list_store_row()
             )
-            counter += 1
 
         if __debug__:
             LOGGER.debug('load_file_contents({}): end.'.format(filename))

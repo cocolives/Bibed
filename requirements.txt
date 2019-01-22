@@ -1,4 +1,5 @@
 pybtex
+pygobject
 pyinotify
 pynotify
 git-up

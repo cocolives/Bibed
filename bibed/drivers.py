@@ -1,48 +1,12 @@
+#
+# This file is unused as of 20190122.
+# We switched from pybtex to bibtexparser.
+#
 
-from bibed.constants import (
-    JABREF_READ_KEYWORDS,
-    JABREF_QUALITY_KEYWORDS,
-)
-
-from bibed.preferences import defaults, preferences
-
-
-def entry_get_keywords(entry):
-    ''' Return entry keywords without JabRef internals. '''
-
-    keywords = entry.fields.get('keywords', [])
-
-    for kw in JABREF_QUALITY_KEYWORDS + JABREF_READ_KEYWORDS:
-        try:
-            keywords.remove(kw)
-        except ValueError:
-            pass
-
-    return keywords
+from pybtex.database import parse_file as pybtex_parse_file
 
 
-def entry_get_quality(entry):
-    ''' Get the JabRef quality from keywords. '''
-
-    keywords = entry.fields.get('keywords', '').split(',')
-
-    for kw in JABREF_QUALITY_KEYWORDS:
-        if kw in keywords:
-            return kw
-
-    return ''
-
-
-def entry_get_read_status(entry):
-    ''' Get the JabRef read status from keywords. '''
-
-    keywords = entry.fields.get('keywords', '').split(',')
-
-    for kw in JABREF_READ_KEYWORDS:
-        if kw in keywords:
-            return kw
-
-    return ''
+# ———————————————————————————————————————————————————————————————— Functions
 
 
 def bib_entry_format_author_pybtex(persons):
@@ -119,30 +83,3 @@ def bib_entry_to_store_row_list_pybtex(global_counter, origin, counter, entry):
 
 
 bib_entry_to_store_row_list = bib_entry_to_store_row_list_pybtex
-
-
-def single_bibkey_to_copy_check(pattern):
-
-    if '@@key@@' in pattern:
-        return pattern
-
-    else:
-        return defaults.accelerators.copy_to_clipboard_single_value
-
-
-def format_single_bibkey_to_copy(bib_key):
-
-    defls = defaults.accelerators.copy_to_clipboard_single_value
-    prefs = preferences.accelerators.copy_to_clipboard_single_value
-
-    if prefs is None:
-        pattern = defls
-
-    else:
-        pattern = prefs
-
-    pattern = single_bibkey_to_copy_check(pattern)
-
-    result = pattern.replace('@@key@@', bib_key)
-
-    return result
