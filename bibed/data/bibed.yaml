@@ -552,6 +552,7 @@ fields:
 keep_recent_files: 10
 make_backup: true
 remember_open_files: true
+remember_windows_states: true
 types:
   main:
   - article
