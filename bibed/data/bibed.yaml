@@ -22,49 +22,65 @@ fields:
       and related fields refer to the journal while <span face="monospace">translator</span>
       and related fields refer to the article.
     optional:
+    - subtitle
+    - url
+    - urldate
+    - journalsubtitle
+    - series
+    - volume
+    - number
+    - issn
+    - doi
+    - issue
+    - month
+    - addendum
     - translator
     - annotator
     - commentator
-    - subtitle
     - titleaddon
     - editor
     - editora
     - editorb
     - editorc
-    - journalsubtitle
     - issuetitle
     - issuesubtitle
     - language
     - origlanguage
-    - series
-    - volume
-    - number
     - eid
-    - issue
-    - month
     - pages
     - version
     - note
-    - issn
-    - addendum
     - pubstate
-    - doi
     - eprint
     - eprintclass
     - eprinttype
-    - url
-    - urldate
     required:
-    - author
     - title
+    - author
     - journaltitle
     - - year
       - date
+    stacked:
+    - abstract
+    - comment
   book:
     doc: A single-volume book with one or more authors where the authors share credit
       for the work as a whole. This entry type also covers the function of the <span
       weight="bold" face="monospace">@inbook</span> type of traditional BibTeX.
     optional:
+    - subtitle
+    - publisher
+    - isbn
+    - edition
+    - pages
+    - pagetotal
+    - addendum
+    - volumes
+    - series
+    - number
+    - foreword
+    - afterword
+    - introduction
     - editor
     - editora
     - editorb
@@ -72,10 +88,6 @@ fields:
     - translator
     - annotator
     - commentator
-    - introduction
-    - foreword
-    - afterword
-    - subtitle
     - titleaddon
     - maintitle
     - mainsubtitle
@@ -84,18 +96,9 @@ fields:
     - origlanguage
     - volume
     - part
-    - edition
-    - volumes
-    - series
-    - number
     - note
-    - publisher
     - location
-    - isbn
     - chapter
-    - pages
-    - pagetotal
-    - addendum
     - pubstate
     - doi
     - eprint
@@ -104,8 +107,8 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - - year
       - date
   bookinbook:
@@ -151,8 +154,8 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - booktitle
     - - year
       - date
@@ -181,9 +184,9 @@ fields:
     - url
     - urldate
     required:
+    - title
     - - author
       - editor
-    - title
     - - year
       - date
   doc:
@@ -289,8 +292,8 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - booktitle
     - - year
       - date
@@ -300,6 +303,32 @@ fields:
       in free format, if applicable. The field type may be useful as well. <span face="monospace">author</span>,
       <span face="monospace">editor</span>, and <span face="monospace">year</span>
       are omissible in terms of @@@cite{defaults.fields.doc.missing_and_omissible_data}.
+  mnemonics:
+    key:
+      doc: The bibliography entry unique key.
+      label: Entry key
+    author:
+      doc: The author(s) of the <span face="monospace">title</span>.
+      label: Author(s)
+    date:
+      doc: 'The publication date. See also <span face="monospace">month</span> and
+        <span face="monospace">year</span>.
+
+
+        @@@import{2.3.8}'
+      label: Date
+    journaltitle:
+      doc: The name of a journal, a newspaper, or some other periodical.
+      label: Journal title
+    title:
+      doc: The title of the work.
+      label: Title
+    year:
+      doc: The year of publication. This field is a literal field only when given
+        explicitly in the data (for plain BibTeX compatibility for example). It is
+        however better to use the <span face="monospace">date</span> field as this
+        is compatible with plain years too and supports many more features. @@@import{2.3.8}
+      label: Year
   mvbook:
     doc: A multi-volume <span weight="bold" face="monospace">@book</span>. For backwards
       compatibility, multi-volume books are also supported by the entry type <span
@@ -338,8 +367,8 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - - year
       - date
   online:
@@ -366,9 +395,9 @@ fields:
     - eprinttype
     - urldate
     required:
+    - title
     - - author
       - editor
-    - title
     - - year
       - date
     - url
@@ -399,8 +428,8 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - type
     - institution
     - - year
@@ -457,8 +486,8 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - booktitle
     - - year
       - date
@@ -486,8 +515,8 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - type
     - institution
     - - year
@@ -516,11 +545,12 @@ fields:
     - url
     - urldate
     required:
-    - author
     - title
+    - author
     - - year
       - date
 keep_recent_files: 10
+make_backup: true
 remember_open_files: true
 types:
   main:
