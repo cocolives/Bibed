@@ -2,6 +2,8 @@
 import os
 import logging
 
+# from bibed.foundations import ltrace_function_name
+
 from bibed.constants import (
     APP_NAME,
     BIBED_ICONS_DIR,
@@ -10,13 +12,7 @@ from bibed.constants import (
     BibAttrs,
 )
 
-from bibed.preferences import (
-    # defaults,
-    preferences,
-    memories,
-)
-
-# from bibed.foundations import ltrace_function_name
+from bibed.preferences import memories, gpod
 from bibed.utils import get_user_home_directory
 from bibed.entry import BibedEntry
 
@@ -53,11 +49,21 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.set_icon_from_file(os.path.join(
             BIBED_ICONS_DIR, 'accessories-dictionary.png'))
 
-        # self.set_border_width(10)
-        self.set_default_size(1200, 600)
+        # TODO: use gui.helpers.get_screen_resolution()
+        dimensions = (1200, 600)
+
+        if gpod('remember_windows_states'):
+            remembered_dimensions = memories.main_window_dimensions
+
+            if remembered_dimensions is not None:
+                dimensions = remembered_dimensions
+
+        self.set_default_size(*dimensions)
 
         # keep for resize() operations smothing.
-        self.current_size = (900, 600)
+        self.current_size = dimensions
+
+        # self.set_border_width(10)
 
         # prepared for future references.
         self.preferences_dialog = None
@@ -379,6 +385,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # Keep in memory for next resize.
         self.current_size = (current_width, current_height)
+
+        if gpod('remember_windows_states'):
+            memories.main_window_dimensions = self.current_size
 
         # Remove 1 else the treeview gets a few pixels too wide.
         # The last column will compensate any "missing" pixels,
