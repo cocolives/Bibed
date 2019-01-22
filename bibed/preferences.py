@@ -11,6 +11,18 @@ from bibed.utils import (
 LOGGER = logging.getLogger(__name__)
 
 
+# —————————————————————————————————————————————————————————————— Functions
+
+def gpod(pref_name):
+
+    pref = getattr(preferences, pref_name)
+
+    if pref is None:
+        return getattr(defaults, pref_name)
+
+    return pref
+
+
 # ————————————————————————————————————————————————— preferences singletons
 
 

@@ -331,6 +331,30 @@ def frame_defaults(title):
     return frame
 
 
+def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state):
+
+    label = widget_properties(label_with_markup(
+        lbl_text),
+        expand=Gtk.Orientation.HORIZONTAL,
+        halign=Gtk.Align.START,
+        valign=Gtk.Align.CENTER,
+    )
+
+    switch = widget_properties(
+        Gtk.Switch(),
+        halign=Gtk.Align.START,
+        valign=Gtk.Align.CENTER
+    )
+
+    switch.connect(
+        'notify::active',
+        swi_notify_func)
+
+    switch.set_active(swi_initial_state)
+
+    return label, switch
+
+
 def build_entry_field_labelled_entry(mnemonics, field_name, entry):
 
     field_node = getattr(mnemonics, field_name)

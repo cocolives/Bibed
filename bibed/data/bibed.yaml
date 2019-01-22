@@ -304,9 +304,6 @@ fields:
       <span face="monospace">editor</span>, and <span face="monospace">year</span>
       are omissible in terms of @@@cite{defaults.fields.doc.missing_and_omissible_data}.
   mnemonics:
-    key:
-      doc: The bibliography entry unique key.
-      label: Entry key
     author:
       doc: The author(s) of the <span face="monospace">title</span>.
       label: Author(s)
@@ -320,6 +317,9 @@ fields:
     journaltitle:
       doc: The name of a journal, a newspaper, or some other periodical.
       label: Journal title
+    key:
+      doc: The bibliography entry unique key.
+      label: Entry key
     title:
       doc: The title of the work.
       label: Title
@@ -552,6 +552,7 @@ fields:
 keep_recent_files: 10
 make_backup: true
 remember_open_files: true
+remember_windows_states: true
 types:
   main:
   - article
