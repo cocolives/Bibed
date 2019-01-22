@@ -8,7 +8,7 @@ from bibed.constants import (
 )
 
 from bibed.utils import get_user_home_directory
-from bibed.preferences import defaults, preferences
+from bibed.preferences import defaults, preferences, gpod
 
 from bibed.gui.helpers import (
     label_with_markup,
@@ -239,6 +239,30 @@ class BibedPreferencesDialog(Gtk.Dialog):
         pg.attach_next_to(
             self.swi_remember_open_files,
             self.lbl_remember_open_files,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # ——————————————————————————————————————————Remember windows states
+
+        (self.lbl_remember_windows_states,
+         self.swi_remember_windows_states) = build_label_and_switch(
+            '<b>Remember windows states</b>\n'
+            '<span foreground="grey" size="small">'
+            'Restore main window and dialogs sizes and positions\n'
+            'across sessions.</span>',
+            self.on_switch_remember_windows_states_activated,
+            gpod('remember_windows_states'),
+        )
+
+        pg.attach_next_to(
+            self.lbl_remember_windows_states,
+            self.lbl_remember_open_files,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.swi_remember_windows_states,
+            self.lbl_remember_windows_states,
             Gtk.PositionType.RIGHT,
             1, 1)
 
@@ -510,6 +534,15 @@ class BibedPreferencesDialog(Gtk.Dialog):
                 'on_working_folder_changed(): set to {}'.format(new_folder))
 
             preferences.working_folder = new_folder
+
+    def on_switch_remember_windows_states_activated(self, switch, gparam):
+
+        is_active = switch.get_active()
+
+        # We need to test, else the set_active() call in dialog
+        # constructor triggers a superflous preferences save().
+        if preferences.remember_windows_states != is_active:
+            preferences.remember_windows_states = is_active
 
     def on_switch_bib_auto_save_activated(self, switch, gparam):
 
