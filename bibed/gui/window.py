@@ -9,6 +9,8 @@ from bibed.constants import (
     BIBED_ICONS_DIR,
     SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
+    FILES_COMBO_DEFAULT_WIDTH,
+    RESIZE_SIZE_MULTIPLIER,
     BibAttrs,
 )
 
@@ -173,7 +175,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         renderer_text = Gtk.CellRendererText(
             ellipsize=Pango.EllipsizeMode.START)
-        renderer_text.props.max_width_chars = 20
+        renderer_text.props.max_width_chars = FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
 
         files_combo.pack_start(renderer_text, True)
         files_combo.add_attribute(renderer_text, "text", 0)
@@ -182,6 +184,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.cmb_files_renderer = renderer_text
         self.cmb_files = files_combo
+        self.cmb_files.set_size_request(150, -1)
 
         self.btn_add = Gtk.Button()
         icon = Gio.ThemedIcon(name="list-add-symbolic")
@@ -392,18 +395,19 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # Remove 1 else the treeview gets a few pixels too wide.
         # The last column will compensate any "missing" pixels,
         # and we get no horizontal scrollbar.
-        column_width = round(current_width * 0.125) - 1
+        column_width = round(current_width * RESIZE_SIZE_MULTIPLIER) - 1
+
+        self.cmb_files_renderer.props.max_width_chars = (
+            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
+        )
+        self.cmb_files.set_size_request(150, -1)
+        self.cmb_files.queue_resize()
 
         self.col_key.set_min_width(column_width)
         self.col_author.set_min_width(column_width)
         self.col_journal.set_min_width(column_width)
 
         self.treeview.columns_autosize()
-
-        # TODO: this doesn't seem to work; on resizes()
-        #       the ComboBox width doesn't change.
-        self.cmb_files_renderer.props.max_width_chars = \
-            round(column_width / 20)
 
     def on_treeview_column_clicked(self, column):
 
