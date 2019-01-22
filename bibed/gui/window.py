@@ -616,7 +616,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         dialog.set_current_name('Untitled bibliography.bib')
         dialog.set_current_folder(
-            preferences.working_folder or get_user_home_directory())
+            gpod('working_folder') or get_user_home_directory())
 
         dialog.add_filter(self.get_bib_filter())
 
@@ -639,7 +639,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
              Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
 
         dialog.set_current_folder(
-            preferences.working_folder or get_user_home_directory())
+            gpod('working_folder') or get_user_home_directory())
 
         dialog.set_select_multiple(True)
         dialog.add_filter(self.get_bib_filter())
