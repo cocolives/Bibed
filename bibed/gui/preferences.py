@@ -16,6 +16,7 @@ from bibed.gui.helpers import (
     frame_defaults,
     grid_with_common_params,
     vbox_with_icon_and_label,
+    build_label_and_switch,
     # debug_widget,
 )
 from bibed.gui.dndflowbox import DnDFlowBox
@@ -118,25 +119,6 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
             return fcbwf
 
-        def build_swbas():
-
-            switch = widget_properties(
-                Gtk.Switch(),
-                halign=Gtk.Align.START,
-                valign=Gtk.Align.CENTER
-            )
-
-            switch.connect(
-                'notify::active',
-                self.on_switch_bib_auto_save_activated)
-
-            switch.set_active(
-                defaults.bib_auto_save
-                if preferences.bib_auto_save is None
-                else preferences.bib_auto_save)
-
-            return switch
-
         def build_spkrf():
 
             spin = widget_properties(
@@ -161,25 +143,6 @@ class BibedPreferencesDialog(Gtk.Dialog):
             spin.set_update_policy(Gtk.SpinButtonUpdatePolicy.IF_VALID)
 
             return spin
-
-        def build_swrof():
-
-            switch = widget_properties(
-                Gtk.Switch(),
-                halign=Gtk.Align.START,
-                valign=Gtk.Align.CENTER
-            )
-
-            switch.connect(
-                'notify::active',
-                self.on_switch_remember_open_files_activated)
-
-            switch.set_active(
-                defaults.remember_open_files
-                if preferences.remember_open_files is None
-                else preferences.remember_open_files)
-
-            return switch
 
         pg = grid_with_common_params()
 
@@ -208,14 +171,13 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         # —————————————————————————————————————————————————— BIB auto save
 
-        self.swi_bib_auto_save = build_swbas()
-        self.lbl_bib_auto_save = widget_properties(label_with_markup(
+        (self.lbl_bib_auto_save,
+         self.swi_bib_auto_save) = build_label_and_switch(
             '<b>Automatic save</b>\n'
             '<span foreground="grey" size="small">'
-            'Save BIB changes automatically while editing.</span>'),
-            expand=Gtk.Orientation.HORIZONTAL,
-            halign=Gtk.Align.START,
-            valign=Gtk.Align.CENTER,
+            'Save BIB changes automatically while editing.</span>',
+            self.on_switch_bib_auto_save_activated,
+            gpod('bib_auto_save'),
         )
 
         pg.attach_next_to(
@@ -257,16 +219,15 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         # ———————————————————————————————————————————— Remember open files
 
-        self.swi_remember_open_files = build_swrof()
-        self.lbl_remember_open_files = widget_properties(label_with_markup(
+        (self.lbl_remember_open_files,
+         self.swi_remember_open_files) = build_label_and_switch(
             '<b>Remember session</b>\n'
             '<span foreground="grey" size="small">'
             'When launching application, automatically re-open files\n'
             'which were previously opened before quitting last session,\n'
-            'restore search query, filters and sorting.</span>'),
-            expand=Gtk.Orientation.HORIZONTAL,
-            halign=Gtk.Align.START,
-            valign=Gtk.Align.CENTER,
+            'restore search query, filters and sorting.</span>',
+            self.on_switch_remember_open_files_activated,
+            gpod('remember_open_files'),
         )
 
         pg.attach_next_to(
