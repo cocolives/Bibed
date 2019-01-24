@@ -12,6 +12,7 @@ from bibed.constants import (
     APP_NAME,
     APP_VERSION,
     APP_MENU_XML,
+    BIBED_DATA_DIR,
     STORE_LIST_ARGS,
     BibAttrs,
 )
@@ -54,12 +55,25 @@ class BibEdApplication(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
+        self.setup_css()
         self.setup_actions()
         self.setup_app_menu()
         self.setup_data_stores()
         self.setup_inotify()
 
         self.file_modify_lock = Lock()
+
+    def setup_css(self):
+
+        self.css_provider = Gtk.CssProvider()
+        self.css_provider.load_from_path(
+            os.path.join(BIBED_DATA_DIR, 'style.css'))
+
+        self.style_context = Gtk.StyleContext()
+        self.style_context.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            self.css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     def setup_actions(self):
 
