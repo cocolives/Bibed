@@ -18,6 +18,8 @@ class DnDFlowBox(Gtk.FlowBox):
 
         super().__init__(*args, **kwargs)
 
+        self.set_selection_mode(Gtk.SelectionMode.NONE)
+
         # Each is a drag-n-drop source
         self.drag_source_set(
             Gdk.ModifierType.BUTTON1_MASK, [],
