@@ -13,12 +13,21 @@ LOGGER = logging.getLogger(__name__)
 
 # —————————————————————————————————————————————————————————————— Functions
 
-def gpod(pref_name):
+def gpod(preference_name):
+    ''' Get preference, or default if preference is not set.
 
-    pref = getattr(preferences, pref_name)
+        .note:: This only works for 1st-level preferences (eg.
+            `preferences.remember_open_files`). As of 2019-01-23, this
+            function is not sub-level capable. In most cases, sublevels
+            need dedicated handlers, anyway.
+    '''
+
+    assert('.' not in preference_name)
+
+    pref = getattr(preferences, preference_name)
 
     if pref is None:
-        return getattr(defaults, pref_name)
+        return getattr(defaults, preference_name)
 
     return pref
 

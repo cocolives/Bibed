@@ -12,6 +12,7 @@ from bibed.constants import (
     APP_NAME,
     APP_VERSION,
     APP_MENU_XML,
+    BIBED_DATA_DIR,
     STORE_LIST_ARGS,
     BibAttrs,
 )
@@ -19,10 +20,11 @@ from bibed.constants import (
 from bibed.foundations import (
     # ltrace_function_name,
     touch_file,
+    NoWatchContextManager,
 )
 
 # Import Gtk before preferences, to initialize GI.
-from bibed.gui.gtk import Gio, GLib, Gtk, Notify
+from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
 
 from bibed.utils import PyinotifyEventHandler
 from bibed.preferences import preferences, memories
@@ -54,12 +56,25 @@ class BibEdApplication(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
+        self.setup_css()
         self.setup_actions()
         self.setup_app_menu()
         self.setup_data_stores()
         self.setup_inotify()
 
         self.file_modify_lock = Lock()
+
+    def setup_css(self):
+
+        self.css_provider = Gtk.CssProvider()
+        self.css_provider.load_from_path(
+            os.path.join(BIBED_DATA_DIR, 'style.css'))
+
+        self.style_context = Gtk.StyleContext()
+        self.style_context.add_provider_for_screen(
+            Gdk.Screen.get_default(),
+            self.css_provider,
+            Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
     def setup_actions(self):
 
@@ -106,6 +121,10 @@ class BibEdApplication(Gtk.Application):
         self.notifier.start()
 
         self.wdd = {}
+
+    def no_watch(self, filename):
+
+        return NoWatchContextManager(self, filename)
 
     def inotify_add_watch(self, filename):
 
@@ -321,6 +340,14 @@ class BibEdApplication(Gtk.Application):
         memories.add_open_file(filename)
         memories.add_recent_file(filename)
 
+    def check_has_key(self, key):
+
+        for filename, database in self.files.items():
+            if key in database.keys():
+                return filename
+
+        return None
+
     def reload_file_contents(self, filename, message=None):
         '''Empty everything and reload. '''
 
@@ -346,7 +373,7 @@ class BibEdApplication(Gtk.Application):
                     filename, clear_first, recompute))
 
         try:
-            new_bibdb = BibedDatabase(filename)
+            new_bibdb = BibedDatabase(filename, self)
 
         except Exception as e:
             LOGGER.exception('Cannot load file {0} ({1})'.format(filename, e))
@@ -402,7 +429,16 @@ class BibEdApplication(Gtk.Application):
             self.do_recompute_global_ids()
 
     def save_file_to_disk(self, filename):
-        pass
+
+        self.file_modify_lock.acquire()
+
+        # TODO: write here.
+
+        try:
+            self.file_modify_lock.release()
+
+        except Exception as e:
+            LOGGER.exception(e)
 
     def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
         ''' Close a file and impact changes. '''

@@ -1,0 +1,35 @@
+/*
+https://thegnomejournal.wordpress.com/2011/03/15/styling-gtk-with-css/
+https://wiki.gnome.org/HowDoI/Buttons
+https://stackoverflow.com/q/11927785/654755
+
+GTK+ currently supports a subset of CSS properties:
+
+background-color
+background-image
+color
+border-color
+border-image
+border-radius
+border-width
+border-style
+padding
+margin
+transition
+
+*/
+
+GtkButton.close-all {
+    background-color: black;
+    background: black;
+}
+
+GtkButton#close-button {
+    background-color: green;
+    background: green;
+}
+
+GtkLabel.dnd-object {
+    background-color: #333333;
+    border-radius: 5px;
+}

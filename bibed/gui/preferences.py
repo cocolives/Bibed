@@ -176,8 +176,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
             '<b>Automatic save</b>\n'
             '<span foreground="grey" size="small">'
             'Save BIB changes automatically while editing.</span>',
-            self.on_switch_bib_auto_save_activated,
+            self.on_switch_activated,
             gpod('bib_auto_save'),
+            func_args=('bib_auto_save', ),
         )
 
         pg.attach_next_to(
@@ -189,6 +190,37 @@ class BibedPreferencesDialog(Gtk.Dialog):
         pg.attach_next_to(
             self.swi_bib_auto_save,
             self.lbl_bib_auto_save,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # TODO: add a switch for 'backup_before_save'
+
+        (self.lbl_ensure_biblatex_checks,
+         self.swi_ensure_biblatex_checks) = build_label_and_switch(
+            '<b>Ensure BibLaTeX requirements</b>\n'
+            '<span foreground="grey" size="small">'
+            'Before saving new entries, ensure that BibLaTeX conditions\n'
+            'and requirements are met (for example one of <span '
+            'face="monospace">date</span> or <span face="monospace">'
+            'year</span>\n'
+            'fields are filled on articles).</span>',
+            self.on_switch_activated,
+            gpod('ensure_biblatex_checks'),
+            func_args=('ensure_biblatex_checks', )
+        )
+
+        # TODO: implement the feature and enable the switch.
+        self.swi_ensure_biblatex_checks.set_sensitive(False)
+
+        pg.attach_next_to(
+            self.lbl_ensure_biblatex_checks,
+            self.lbl_bib_auto_save,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.swi_ensure_biblatex_checks,
+            self.lbl_ensure_biblatex_checks,
             Gtk.PositionType.RIGHT,
             1, 1)
 
@@ -207,7 +239,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         pg.attach_next_to(
             self.lbl_keep_recent_files,
-            self.lbl_bib_auto_save,
+            self.lbl_ensure_biblatex_checks,
             Gtk.PositionType.BOTTOM,
             1, 1)
 
@@ -226,8 +258,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
             'When launching application, automatically re-open files\n'
             'which were previously opened before quitting last session,\n'
             'restore search query, filters and sorting.</span>',
-            self.on_switch_remember_open_files_activated,
+            self.on_switch_activated,
             gpod('remember_open_files'),
+            func_args=('remember_open_files', )
         )
 
         pg.attach_next_to(
@@ -250,8 +283,10 @@ class BibedPreferencesDialog(Gtk.Dialog):
             '<span foreground="grey" size="small">'
             'Restore main window and dialogs sizes and positions\n'
             'across sessions.</span>',
-            self.on_switch_remember_windows_states_activated,
+            self.on_switch_activated,
             gpod('remember_windows_states'),
+            func_args=('remember_windows_states', )
+
         )
 
         pg.attach_next_to(
@@ -469,60 +504,102 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
     def setup_page_editor(self):
 
-        def build_cbtet():
+        def build_dnd(qualify, title):
 
-            prefs = defaults.fields
-            defls = defaults.fields
-            prefsv = preferences.accelerators.copy_to_clipboard_single_value
-            deflsv = defaults.accelerators.copy_to_clipboard_single_value
+            defl_main  = defaults.types.main
+            defl_other = defaults.types.other
+            pref_main  = preferences.types.main
+            pref_other = preferences.types.other
 
-            if prefs is not None:
-                options = prefs.copy() + defls.copy()
+            (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
+                name=qualify, title=title, dialog=self)
 
-            else:
-                options = defls.copy()
-
-            combo = Gtk.ComboBoxText.new_with_entry()
-            combo.set_entry_text_column(0)
-            combo.set_size_request(300, 10)
-
-            combo.connect('changed', self.on_combo_single_copy_changed)
-
-            for option in options:
-                combo.append_text(option)
-
-            if prefsv is None:
-                combo.set_active(options.index(deflsv))
+            if qualify == 'main':
+                children = defl_main if pref_main is None else pref_main
 
             else:
-                combo.set_active(options.index(prefsv))
+                children = defl_other if pref_other is None else pref_other
+                # dnd_area.drag_source_set_icon_name(Gtk.STOCK_GO_BACK)
 
-            return combo
+            dnd_area.add_items(children)
 
-        pf = grid_with_common_params()
+            return (frame, scrolled, dnd_area)
 
-        self.cbt_entry_type = build_cbtet()
+        pc = grid_with_common_params()
 
-        pf.attach(self.cbt_entry_type)
+        (self.fr_creator_dnd_main,
+         self.sw_creator_dnd_main,
+         self.fb_creator_dnd_main) = build_dnd('main', '   Main types   ')
+        (self.fr_creator_dnd_other,
+         self.sw_creator_dnd_other,
+         self.fb_creator_dnd_other) = build_dnd('other', '   Other types   ')
 
-        pf.attach_next_to(widget_properties(label_with_markup(
-            '<span foreground="grey">Preferences are automatically saved; '
-            'just hit <span face="monospace">ESC</span> when you are done.'
-            '</span>',
-            xalign=0.5),
-            expand=Gtk.Orientation.HORIZONTAL,
-            halign=Gtk.Align.CENTER)
+        self.lbl_creator = widget_properties(label_with_markup(
+            '<big>Main and other entry types</big>\n'
+            '<span foreground="grey">'
+            'Drag and drop items from one side to another\n'
+            'to have</span> main <span foreground="grey">'
+            'items displayed first in entry\n'
+            'creator assistant, and</span> other '
+            '<span foreground="grey">accessible\n'
+            'in a folded area of the assistant.\n\n'
+            'Note: they will appear in the exact order\n'
+            'you organize them into.'
+            '</span>'),
+            expand=False,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.START)
+
+        self.btn_creator_reset = widget_properties(
+            Gtk.Button('Reset to defaults'),
+            expand=False,
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.END,
+            margin_top=GRID_ROWS_SPACING,
+            margin_bottom=GRID_ROWS_SPACING)
+
+        self.btn_creator_reset.connect('clicked', self.on_creator_reset)
+
+        if preferences.types.main or preferences.types.other:
+            self.btn_creator_reset.set_sensitive(True)
+
+        # debug_widget(self.lbl_creator)
+        pc.attach(
+            self.lbl_creator,
+            0, 0, 1, 1
         )
 
-        self.page_formats = pf
+        pc.attach_next_to(
+            self.btn_creator_reset,
+            self.lbl_creator,
+            Gtk.PositionType.BOTTOM,
+            1, 1
+        )
+
+        pc.attach_next_to(
+            self.fr_creator_dnd_main,
+            self.lbl_creator,
+            Gtk.PositionType.RIGHT,
+            1, 2
+        )
+
+        pc.attach_next_to(
+            self.fr_creator_dnd_other,
+            self.fr_creator_dnd_main,
+            Gtk.PositionType.RIGHT,
+            1, 2
+        )
+
+        self.page_creator = pc
 
         self.notebook.append_page(
-            self.page_formats,
+            self.page_creator,
             vbox_with_icon_and_label(
-                'document-edit-symbolic',
-                'Editor'
+                'document-new-symbolic',
+                'Creator'
             )
         )
+
 
     def on_working_folder_set(self, widget):
 
@@ -535,32 +612,14 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
             preferences.working_folder = new_folder
 
-    def on_switch_remember_windows_states_activated(self, switch, gparam):
+    def on_switch_activated(self, switch, gparam, preference_name):
 
         is_active = switch.get_active()
 
         # We need to test, else the set_active() call in dialog
         # constructor triggers a superflous preferences save().
-        if preferences.remember_windows_states != is_active:
-            preferences.remember_windows_states = is_active
-
-    def on_switch_bib_auto_save_activated(self, switch, gparam):
-
-        is_active = switch.get_active()
-
-        # We need to test, else the set_active() call in dialog
-        # constructor triggers a superflous preferences save().
-        if preferences.bib_auto_save != is_active:
-            preferences.bib_auto_save = is_active
-
-    def on_switch_remember_open_files_activated(self, switch, gparam):
-
-        is_active = switch.get_active()
-
-        # We need to test, else the set_active() call in dialog
-        # constructor triggers a superflous preferences save().
-        if preferences.remember_open_files != is_active:
-            preferences.remember_open_files = is_active
+        if getattr(preferences, preference_name) != is_active:
+            setattr(preferences, preference_name, is_active)
 
     def on_spin_keep_recent_files_changed(self, adj):
 

@@ -70,6 +70,10 @@ class BibedEntry:
     def type(self):
         return self.entry['ENTRYTYPE']
 
+    @type.setter
+    def type(self, value):
+        self.entry['ENTRYTYPE'] = value
+
     @property
     def key(self):
         return self.entry.get('ID', None)
@@ -80,16 +84,28 @@ class BibedEntry:
         # TODO: check key on the fly
         self.entry['ID'] = value
 
-    def normalize(self, name):
+    def translate(self, name):
+        ''' Translation Bibed ←→ bibtexparser. '''
 
-        if name in ('ID', 'ENTRYTYPE', ):
-            return name.upper()
+        if name == 'key':
+            return 'ID'
+        elif name == 'type':
+            return 'ENTRYTYPE'
 
         return name
 
+    def __setitem__(self, item_name, value):
+        ''' Translation Bibed ←→ bibtexparser. '''
+
+        self.entry[self.translate(item_name)] = value
+
+    def __getitem__(self, item_name):
+
+        return self.entry[self.translate(item_name)]
+
     def get_field(self, name, default=None):
 
-        name = self.normalize(name)
+        name = self.translate(name)
 
         if default is None:
             return bibtexparser_as_text(self.entry[name])
@@ -98,7 +114,7 @@ class BibedEntry:
 
     def set_field(self, name, value):
 
-        name = self.normalize(name)
+        name = self.translate(name)
 
         self.entry[name] = value
 

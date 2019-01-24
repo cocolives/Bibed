@@ -12,6 +12,7 @@ accelerators:
   - \footcite{@@key@@}
   copy_to_clipboard_single_value: \cite{@@key@@}
 bib_auto_save: true
+ensure_biblatex_checks: false
 fields:
   article:
     doc: An article in a journal, magazine, newspaper, or other periodical which forms
@@ -550,7 +551,7 @@ fields:
     - - year
       - date
 keep_recent_files: 10
-make_backup: true
+backup_before_save: true
 remember_open_files: true
 remember_windows_states: true
 types:
