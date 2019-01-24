@@ -373,7 +373,7 @@ class BibEdApplication(Gtk.Application):
                     filename, clear_first, recompute))
 
         try:
-            new_bibdb = BibedDatabase(filename)
+            new_bibdb = BibedDatabase(filename, self)
 
         except Exception as e:
             LOGGER.exception('Cannot load file {0} ({1})'.format(filename, e))
