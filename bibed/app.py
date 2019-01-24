@@ -24,7 +24,7 @@ from bibed.foundations import (
 )
 
 # Import Gtk before preferences, to initialize GI.
-from bibed.gui.gtk import Gio, GLib, Gtk, Notify
+from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
 
 from bibed.utils import PyinotifyEventHandler
 from bibed.preferences import preferences, memories
