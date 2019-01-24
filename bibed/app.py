@@ -20,6 +20,7 @@ from bibed.constants import (
 from bibed.foundations import (
     # ltrace_function_name,
     touch_file,
+    NoWatchContextManager,
 )
 
 # Import Gtk before preferences, to initialize GI.
@@ -120,6 +121,10 @@ class BibEdApplication(Gtk.Application):
         self.notifier.start()
 
         self.wdd = {}
+
+    def no_watch(self, filename):
+
+        return NoWatchContextManager(self, filename)
 
     def inotify_add_watch(self, filename):
 
