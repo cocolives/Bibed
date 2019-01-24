@@ -175,7 +175,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         renderer_text = Gtk.CellRendererText(
             ellipsize=Pango.EllipsizeMode.START)
-        renderer_text.props.max_width_chars = FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
+        renderer_text.props.max_width_chars = (
+            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
+        )
 
         files_combo.pack_start(renderer_text, True)
         files_combo.add_attribute(renderer_text, "text", 0)
@@ -507,7 +509,14 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # if ctrl and keyval_name == 's':
 
         if ctrl and keyval == Gdk.KEY_s:
+
+            if gpod('bib_auto_save'):
+                # propagate signal, we do not need to save.
+                return True
+
             LOGGER.info('Control-S pressed (no action yet).')
+
+            # given cmb_files, save one or ALL files.
 
         elif ctrl and keyval == Gdk.KEY_r:
             self.application.reload_file(
@@ -598,8 +607,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
             self.treeview.grab_focus()
 
         else:
+            # The keycode combination was not handled, propagate.
             return False
 
+        # Stop propagation of signal, we handled it.
         return True
 
     def on_search_focus_event(self, search, event):
