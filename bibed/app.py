@@ -429,7 +429,16 @@ class BibEdApplication(Gtk.Application):
             self.do_recompute_global_ids()
 
     def save_file_to_disk(self, filename):
-        pass
+
+        self.file_modify_lock.acquire()
+
+        # TODO: write here.
+
+        try:
+            self.file_modify_lock.release()
+
+        except Exception as e:
+            LOGGER.exception(e)
 
     def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
         ''' Close a file and impact changes. '''
