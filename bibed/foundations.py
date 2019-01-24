@@ -249,3 +249,18 @@ class Singleton(type):
                         cls.__name__))
 
         return cls._instances[cls]
+
+
+class NoWatchContextManager:
+    ''' A simple context manager to temporarily disable inotify watches. '''
+
+    def __init__(self, application, filename):
+
+        self.application = application
+        self.filename = filename
+
+    def __enter__(self):
+        self.application.inotify_remove_watch(self.filename)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.application.inotify_add_watch(self.filename)
