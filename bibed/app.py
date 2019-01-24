@@ -340,6 +340,14 @@ class BibEdApplication(Gtk.Application):
         memories.add_open_file(filename)
         memories.add_recent_file(filename)
 
+    def check_has_key(self, key):
+
+        for filename, database in self.files.items():
+            if key in database.keys():
+                return filename
+
+        return None
+
     def reload_file_contents(self, filename, message=None):
         '''Empty everything and reload. '''
 
