@@ -256,6 +256,9 @@ class NoWatchContextManager:
 
     def __init__(self, application, filename):
 
+        # TODO: lock the file_modify_lock in application, too?
+        # or is it superfluous because inotify is already disabled?
+
         self.application = application
         self.filename = filename
 
