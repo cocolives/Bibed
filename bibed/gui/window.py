@@ -2,7 +2,7 @@
 import os
 import logging
 
-# from bibed.foundations import ltrace_function_name
+# from bibed.foundations import ltrace_caller_name
 
 from bibed.constants import (
     APP_NAME,
@@ -783,7 +783,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def do_filter_data_store(self):
         ''' Filter the data store on filename, search_text, or both. '''
 
-        # print(ltrace_function_name())
+        # print(ltrace_caller_name())
 
         try:
             filename = self.get_files_combo_filename()

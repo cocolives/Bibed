@@ -2,7 +2,7 @@
 import os
 import logging
 
-from bibed.foundations import ltrace_function_name
+from bibed.foundations import ltrace_caller_name
 
 from collections import OrderedDict
 from threading import Lock
@@ -655,7 +655,7 @@ class BibedEntryDialog(Gtk.Dialog):
 
     def update_entry_and_save_file(self):
 
-        print(ltrace_function_name())
+        print(ltrace_caller_name())
 
         entry = self.entry
 

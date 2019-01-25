@@ -18,7 +18,7 @@ from bibed.constants import (
 )
 
 from bibed.foundations import (
-    # ltrace_function_name,
+    # ltrace_caller_name,
     set_process_title,
     touch_file,
     NoWatchContextManager,
@@ -324,7 +324,7 @@ class BibEdApplication(Gtk.Application):
             LOGGER.debug('open_file({}, recompute={})'.format(
                 filename, recompute))
 
-        # print(ltrace_function_name())
+        # print(ltrace_caller_name())
 
         for row in self.files_store:
             if row[0] == filename:

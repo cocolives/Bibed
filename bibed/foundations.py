@@ -93,7 +93,15 @@ def set_process_title(title):
             LOGGER.warning("Setting the process title failed.")
 
 
-def ltrace_function_name():
+def ltrace_caller_name():
+    ''' Print the stack previous level function name (eg. “caller”).
+
+        .. note:: if you want to print current function name (the one where
+            the `ltrace_caller_name` call is in), just wrap it in a lamda.
+
+        .. todo:: re-integrate :func:`ltrace_func` from
+            :mod:`licorn.foundations.ltrace` to ease debugging.
+    '''
 
     # for frame, filename, line_num, func, source_code,
     # source_index in inspect.stack():
@@ -289,7 +297,7 @@ class AttributeDictFromYaml(AttributeDict):
 
     def save(self):
 
-        # print(ltrace_function_name())
+        # print(ltrace_caller_name())
 
         with open(self.filename, 'w') as f:
             yaml.add_representer(type(self), Representer.represent_dict)
