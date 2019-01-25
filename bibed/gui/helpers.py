@@ -142,7 +142,7 @@ def debug_widget(widget):
     print('\tmargin_end={0}'.format(widget.props.margin_end))
 
 
-def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, debug=False):
+def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, no_show_all=False, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA
 
@@ -260,6 +260,10 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
         widget.connect(
             connect_signal, connect_to,
             *connect_args, **connect_kwargs)
+
+    if no_show_all:
+        if __debug__ and debug: mp('SET no_show_all')  # NOQA
+        widget.set_no_show_all(True)
 
     return widget
 
