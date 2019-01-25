@@ -33,6 +33,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.set_name('Bibed')
+
         # This will be in the windows group and have the "win" prefix
         max_action = Gio.SimpleAction.new_stateful(
             "maximize", None, GLib.Variant.new_boolean(False))

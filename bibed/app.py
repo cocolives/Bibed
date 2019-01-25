@@ -19,6 +19,7 @@ from bibed.constants import (
 
 from bibed.foundations import (
     # ltrace_function_name,
+    set_process_title,
     touch_file,
     NoWatchContextManager,
 )
@@ -34,6 +35,18 @@ from bibed.gui.window import BibEdWindow
 
 
 LOGGER = logging.getLogger(__name__)
+
+# This fixes the name displayed in the GNOME Menu bar.
+# Without this, the name is 'Bibed.py'.
+GLib.set_prgname(APP_NAME)
+
+set_process_title(APP_NAME)
+# set after main loop has started (gtk seems to reset it)
+GLib.idle_add(set_process_title, APP_NAME)
+
+# Not sure what this is for, but it seems important in
+# Gtk/GLib documentation.
+GLib.set_application_name(APP_NAME)
 
 
 class BibEdApplication(Gtk.Application):
