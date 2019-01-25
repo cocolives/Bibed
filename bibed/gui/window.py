@@ -93,6 +93,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.add(self.vbox)
 
+            BIBED_ICONS_DIR, 'gnome-contacts.png')
     def setup_stack(self):
 
         stack = Gtk.Stack()
@@ -171,6 +172,14 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         hb.pack_start(bbox)
 
+        self.btn_file_close = Gtk.Button()
+        self.btn_file_close.connect("clicked", self.on_file_close_clicked)
+        icon = Gio.ThemedIcon(name="window-close-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_file_close.add(image)
+        self.btn_file_close_switch_icon(False)
+        hb.pack_start(self.btn_file_close)
+
         files_combo = Gtk.ComboBox.new_with_model(
             self.application.files_store)
         files_combo.connect("changed", self.on_files_combo_changed)
@@ -197,14 +206,6 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.btn_add.connect('clicked', self.on_entry_add_clicked)
 
         hb.pack_start(self.btn_add)
-
-        self.btn_file_close = Gtk.Button()
-        self.btn_file_close.connect("clicked", self.on_file_close_clicked)
-        icon = Gio.ThemedIcon(name="window-close-symbolic")
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.btn_file_close.add(image)
-        self.btn_file_close_switch_icon(False)
-        hb.pack_start(self.btn_file_close)
 
         # ————————————————————————————— Right side, from end to start
 
@@ -835,7 +836,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def btn_file_close_switch_icon(self, multiple=False):
 
         if multiple:
-            self.btn_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
-
+            # self.btn_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
+            add_classes(self.btn_file_close, ['close-all'])
+            self.btn_file_close.set_tooltip_markup(
+                'Close <b>ALL</b> open files')
         else:
-            self.btn_file_close.set_relief(Gtk.ReliefStyle.NONE)
+            # self.btn_file_close.set_relief(Gtk.ReliefStyle.NONE)
+            remove_classes(self.btn_file_close, ['close-all'])
+            self.btn_file_close.set_tooltip_markup(
+                'Close <i>currently selected</i> file')
