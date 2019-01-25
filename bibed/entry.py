@@ -89,10 +89,15 @@ class BibedEntry:
 
         if name == 'key':
             return 'ID'
-        elif name == 'type':
-            return 'ENTRYTYPE'
+
+        # NO !!! we have type for thesis, etc.
+        # elif name == 'type':
+        #     return 'ENTRYTYPE'
 
         return name
+
+    def fields(self):
+        return self.entry.keys()
 
     def __setitem__(self, item_name, value):
         ''' Translation Bibed ←→ bibtexparser. '''
