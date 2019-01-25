@@ -567,11 +567,32 @@ class BibEdApplication(Gtk.Application):
 
         about_dialog.set_program_name(APP_NAME)
         about_dialog.set_version(APP_VERSION)
-        about_dialog.set_authors(["Olivier Cortès", "Collectif Cocoliv.es"])
-        about_dialog.set_copyright("(c) Collectif Cocoliv.es")
+        about_dialog.set_logo_icon_name('gnome-contacts.png')
+        # os.path.join(BIBED_ICONS_DIR, 'gnome-contacts.png'))
+
+        about_dialog.set_copyright('(c) Collectif Cocoliv.es')
         about_dialog.set_comments(
             "Logiciel libre d'assistance bibliographique")
-        about_dialog.set_website("https://cocoliv.es/library/bibed")
+        about_dialog.set_website('https://cocoliv.es/library/bibed')
+        about_dialog.set_website_label('Site web de Bibed')
+        about_dialog.set_license_type(Gtk.License.GPL_3_0)
+
+        about_dialog.set_authors([
+            'Olivier Cortès <olive@cocoliv.es>',
+            'Collectif Cocoliv.es <contact@cocoliv.es>',
+        ])
+        about_dialog.set_documenters([
+            'Olivier Cortès <olive@cocoliv.es>',
+        ])
+        about_dialog.set_artists([
+            'Corinne Carnevali <coco@cocoliv.es>',
+        ])
+        about_dialog.set_translator_credits(
+            'Olivier Cortès <olive@cocoliv.es>'
+        )
+
+        # add_credit_section(section_name, people)
+        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/AboutDialog.html#Gtk.AboutDialog.add_credit_section
 
         about_dialog.present()
 
