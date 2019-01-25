@@ -13,6 +13,7 @@ from bibed.constants import (
     APP_VERSION,
     APP_MENU_XML,
     BIBED_DATA_DIR,
+    BIBED_ICONS_DIR,
     STORE_LIST_ARGS,
     BibAttrs,
 )
@@ -62,6 +63,11 @@ class BibEdApplication(Gtk.Application):
             GLib.OptionArg.NONE,
             "Command line test", None)
 
+        # TODO: If there is a resource located at “gtk/help-overlay.ui”
+        # which defines a Gtk.ShortcutsWindow with ID “help_overlay” […].
+        # To create a menu item that displays the shortcuts window,
+        # associate the item with the action win.show-help-overlay.
+
         self.window = None
         self.files = OrderedDict()
         self.bibdb = None
@@ -69,7 +75,7 @@ class BibEdApplication(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
-        self.setup_css()
+        self.setup_resources_and_css()
         self.setup_actions()
         self.setup_app_menu()
         self.setup_data_stores()
@@ -77,7 +83,19 @@ class BibEdApplication(Gtk.Application):
 
         self.file_modify_lock = Lock()
 
-    def setup_css(self):
+    def setup_resources_and_css(self):
+
+        self.set_resource_base_path(BIBED_DATA_DIR)
+
+        default_screen = Gdk.Screen.get_default()
+
+        # could also be .icon_theme_get_default()
+        self.icon_theme = Gtk.IconTheme.get_for_screen(default_screen)
+        self.icon_theme.add_resource_path(os.path.join(BIBED_ICONS_DIR))
+
+        # Get an icon path.
+        # icon_info = icon_theme.lookup_icon("my-icon-name", 48, 0)
+        # print icon_info.get_filename()
 
         self.css_provider = Gtk.CssProvider()
         self.css_provider.load_from_path(
@@ -85,7 +103,7 @@ class BibEdApplication(Gtk.Application):
 
         self.style_context = Gtk.StyleContext()
         self.style_context.add_provider_for_screen(
-            Gdk.Screen.get_default(),
+            default_screen,
             self.css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
@@ -99,7 +117,18 @@ class BibEdApplication(Gtk.Application):
         action.connect("activate", self.on_quit)
         self.add_action(action)
 
+        # TODO: take back window keypresses here.
+        # Use https://lazka.github.io/pgi-docs/Gtk-3.0/classes/Application.html#Gtk.Application.add_accelerator  # NOQA
+
+        # TODO: implement a shortcuts window.
+        # from https://lazka.github.io/pgi-docs/Gtk-3.0/classes/ShortcutsWindow.html#Gtk.ShortcutsWindow  # NOQA
+
     def setup_app_menu(self):
+
+        # TODO: move menus to gtk/menus.ui for automatic load.
+        #       and gtk/menus-common.ui
+        #
+        # See “Automatic Resources” at https://lazka.github.io/pgi-docs/Gtk-3.0/classes/Application.html#Gtk.Application  # NOQA
 
         builder = Gtk.Builder.new_from_string(APP_MENU_XML, -1)
         self.set_app_menu(builder.get_object("app-menu"))
@@ -167,7 +196,7 @@ class BibEdApplication(Gtk.Application):
             return True
 
         try:
-            filter_file = self.window.get_files_combo_filename()
+            filter_file = self.window.get_selected_filename()
 
         except TypeError:
             # The window is not yet constructed.

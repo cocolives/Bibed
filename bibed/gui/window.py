@@ -18,11 +18,15 @@ from bibed.preferences import memories, gpod
 from bibed.utils import get_user_home_directory
 from bibed.entry import BibedEntry
 
-from bibed.gui.helpers import scrolled_textview
+from bibed.gui.helpers import (
+    scrolled_textview,
+    add_classes,
+    remove_classes,
+)
 from bibed.gui.preferences import BibedPreferencesDialog
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
+from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, GdkPixbuf, Pango
 
 
 LOGGER = logging.getLogger(__name__)
@@ -49,9 +53,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.connect('check-resize', self.on_resize)
         self.connect("key-press-event", self.on_key_pressed)
 
-        # self.set_icon_name('accessories-dictionary')
-        self.set_icon_from_file(os.path.join(
-            BIBED_ICONS_DIR, 'accessories-dictionary.png'))
+        self.setup_icon()
 
         # TODO: use gui.helpers.get_screen_resolution()
         dimensions = (1200, 600)
@@ -93,7 +95,21 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.add(self.vbox)
 
-            BIBED_ICONS_DIR, 'gnome-contacts.png')
+    def setup_icon(self):
+
+        # icon_filename = os.path.join(
+        #     BIBED_ICONS_DIR, 'gnome-contacts.png')
+        # LOGGER.debug('loading Window icon from {}'.format(icon_filename))
+
+        self.set_icon_name('gnome-contacts')
+        self.set_default_icon_name('gnome-contacts')
+        # self.set_icon_from_file(icon_filename)
+        # self.set_default_icon_from_file(icon_filename)
+
+        # pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+        # self.set_default_icon_list([pixbuf])
+        # self.set_icon_list([pixbuf])
+
     def setup_stack(self):
 
         stack = Gtk.Stack()
@@ -189,6 +205,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
         renderer_text.props.max_width_chars = (
             FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
         )
+
+        # TODO: replace this combo with a Gtk.StackSidebar()
+        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
 
         files_combo.pack_start(renderer_text, True)
         files_combo.add_attribute(renderer_text, "text", 0)
@@ -522,9 +541,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # given cmb_files, save one or ALL files.
 
         elif ctrl and keyval == Gdk.KEY_r:
-            self.application.reload_file(
-                '{} reloaded at user request.'.format(
-                    self.application.filename))
+            self.application.reload_files(
+                'Reloaded all open files at user request.')
 
         elif ctrl and keyval == Gdk.KEY_f:
             self.search.grab_focus()
@@ -700,7 +718,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # self.application.do_recompute_global_ids()
 
         else:
-            self.application.close_file(self.get_files_combo_filename())
+            self.application.close_file(self.get_selected_filename())
 
         self.sync_shown_hidden()
 
@@ -749,7 +767,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         return filter_bib
 
-    def get_files_combo_filename(self):
+    def get_selected_filename(self):
 
         filename = self.application.files_store[
             self.cmb_files.get_active_iter()
@@ -787,7 +805,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # print(ltrace_caller_name())
 
         try:
-            filename = self.get_files_combo_filename()
+            filename = self.get_selected_filename()
 
         except TypeError:
             filename = None
