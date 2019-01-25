@@ -337,15 +337,13 @@ class NoWatchContextManager:
     ''' A simple context manager to temporarily disable inotify watches. '''
 
     def __init__(self, application, filename):
-
-        # TODO: lock the file_modify_lock in application, too?
-        # or is it superfluous because inotify is already disabled?
-
         self.application = application
         self.filename = filename
 
     def __enter__(self):
         self.application.inotify_remove_watch(self.filename)
+        self.application.file_modify_lock.acquire()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.application.file_modify_lock.release()
         self.application.inotify_add_watch(self.filename)
