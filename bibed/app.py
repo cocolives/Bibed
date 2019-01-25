@@ -331,9 +331,22 @@ class BibEdApplication(Gtk.Application):
                 self.do_notification('“{}” already loaded.'.format(filename))
                 return
 
+        self.files[filename] = None
+
+        try:
+            self.load_file_contents(filename, recompute=recompute)
+
+        except Exception as e:
+            del self.files[filename]
+
+            message = 'Cannot load file “{0}”: {1}'.format(filename, e)
+            LOGGER.exception(message)
+
+            self.window.do_status_change(message)
+            return
+
         self.inotify_add_watch(filename)
 
-        self.files[filename] = None
         self.files_store.append((filename, ))
 
         if len(self.files_store) == 2:
@@ -348,18 +361,43 @@ class BibEdApplication(Gtk.Application):
         else:
             self.window.cmb_files.set_active(0)
 
-        self.load_file_contents(filename, recompute=recompute)
-
         memories.add_open_file(filename)
         memories.add_recent_file(filename)
+
+    def get_open_files_names(self):
+        ''' Return a list of our open files. '''
+
+        return [
+            row[0]
+            for row in self.files_store
+            # Do not return the “All” special entry.
+            if row[0].lower().endswith('bib')
+        ]
+
+    def get_database_from_filename(self, searched_filename):
+
+        return self.files.get(searched_filename, None)
 
     def check_has_key(self, key):
 
         for filename, database in self.files.items():
-            if key in database.keys():
-                return filename
+            for entry in database.itervalues():
+                if key == entry.key:
+                    return filename
+
+                # look in aliases (valid old key values) too.
+                if key in entry.get_field('ids', '').split(','):
+                    return filename
 
         return None
+
+    def reload_files(self, message=None):
+
+        for filename in self.files:
+            self.reload_file_contents(filename)
+
+        if message:
+            self.window.do_status_change(message)
 
     def reload_file_contents(self, filename, message=None):
         '''Empty everything and reload. '''
@@ -385,12 +423,7 @@ class BibEdApplication(Gtk.Application):
                 'load_file_contents({}, clear_first={}, recompute={})'.format(
                     filename, clear_first, recompute))
 
-        try:
-            new_bibdb = BibedDatabase(filename, self)
-
-        except Exception as e:
-            LOGGER.exception('Cannot load file {0} ({1})'.format(filename, e))
-            return False
+        new_bibdb = BibedDatabase(filename, self)
 
         if clear_first:
             if __debug__:
@@ -415,8 +448,6 @@ class BibEdApplication(Gtk.Application):
             self.do_recompute_global_ids()
 
         self.window.update_title()
-
-        return True
 
     def clear_file_from_store(self, filename=None, recompute=True):
         ''' Clear the data store from one or more file contents. '''
