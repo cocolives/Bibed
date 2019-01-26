@@ -1,12 +1,11 @@
 
-import os
 import logging
 
 # from bibed.foundations import ltrace_caller_name
 
 from bibed.constants import (
     APP_NAME,
-    BIBED_ICONS_DIR,
+    # BIBED_ICONS_DIR,
     SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
     FILES_COMBO_DEFAULT_WIDTH,
@@ -26,7 +25,7 @@ from bibed.gui.helpers import (
 from bibed.gui.preferences import BibedPreferencesDialog
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, GdkPixbuf, Pango
+from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
 
 
 LOGGER = logging.getLogger(__name__)
