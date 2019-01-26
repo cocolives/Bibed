@@ -13,12 +13,14 @@ from bibed.constants import (
     APP_VERSION,
     APP_MENU_XML,
     BIBED_DATA_DIR,
+    BIBED_ICONS_DIR,
     STORE_LIST_ARGS,
     BibAttrs,
 )
 
 from bibed.foundations import (
-    # ltrace_function_name,
+    # ltrace_caller_name,
+    set_process_title,
     touch_file,
     NoWatchContextManager,
 )
@@ -35,6 +37,18 @@ from bibed.gui.window import BibEdWindow
 
 LOGGER = logging.getLogger(__name__)
 
+# This fixes the name displayed in the GNOME Menu bar.
+# Without this, the name is 'Bibed.py'.
+GLib.set_prgname(APP_NAME)
+
+set_process_title(APP_NAME)
+# set after main loop has started (gtk seems to reset it)
+GLib.idle_add(set_process_title, APP_NAME)
+
+# Not sure what this is for, but it seems important in
+# Gtk/GLib documentation.
+GLib.set_application_name(APP_NAME)
+
 
 class BibEdApplication(Gtk.Application):
 
@@ -49,6 +63,11 @@ class BibEdApplication(Gtk.Application):
             GLib.OptionArg.NONE,
             "Command line test", None)
 
+        # TODO: If there is a resource located at “gtk/help-overlay.ui”
+        # which defines a Gtk.ShortcutsWindow with ID “help_overlay” […].
+        # To create a menu item that displays the shortcuts window,
+        # associate the item with the action win.show-help-overlay.
+
         self.window = None
         self.files = OrderedDict()
         self.bibdb = None
@@ -56,7 +75,7 @@ class BibEdApplication(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
-        self.setup_css()
+        self.setup_resources_and_css()
         self.setup_actions()
         self.setup_app_menu()
         self.setup_data_stores()
@@ -64,7 +83,19 @@ class BibEdApplication(Gtk.Application):
 
         self.file_modify_lock = Lock()
 
-    def setup_css(self):
+    def setup_resources_and_css(self):
+
+        self.set_resource_base_path(BIBED_DATA_DIR)
+
+        default_screen = Gdk.Screen.get_default()
+
+        # could also be .icon_theme_get_default()
+        self.icon_theme = Gtk.IconTheme.get_for_screen(default_screen)
+        self.icon_theme.add_resource_path(os.path.join(BIBED_ICONS_DIR))
+
+        # Get an icon path.
+        # icon_info = icon_theme.lookup_icon("my-icon-name", 48, 0)
+        # print icon_info.get_filename()
 
         self.css_provider = Gtk.CssProvider()
         self.css_provider.load_from_path(
@@ -72,7 +103,7 @@ class BibEdApplication(Gtk.Application):
 
         self.style_context = Gtk.StyleContext()
         self.style_context.add_provider_for_screen(
-            Gdk.Screen.get_default(),
+            default_screen,
             self.css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_USER)
 
@@ -86,7 +117,19 @@ class BibEdApplication(Gtk.Application):
         action.connect("activate", self.on_quit)
         self.add_action(action)
 
+        # TODO: take back window keypresses here.
+        # Use https://lazka.github.io/pgi-docs/Gtk-3.0/classes/Application.html#Gtk.Application.add_accelerator  # NOQA
+
+        # TODO: implement a shortcuts window.
+        # from https://lazka.github.io/pgi-docs/Gtk-3.0/classes/ShortcutsWindow.html#Gtk.ShortcutsWindow  # NOQA
+        pass
+
     def setup_app_menu(self):
+
+        # TODO: move menus to gtk/menus.ui for automatic load.
+        #       and gtk/menus-common.ui
+        #
+        # See “Automatic Resources” at https://lazka.github.io/pgi-docs/Gtk-3.0/classes/Application.html#Gtk.Application  # NOQA
 
         builder = Gtk.Builder.new_from_string(APP_MENU_XML, -1)
         self.set_app_menu(builder.get_object("app-menu"))
@@ -108,8 +151,6 @@ class BibEdApplication(Gtk.Application):
         self.filter = self.data_store.filter_new()
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.filter_method)
-
-        self.preamble = Gtk.TextBuffer()
 
     def setup_inotify(self):
 
@@ -154,7 +195,7 @@ class BibEdApplication(Gtk.Application):
             return True
 
         try:
-            filter_file = self.window.get_files_combo_filename()
+            filter_file = self.window.get_selected_filename()
 
         except TypeError:
             # The window is not yet constructed.
@@ -294,6 +335,30 @@ class BibEdApplication(Gtk.Application):
 
         self.window.present()
 
+    def insert_entry(self, entry):
+
+        self.data_store.append(
+            entry.to_list_store_row()
+        )
+
+        self.do_recompute_global_ids()
+
+        print('INSERTED')
+
+    def update_entry(self, entry):
+
+        store = self.data_store
+
+        for row in store:
+            if row[BibAttrs.GLOBAL_ID] == entry.gid:
+                # This is far from perfect, we could just update the row.
+                # But I'm tired and I want a simple way to view results.
+                # TODO: do better on next code review.
+                store.insert_after(row.iter, entry.to_list_store_row())
+                store.remove(row.iter)
+                print('UPDATED')
+                break
+
     def create_file(self, filename):
         ''' Create a new BIB file, then open it in the application. '''
 
@@ -311,16 +376,29 @@ class BibEdApplication(Gtk.Application):
             LOGGER.debug('open_file({}, recompute={})'.format(
                 filename, recompute))
 
-        # print(ltrace_function_name())
+        # print(ltrace_caller_name())
 
         for row in self.files_store:
             if row[0] == filename:
                 self.do_notification('“{}” already loaded.'.format(filename))
                 return
 
+        self.files[filename] = None
+
+        try:
+            self.load_file_contents(filename, recompute=recompute)
+
+        except Exception as e:
+            del self.files[filename]
+
+            message = 'Cannot load file “{0}”: {1}'.format(filename, e)
+            LOGGER.exception(message)
+
+            self.window.do_status_change(message)
+            return
+
         self.inotify_add_watch(filename)
 
-        self.files[filename] = None
         self.files_store.append((filename, ))
 
         if len(self.files_store) == 2:
@@ -335,18 +413,43 @@ class BibEdApplication(Gtk.Application):
         else:
             self.window.cmb_files.set_active(0)
 
-        self.load_file_contents(filename, recompute=recompute)
-
         memories.add_open_file(filename)
         memories.add_recent_file(filename)
+
+    def get_open_files_names(self):
+        ''' Return a list of our open files. '''
+
+        return [
+            row[0]
+            for row in self.files_store
+            # Do not return the “All” special entry.
+            if row[0].lower().endswith('bib')
+        ]
+
+    def get_database_from_filename(self, searched_filename):
+
+        return self.files.get(searched_filename, None)
 
     def check_has_key(self, key):
 
         for filename, database in self.files.items():
-            if key in database.keys():
-                return filename
+            for entry in database.itervalues():
+                if key == entry.key:
+                    return filename
+
+                # look in aliases (valid old key values) too.
+                if key in entry.get_field('ids', '').split(','):
+                    return filename
 
         return None
+
+    def reload_files(self, message=None):
+
+        for filename in self.files:
+            self.reload_file_contents(filename)
+
+        if message:
+            self.window.do_status_change(message)
 
     def reload_file_contents(self, filename, message=None):
         '''Empty everything and reload. '''
@@ -372,12 +475,7 @@ class BibEdApplication(Gtk.Application):
                 'load_file_contents({}, clear_first={}, recompute={})'.format(
                     filename, clear_first, recompute))
 
-        try:
-            new_bibdb = BibedDatabase(filename, self)
-
-        except Exception as e:
-            LOGGER.exception('Cannot load file {0} ({1})'.format(filename, e))
-            return False
+        new_bibdb = BibedDatabase(filename, self)
 
         if clear_first:
             if __debug__:
@@ -402,8 +500,6 @@ class BibEdApplication(Gtk.Application):
             self.do_recompute_global_ids()
 
         self.window.update_title()
-
-        return True
 
     def clear_file_from_store(self, filename=None, recompute=True):
         ''' Clear the data store from one or more file contents. '''
@@ -494,11 +590,32 @@ class BibEdApplication(Gtk.Application):
 
         about_dialog.set_program_name(APP_NAME)
         about_dialog.set_version(APP_VERSION)
-        about_dialog.set_authors(["Olivier Cortès", "Collectif Cocoliv.es"])
-        about_dialog.set_copyright("(c) Collectif Cocoliv.es")
+        about_dialog.set_logo_icon_name('gnome-contacts.png')
+        # os.path.join(BIBED_ICONS_DIR, 'gnome-contacts.png'))
+
+        about_dialog.set_copyright('(c) Collectif Cocoliv.es')
         about_dialog.set_comments(
             "Logiciel libre d'assistance bibliographique")
-        about_dialog.set_website("https://cocoliv.es/library/bibed")
+        about_dialog.set_website('https://cocoliv.es/library/bibed')
+        about_dialog.set_website_label('Site web de Bibed')
+        about_dialog.set_license_type(Gtk.License.GPL_3_0)
+
+        about_dialog.set_authors([
+            'Olivier Cortès <olive@cocoliv.es>',
+            'Collectif Cocoliv.es <contact@cocoliv.es>',
+        ])
+        about_dialog.set_documenters([
+            'Olivier Cortès <olive@cocoliv.es>',
+        ])
+        about_dialog.set_artists([
+            'Corinne Carnevali <coco@cocoliv.es>',
+        ])
+        about_dialog.set_translator_credits(
+            'Olivier Cortès <olive@cocoliv.es>'
+        )
+
+        # add_credit_section(section_name, people)
+        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/AboutDialog.html#Gtk.AboutDialog.add_credit_section
 
         about_dialog.present()
 

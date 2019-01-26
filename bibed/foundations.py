@@ -1,5 +1,8 @@
 
+import sys
 import os
+import ctypes
+import ctypes.util
 import yaml
 import inspect
 import logging
@@ -18,8 +21,87 @@ LOGGER = logging.getLogger(__name__)
 
 # ————————————————————————————————————————————————————————————— Functions
 
+def is_osx():
+    return sys.platform == "darwin"
 
-def ltrace_function_name():
+
+def load_library(names, shared=True):
+    """Load a ctypes library with a range of names to try.
+
+    Handles direct .so names and library names ["libgpod.so", "gpod"].
+
+    If shared is True can return a shared instance.
+    Raises OSError if not found.
+
+    Returns (library, name)
+    """
+
+    if not names:
+        raise ValueError
+
+    if shared:
+        load_func = lambda n: getattr(ctypes.cdll, n)  # NOQA
+    else:
+        load_func = ctypes.cdll.LoadLibrary
+
+    errors = []
+    for name in names:
+        dlopen_name = name
+        if ".so" not in name and ".dll" not in name and \
+                ".dylib" not in name:
+            dlopen_name = ctypes.util.find_library(name) or name
+
+        if is_osx() and not os.path.isabs(dlopen_name):
+            dlopen_name = os.path.join(sys.prefix, "lib", dlopen_name)
+
+        try:
+            return load_func(dlopen_name), name
+        except OSError as e:
+            errors.append(str(e))
+
+    raise OSError("\n".join(errors))
+
+
+def set_process_title(title):
+    """Sets process name as visible in ps or top. Requires ctypes libc
+        and is almost certainly *nix-only.
+    """
+
+    if os.name == "nt":
+        return
+
+    try:
+        libc = load_library(["libc.so.6", "c"])[0]
+        prctl = libc.prctl
+
+    except (OSError, AttributeError):
+        LOGGER.error(
+            "Couldn't find module libc.so.6 (ctypes). "
+            "Not setting process title.")
+    else:
+        prctl.argtypes = [
+            ctypes.c_int, ctypes.c_ulong, ctypes.c_ulong,
+            ctypes.c_ulong, ctypes.c_ulong,
+        ]
+        prctl.restype = ctypes.c_int
+
+        PR_SET_NAME = 15
+        data = ctypes.create_string_buffer(title.encode("utf-8"))
+        res = prctl(PR_SET_NAME, ctypes.addressof(data), 0, 0, 0)
+
+        if res != 0:
+            LOGGER.warning("Setting the process title failed.")
+
+
+def ltrace_caller_name():
+    ''' Print the stack previous level function name (eg. “caller”).
+
+        .. note:: if you want to print current function name (the one where
+            the `ltrace_caller_name` call is in), just wrap it in a lamda.
+
+        .. todo:: re-integrate :func:`ltrace_func` from
+            :mod:`licorn.foundations.ltrace` to ease debugging.
+    '''
 
     # for frame, filename, line_num, func, source_code,
     # source_index in inspect.stack():
@@ -215,7 +297,7 @@ class AttributeDictFromYaml(AttributeDict):
 
     def save(self):
 
-        # print(ltrace_function_name())
+        # print(ltrace_caller_name())
 
         with open(self.filename, 'w') as f:
             yaml.add_representer(type(self), Representer.represent_dict)
@@ -255,15 +337,13 @@ class NoWatchContextManager:
     ''' A simple context manager to temporarily disable inotify watches. '''
 
     def __init__(self, application, filename):
-
-        # TODO: lock the file_modify_lock in application, too?
-        # or is it superfluous because inotify is already disabled?
-
         self.application = application
         self.filename = filename
 
     def __enter__(self):
         self.application.inotify_remove_watch(self.filename)
+        self.application.file_modify_lock.acquire()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.application.file_modify_lock.release()
         self.application.inotify_add_watch(self.filename)

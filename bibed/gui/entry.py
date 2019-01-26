@@ -2,7 +2,7 @@
 import os
 import logging
 
-from bibed.foundations import ltrace_function_name
+# from bibed.foundations import ltrace_caller_name
 
 from collections import OrderedDict
 from threading import Lock
@@ -21,13 +21,14 @@ from bibed.gui.helpers import (
     widget_properties,
     label_with_markup,
     in_scrolled,
-    add_classes,
+    add_classes, remove_classes,
     find_child_by_name,
     # frame_defaults,
     # scrolled_textview,
     build_entry_field_labelled_entry,
     build_entry_field_textview,
     # build_help_popover,
+    grid_with_common_params,
 )
 
 from bibed.gui.gtk import GLib, Gtk, Gio
@@ -36,6 +37,59 @@ LOGGER = logging.getLogger(__name__)
 
 
 class BibedEntryDialog(Gtk.Dialog):
+
+    @property
+    def needs_save(self):
+
+        return len(self.changed_fields)
+
+    @property
+    def can_save(self):
+
+        result = (
+            (self.entry.key is not None or 'key' in self.changed_fields)
+
+            and self.entry.database is not None
+
+            # bibtexparser fails when there is an entry with only a key.
+            # We need more than ID and ENTRYTYPE.
+            and (len(self.entry.fields()) > 2 or len(self.changed_fields) > 2)
+
+            and (
+                not self.brand_new or (
+                    self.brand_new
+                    and not self.parent.application.check_has_key(
+                        self.entry.key
+                        if self.entry.key
+                        else self.get_field_value('key'))
+                )
+            )
+        )
+
+        if __debug__:
+            LOGGER.debug(
+                'CAN SAVE: 1={}'
+                'CAN SAVE: and 2={}'
+                'CAN SAVE: and 3={}'
+                'CAN SAVE: and (4={}'
+                'CAN SAVE: or 5)={}'
+                'CAN SAVE: FINAL={}'.format(
+                    (self.entry.key is not None
+                        or 'key' in self.changed_fields),
+                    self.entry.database is not None,
+                    (len(self.entry.fields()) > 2
+                        or len(self.changed_fields) > 2),
+                    not self.brand_new,
+                    (self.brand_new
+                     and not self.parent.applicationcheck_has_key(
+                         self.entry.key
+                         if self.entry.key
+                         else self.get_field_value('key'))
+                     )
+                )
+            )
+
+        return result
 
     def __init__(self, parent, entry):
 
@@ -67,7 +121,6 @@ class BibedEntryDialog(Gtk.Dialog):
         self.set_modal(True)
         self.set_default_size(500, 500)
         self.set_border_width(BOXES_BORDER_WIDTH)
-        self.connect('hide', self.on_entry_hide)
 
         self.entry = entry
 
@@ -78,28 +131,203 @@ class BibedEntryDialog(Gtk.Dialog):
         # and used in self.update_entry_and_save_file().
         self.changed_fields = set()
 
+        # This is needed for auto_save to interact gracefully with
+        # destination_file popover, and be able to (re)set it as
+        # will until the first save.
+        #
+        # TODO: this "feature" should probably be removed when the
+        #       “move” operation is implemented.
+        self.brand_new = (
+            self.entry.key is None and self.entry.database is None
+        )
+
+        # Will be set to True by the update*() method.
+        # Needed by window.*row_activated*() to know
+        # if it needs to update the treeview or not.
+        self.changed = False
+
         # Direct access to fields grids.
         self.grids = {}
 
         self.box = self.get_content_area()
 
         self.setup_headerbar()
+        self.setup_infobar()
         self.setup_key_entry()
         self.setup_stack()
         self.setup_help_label()
 
         self.show_all()
 
-        # Focus the first sensitive field
-        # (eg. 'key' for new entries, 'title' for existing).
-        for val in self.fields.values():
-            if val.get_sensitive():
-                val.grab_focus()
-                break
+        self.first_focus()
+
+    def first_focus(self):
+
+        if self.entry.database is None:
+            print('NO Database')
+            if not self.autoselect_destination():
+                print('NO Autoselect')
+                self.destination_popover.show_all()
+                self.destination_popover.popup()
+                self.cmb_destination.grab_focus()
+
+        else:
+            # Focus the first sensitive field
+            # (eg. 'key' for new entries, 'title' for existing).
+            for val in self.fields.values():
+                if val.get_sensitive():
+                    val.grab_focus()
+                    break
+
+    def autoselect_destination(self):
+
+        # This could be “All”
+        selected_filename = self.parent.get_selected_filename()
+
+        # In previous case, this will be None.
+        database = self.parent.application.get_database_from_filename(
+            selected_filename)
+
+        if selected_filename and database:
+
+            combo = self.cmb_destination
+
+            combo.handler_block_by_func(
+                self.on_destination_changed)
+
+            for row in combo.get_model():
+                if row[0] == selected_filename:
+                    combo.set_active_iter(row.iter)
+                    break
+
+            combo.handler_unblock_by_func(
+                self.on_destination_changed)
+
+            if self.entry.database is None:
+
+                self.entry.database = database
+
+                return True
+
+        return False
+
+    def setup_infobar(self):
+
+        self.infobar = widget_properties(
+            Gtk.InfoBar(),
+            expand=Gtk.Orientation.HORIZONTAL,
+            margin_bottom=GRID_ROWS_SPACING,
+            no_show_all=True,
+            debug=True,
+        )
+
+        self.lbl_infobar = label_with_markup(
+            '',
+            xalign=0.0,
+        )
+
+        self.infobar.get_content_area().add(self.lbl_infobar)
+        self.lbl_infobar.show_all()
+        self.infobar.set_show_close_button(True)
+
+        self.infobar.connect('response', self.close_infobar)
+
+        self.box.add(self.infobar)
+
+    def close_infobar(self, *args, **kwargs):
+        self.infobar.set_revealed(False)
+
+        # To get rid of the 1 remaining pixel.
+        # self.infobar.hide()
+        pass
+
+    def message_info(self, message):
+
+        self.lbl_infobar.set_markup(message)
+
+        self.infobar.set_message_type(Gtk.MessageType.INFO)
+        self.infobar.show_now()
+        self.infobar.set_revealed(True)
+
+    def message_error(self, message):
+
+        self.lbl_infobar.set_markup(message)
+
+        self.infobar.set_message_type(Gtk.MessageType.ERROR)
+        self.infobar.show_now()
+        self.infobar.set_revealed(True)
 
     def setup_headerbar(self):
 
+        def build_destination_popover(attached_to):
+
+            popover = Gtk.Popover()
+
+            grid = grid_with_common_params()
+
+            label = widget_properties(
+                label_with_markup(
+                    'Choose file to record entry into:',
+                    xalign=0.5,
+                ),
+                expand=True,
+                halign=Gtk.Align.CENTER,
+            )
+
+            grid.attach(label, 0, 0, 1, 1)
+
+            # ——————————————————————————————————————————— Entry+Auto-compute
+
+            self.cmb_destination = widget_properties(
+                Gtk.ComboBoxText(name='destination_file'),
+                expand=Gtk.Orientation.HORIZONTAL,
+                halign=Gtk.Align.FILL,
+                valign=Gtk.Align.CENTER,
+                width=300,
+            )
+
+            self.cmb_destination.set_entry_text_column(0)
+            self.cmb_destination.set_popup_fixed_width(False)
+
+            for filename in self.parent.application.get_open_files_names():
+                self.cmb_destination.append_text(filename)
+
+            self.cmb_destination.connect(
+                'changed', self.on_destination_changed)
+
+            grid.attach_next_to(
+                self.cmb_destination, label,
+                Gtk.PositionType.BOTTOM,
+                1, 1
+            )
+
+            # ————————————————————————— popover confirmation / close button
+
+            self.btn_destination_set = widget_properties(
+                Gtk.Button('Set'),
+                classes=['suggested-action'],
+                connect_to=self.on_destination_set_clicked,
+                default=True,
+                connect_args=(self.cmb_destination, popover, ),
+            )
+
+            grid.attach_next_to(
+                self.btn_destination_set,
+                self.cmb_destination,
+                Gtk.PositionType.BOTTOM,
+                1, 1
+            )
+
+            popover.add(grid)
+
+            popover.set_position(Gtk.PositionType.BOTTOM)
+            popover.set_relative_to(attached_to)
+
+            return popover
+
         self.headerbar = self.get_header_bar()
+
+        # ————————————————————————————————————————————— Prev / Next buttons
 
         bbox = widget_properties(
             Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
@@ -124,12 +352,15 @@ class BibedEntryDialog(Gtk.Dialog):
 
         self.headerbar.pack_start(bbox)
 
-        if self.entry.key is None:
+        # TODO: remove this "1" when ←→ navigation is implemented.
+        if 1 or self.entry.key is None:
             # We need to wait after the entry is first saved.
             bbox.set_sensitive(False)
 
+        # ———————————————————————————————————————————— Eventual save button
+
         if not gpod('bib_auto_save'):
-            btn_save = widget_properties(
+            self.btn_save = widget_properties(
                 Gtk.Button('Save'),
                 expand=False,
                 classes=['suggested-action'],
@@ -137,16 +368,44 @@ class BibedEntryDialog(Gtk.Dialog):
                 default=True,
             )
 
-            self.headerbar.pack_end(btn_save)
+            self.headerbar.pack_end(self.btn_save)
+
+        # ————————————————————————————————————————————— Save in file button
+
+        btn_destination_choose = widget_properties(Gtk.Button(), expand=False)
+        icon = Gio.ThemedIcon(name='system-file-manager-symbolic')
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        btn_destination_choose.add(image)
+        btn_destination_choose.set_tooltip_markup(
+            'Set or change BIB storage file')
+
+        self.destination_popover = build_destination_popover(
+            btn_destination_choose)
+        self.btn_destination_choose = btn_destination_choose
+        self.headerbar.pack_end(btn_destination_choose)
+
+        btn_destination_choose.connect(
+            'clicked', self.on_destination_choose_clicked,
+            self.destination_popover)
+
+        # TODO: remove this block when “move” operation is implemented
+        if self.entry.database is not None:
+            self.btn_destination_choose.set_sensitive(False)
+
+        # —————————————————————————————————————————————— Switch type button
 
         btn_switch_type = widget_properties(Gtk.Button(), expand=False)
-        btn_switch_type.connect('clicked', self.on_switch_type_clicked)
         icon = Gio.ThemedIcon(name='network-transmit-receive-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         btn_switch_type.add(image)
         btn_switch_type.set_tooltip_markup('Switch entry type')
+        btn_switch_type.connect('clicked', self.on_switch_type_clicked)
 
+        self.btn_switch_type = btn_switch_type
         self.headerbar.pack_end(btn_switch_type)
+
+        # TODO: reactivate this when popover is implemented.
+        self.btn_switch_type.set_sensitive(False)
 
     def setup_help_label(self):
 
@@ -223,6 +482,7 @@ class BibedEntryDialog(Gtk.Dialog):
                 Gtk.Label(name='error_label'),
                 expand=True,
                 halign=Gtk.Align.CENTER,
+                no_show_all=True,
             )
 
             vbox.pack_start(error_label, False, True, 0)
@@ -502,10 +762,11 @@ class BibedEntryDialog(Gtk.Dialog):
 
     def on_rename_clicked(self, button):
 
+        # error_label has no_show_all set.
         self.rename_popover.show_all()
-        find_child_by_name(
-            self.rename_popover, 'error_label'
-        ).hide()
+        # find_child_by_name(
+        #     self.rename_popover, ''
+        # ).hide()
         self.rename_popover.popup()
 
     def on_rename_confirm_clicked(self, widget, entry, popover):
@@ -534,7 +795,7 @@ class BibedEntryDialog(Gtk.Dialog):
             error_label.set_markup(
                 'Key already present in\n'
                 '<span face="monospace">{filename}</span>.\n'
-                'Please choose another'.format(
+                'Please choose another one.'.format(
                     filename=os.path.basename(has_key_in))
             )
             error_label.show()
@@ -543,7 +804,7 @@ class BibedEntryDialog(Gtk.Dialog):
             return
 
         # put old key in 'aliases'
-        if 'ids' in self.entry.keys():
+        if 'ids' in self.entry.fields():
             self.entry['ids'] += ', {}'.format(self.entry.key)
 
         else:
@@ -553,6 +814,10 @@ class BibedEntryDialog(Gtk.Dialog):
         # Just for the consistency with "new entry case"
         # where the current method is NOT ran.
         # self.entry.key = new_key
+
+        # fake the field change and populate the UI entry
+        # for *save() to update the BIB entry key.
+        self.fields['key'].set_text(new_key)
 
         self.changed_fields |= set(('key', 'ids', ))
 
@@ -564,15 +829,72 @@ class BibedEntryDialog(Gtk.Dialog):
 
         popover.popdown()
 
-    def on_entry_hide(self, window):
+    def on_destination_changed(self, combo):
 
-        # We need to save
+        if self.entry.database is None:
+            self.btn_destination_set.set_label('Set')
+            return
+
+        destination_filename = combo.get_active_text()
+
+        if destination_filename == self.entry.database.filename:
+            self.btn_destination_set.set_label('Close')
+            return
+
+        self.btn_destination_set.set_label('Set')
+
+    def on_destination_choose_clicked(self, button, destination_popover):
+        ''' When the popover opener is clicked. '''
+
+        if destination_popover.is_visible():
+            destination_popover.popdown()
+
+        else:
+            destination_popover.show_all()
+            destination_popover.popup()
+
+    def on_destination_set_clicked(self, button, combo_destination, popover):
+        ''' When the button IN the popover is clicked. '''
+
+        destination_filename = combo_destination.get_active_text()
+
+        if not destination_filename:
+            # TODO: "you must choose one" error label.
+            return
+
+        if self.entry.database is None:
+
+            self.entry.database = \
+                self.parent.application.get_database_from_filename(
+                    destination_filename)
+
+            # Now that we have a destination, do not allow to
+            # change it until we implement the “move” operation.
+            # TODO: remove this statement when “move” operation
+            #       is implemented.
+            if not self.brand_new:
+                self.btn_destination_choose.set_sensitive(False)
+
+        elif destination_filename != self.entry.database.filename:
+            # TODO: move the entry from one database to another.
+            pass
+
+        popover.popdown()
+
+    def run(self, *args, **kwargs):
+
+        result = super().run(*args, **kwargs)
+
+        # We need to save before closing for
+        # treeview update to use the new entry.
         with self.save_lock:
 
             if gpod('bib_auto_save'):
                 self.clear_save_callback()
 
             self.update_entry_and_save_file()
+
+        return result
 
     def on_switch_type_clicked(self, button):
 
@@ -596,23 +918,72 @@ class BibedEntryDialog(Gtk.Dialog):
         else:
             pass
 
+    def check_field_key(self):
+
+        has_key = self.parent.application.check_has_key(
+            self.fields['key'].get_text())
+
+        if has_key:
+            return (
+                'Key already taken in <span '
+                'face="monospace">{filename}</span>. '
+                'Please choose another one.').format(
+                    filename=os.path.basename(has_key)
+            )
+
+    def get_field_value(self, field_name):
+
+        widget = self.fields[field_name]
+
+        if isinstance(widget, Gtk.Entry):
+            return widget.get_text()
+
+        elif isinstance(widget, Gtk.TextView):
+            return widget.get_textbuffer().get_text()
+
+        else:
+            LOGGER.warning('Unhandled changed field {}'.format(field_name))
+            return None
+
     def on_field_changed(self, entry, field_name):
 
         # Multiple updates to same widget will be
         # recorded only once, thanks to the set.
         self.changed_fields.add(field_name)
 
-        if not gpod('bib_auto_save'):
-            return
-
         if __debug__:
             LOGGER.debug('Field {} changed.'.format(field_name))
+
+        try:
+            check_method = getattr(self, 'check_field_{}'.format(field_name))
+
+        except AttributeError:
+            pass
+
+        else:
+            error = check_method()
+
+            if error:
+                # TODO: implement error label in dialog, under
+                add_classes(self.fields[field_name], ['error'])
+                self.message_error(error)
+
+                LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
+
+                return
+
+            else:
+                remove_classes(self.fields[field_name], ['error'])
+                self.close_infobar()
+
+        if not gpod('bib_auto_save'):
+            return
 
         with self.save_lock:
             self.clear_save_callback()
 
             self.save_trigger_source = GLib.timeout_add_seconds(
-                priority=GLib.PRIORITY_DEFAULT, interval=5,
+                priority=GLib.PRIORITY_DEFAULT, interval=1,
                 function=self.on_save_trigger_callback)
 
     def on_save_clicked(self, widget, *args, **kwargs):
@@ -655,14 +1026,27 @@ class BibedEntryDialog(Gtk.Dialog):
 
     def update_entry_and_save_file(self):
 
-        print(ltrace_function_name())
+        # print(ltrace_caller_name())
 
         entry = self.entry
 
+        LOGGER.info('Save {0}: [{1}]'.format(
+            entry.key, ', '.join(self.changed_fields)
+        ))
+
         if not self.changed_fields:
-            LOGGER.info(
-                'Entry {} did not change, avoiding superfluous save.'.format(
-                    entry.key))
+            if __debug__:
+                LOGGER.debug(
+                    'Entry {} did not change, '
+                    'avoiding superfluous save.'.format(
+                        entry.key))
+            return
+
+        if not self.can_save:
+            if __debug__:
+                LOGGER.debug(
+                    'Entry {} cannot save yet, aborting save().'.format(
+                        entry.key))
             return
 
         if gpod('ensure_biblatex_checks'):
@@ -687,16 +1071,7 @@ class BibedEntryDialog(Gtk.Dialog):
                 new_entry = True
 
         for field_name in self.changed_fields:
-            widget = self.fields[field_name]
-
-            if isinstance(widget, Gtk.Entry):
-                entry[field_name] = widget.get_text()
-
-            elif isinstance(widget, Gtk.TextView):
-                entry[field_name] = widget.get_textbuffer().get_text()
-
-            else:
-                LOGGER.warning('Unhandled changed field {}'.format(field_name))
+            entry[field_name] = self.get_field_value(field_name)
 
         if new_entry:
             # TODO: find a database !!!
@@ -712,3 +1087,4 @@ class BibedEntryDialog(Gtk.Dialog):
 
         # Reset changed fields now that everything is saved.
         self.changed_fields = set()
+        self.brand_new = False

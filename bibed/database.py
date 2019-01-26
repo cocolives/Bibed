@@ -50,10 +50,17 @@ class BibedDatabase:
 
         return self.entries.keys()
 
-    def values(self):
+    def itervalues(self):
 
         for index, entry in enumerate(self.bibdb.entries):
             yield BibedEntry(self, entry, index)
+
+    def values(self):
+
+        return [
+            BibedEntry(self, entry, index)
+            for index, entry in enumerate(self.bibdb.entries)
+        ]
 
     def add_entry(self, entry):
 
@@ -92,7 +99,7 @@ class BibedDatabase:
             datetime.date.today().isoformat())
 
         (handle, new_filename) = tempfile.mkstemp(
-            suffix='bib', prefix=prefix, dir=dirname)
+            suffix='.bib', prefix=prefix, dir=dirname)
 
         try:
             shutil.copyfile(self.filename, new_filename)

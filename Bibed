@@ -1,0 +1,63 @@
+#!/usr/bin/env -S python -O
+'''
+Bibed — main application launcher
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Should installed or linked in :path:`/usr/bin`, or anywhere executable
+programs live.
+
+..  This file is part of the Bibed program.
+
+    Bibed is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as
+    published by the Free Software Foundation, version 3.
+
+    Bibed is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public
+    License version 3 along with Bibed. If not, see
+    https://www.gnu.org/licenses/gpl-3.0.html
+
+:copyright:
+        * 2019 Olivier Cortès <olive@cocoliv.es>
+        * 2019 Collectif Cocoliv.es <contact@cocoliv.es>
+
+:license: GNU GPL version 3
+
+'''
+
+import sys
+import logging
+
+LOGGER = logging.getLogger(__name__)
+
+
+def setup_logging(level=logging.INFO):
+    root = logging.getLogger()
+    root.setLevel(level)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter(
+        '%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
+
+
+if __name__ == "__main__":
+    if __debug__:
+        setup_logging(logging.DEBUG)
+    else:
+        setup_logging(logging.INFO)
+
+    logging.getLogger('bibtexparser').setLevel(logging.ERROR)
+
+    # Needs to be after setup_logging(),
+    # else we miss a lot of message.
+    from bibed.app import BibEdApplication
+
+    app = BibEdApplication()
+    exit_status = app.run(sys.argv)
+    sys.exit(exit_status)

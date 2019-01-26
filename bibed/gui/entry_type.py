@@ -173,6 +173,9 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
         font_size = PANGO_BIG_FONT_SIZES[size_multiplier]
 
+        if size_multiplier > 3:
+            size_multiplier = 3
+
         self.grid_types_main = build_types_grid(
             'main', types_main, label_tmpl_main, font_size, size_mult_main
         )

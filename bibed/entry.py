@@ -66,6 +66,9 @@ class BibedEntry:
         self.index = index
         self.database = database
 
+        # This is needed to update the treeview after modifications.
+        self.gid = 0
+
     @property
     def type(self):
         return self.entry['ENTRYTYPE']
@@ -89,10 +92,15 @@ class BibedEntry:
 
         if name == 'key':
             return 'ID'
-        elif name == 'type':
-            return 'ENTRYTYPE'
+
+        # NO !!! we have type for thesis, etc.
+        # elif name == 'type':
+        #     return 'ENTRYTYPE'
 
         return name
+
+    def fields(self):
+        return self.entry.keys()
 
     def __setitem__(self, item_name, value):
         ''' Translation Bibed ←→ bibtexparser. '''
@@ -204,7 +212,7 @@ class BibedEntry:
         fields = self.entry
 
         return [
-            0,  # global_id, computed by app.
+            self.gid,  # global_id, computed by app.
             self.database.filename,
             self.index,
             self.type,

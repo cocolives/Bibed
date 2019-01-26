@@ -3,7 +3,8 @@ import os
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
 APP_ID = 'es.cocoliv.bibed'
-BIBED_DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+BIBED_DATA_DIR = os.path.join(os.path.realpath(
+    os.path.abspath(os.path.dirname(__file__))), 'data')
 BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
 
@@ -99,7 +100,7 @@ SEARCH_WIDTH_EXPANDED = 30
 
 FILES_COMBO_DEFAULT_WIDTH = 25
 
-RESIZE_SIZE_MULTIPLIER = 0.125
+RESIZE_SIZE_MULTIPLIER = 0.15
 
 PANGO_BIG_FONT_SIZES = [
     14336,

@@ -2,7 +2,7 @@
 import os
 import logging
 
-# from bibed.foundations import ltrace_function_name
+# from bibed.foundations import ltrace_caller_name
 
 from bibed.constants import (
     APP_NAME,
@@ -18,11 +18,15 @@ from bibed.preferences import memories, gpod
 from bibed.utils import get_user_home_directory
 from bibed.entry import BibedEntry
 
-from bibed.gui.helpers import scrolled_textview
+from bibed.gui.helpers import (
+    scrolled_textview,
+    add_classes,
+    remove_classes,
+)
 from bibed.gui.preferences import BibedPreferencesDialog
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
+from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, GdkPixbuf, Pango
 
 
 LOGGER = logging.getLogger(__name__)
@@ -32,6 +36,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.set_name('Bibed')
 
         # This will be in the windows group and have the "win" prefix
         max_action = Gio.SimpleAction.new_stateful(
@@ -47,9 +53,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.connect('check-resize', self.on_resize)
         self.connect("key-press-event", self.on_key_pressed)
 
-        # self.set_icon_name('accessories-dictionary')
-        self.set_icon_from_file(os.path.join(
-            BIBED_ICONS_DIR, 'accessories-dictionary.png'))
+        self.setup_icon()
 
         # TODO: use gui.helpers.get_screen_resolution()
         dimensions = (1200, 600)
@@ -90,6 +94,21 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.vbox.pack_end(self.statusbar, False, True, 0)
 
         self.add(self.vbox)
+
+    def setup_icon(self):
+
+        # icon_filename = os.path.join(
+        #     BIBED_ICONS_DIR, 'gnome-contacts.png')
+        # LOGGER.debug('loading Window icon from {}'.format(icon_filename))
+
+        self.set_icon_name('gnome-contacts')
+        self.set_default_icon_name('gnome-contacts')
+        # self.set_icon_from_file(icon_filename)
+        # self.set_default_icon_from_file(icon_filename)
+
+        # pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
+        # self.set_default_icon_list([pixbuf])
+        # self.set_icon_list([pixbuf])
 
     def setup_stack(self):
 
@@ -169,6 +188,14 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         hb.pack_start(bbox)
 
+        self.btn_file_close = Gtk.Button()
+        self.btn_file_close.connect("clicked", self.on_file_close_clicked)
+        icon = Gio.ThemedIcon(name="window-close-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_file_close.add(image)
+        self.btn_file_close_switch_icon(False)
+        hb.pack_start(self.btn_file_close)
+
         files_combo = Gtk.ComboBox.new_with_model(
             self.application.files_store)
         files_combo.connect("changed", self.on_files_combo_changed)
@@ -178,6 +205,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
         renderer_text.props.max_width_chars = (
             FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
         )
+
+        # TODO: replace this combo with a Gtk.StackSidebar()
+        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
 
         files_combo.pack_start(renderer_text, True)
         files_combo.add_attribute(renderer_text, "text", 0)
@@ -195,14 +225,6 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.btn_add.connect('clicked', self.on_entry_add_clicked)
 
         hb.pack_start(self.btn_add)
-
-        self.btn_file_close = Gtk.Button()
-        self.btn_file_close.connect("clicked", self.on_file_close_clicked)
-        icon = Gio.ThemedIcon(name="window-close-symbolic")
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.btn_file_close.add(image)
-        self.btn_file_close_switch_icon(False)
-        hb.pack_start(self.btn_file_close)
 
         # ————————————————————————————— Right side, from end to start
 
@@ -442,19 +464,24 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # value = store.get_value(treeiter, 1)
         bib_key = model[treeiter][BibAttrs.KEY]
+        global_id = model[treeiter][BibAttrs.GLOBAL_ID]
         filename = model[treeiter][BibAttrs.FILENAME]
 
         entry = files[filename].get_entry_by_key(bib_key)
+
+        # This is needed to update the treeview after modifications.
+        entry.gid = global_id
 
         assert(isinstance(entry, BibedEntry))
 
         entry_edit_dialog = BibedEntryDialog(
             parent=self, entry=entry)
 
-        response = entry_edit_dialog.run()
+        entry_edit_dialog.run()
 
-        if response == Gtk.ResponseType.OK:
-            pass
+        if entry.database is not None:
+            # Entry was saved to disk, insert it in the treeview.
+            self.application.update_entry(entry)
 
         entry_edit_dialog.destroy()
 
@@ -519,9 +546,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # given cmb_files, save one or ALL files.
 
         elif ctrl and keyval == Gdk.KEY_r:
-            self.application.reload_file(
-                '{} reloaded at user request.'.format(
-                    self.application.filename))
+            self.application.reload_files(
+                'Reloaded all open files at user request.')
 
         elif ctrl and keyval == Gdk.KEY_f:
             self.search.grab_focus()
@@ -697,7 +723,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # self.application.do_recompute_global_ids()
 
         else:
-            self.application.close_file(self.get_files_combo_filename())
+            self.application.close_file(self.get_selected_filename())
 
         self.sync_shown_hidden()
 
@@ -711,13 +737,16 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             entry_add_dialog.hide()
 
+            entry = BibedEntry.new_from_type(entry_type)
+
             entry_edit_dialog = BibedEntryDialog(
-                parent=self, entry=BibedEntry.new_from_type(entry_type))
+                parent=self, entry=entry)
 
-            response = entry_edit_dialog.run()
+            entry_edit_dialog.run()
 
-            if response == Gtk.ResponseType.OK:
-                pass
+            if entry.database is not None:
+                # Entry was saved to disk, insert it in the treeview.
+                self.application.insert_entry(entry)
 
             entry_edit_dialog.destroy()
 
@@ -746,7 +775,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         return filter_bib
 
-    def get_files_combo_filename(self):
+    def get_selected_filename(self):
 
         filename = self.application.files_store[
             self.cmb_files.get_active_iter()
@@ -781,10 +810,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def do_filter_data_store(self):
         ''' Filter the data store on filename, search_text, or both. '''
 
-        # print(ltrace_function_name())
+        # print(ltrace_caller_name())
 
         try:
-            filename = self.get_files_combo_filename()
+            filename = self.get_selected_filename()
 
         except TypeError:
             filename = None
@@ -833,7 +862,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def btn_file_close_switch_icon(self, multiple=False):
 
         if multiple:
-            self.btn_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
-
+            # self.btn_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
+            add_classes(self.btn_file_close, ['close-all'])
+            self.btn_file_close.set_tooltip_markup(
+                'Close <b>ALL</b> open files')
         else:
-            self.btn_file_close.set_relief(Gtk.ReliefStyle.NONE)
+            # self.btn_file_close.set_relief(Gtk.ReliefStyle.NONE)
+            remove_classes(self.btn_file_close, ['close-all'])
+            self.btn_file_close.set_tooltip_markup(
+                'Close <i>currently selected</i> file')

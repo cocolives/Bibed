@@ -11,6 +11,7 @@ accelerators:
   - \cite{@@key@@}
   - \footcite{@@key@@}
   copy_to_clipboard_single_value: \cite{@@key@@}
+backup_before_save: true
 bib_auto_save: true
 ensure_biblatex_checks: false
 fields:
@@ -330,6 +331,33 @@ fields:
         however better to use the <span face="monospace">date</span> field as this
         is compatible with plain years too and supports many more features. @@@import{2.3.8}
       label: Year
+  movie:
+    doc: Motion pictures. See also <span weight="bold" face="monospace">@video</span>.
+    optional:
+    - subtitle
+    - howpublished
+    - type
+    - url
+    - urldate
+    - addendum
+    - doi
+    - language
+    - titleaddon
+    - version
+    - note
+    - organization
+    - location
+    - month
+    - pubstate
+    - eprint
+    - eprintclass
+    - eprinttype
+    required:
+    - - author
+      - editor
+    - title
+    - - year
+      - date
   mvbook:
     doc: A multi-volume <span weight="bold" face="monospace">@book</span>. For backwards
       compatibility, multi-volume books are also supported by the entry type <span
@@ -551,7 +579,6 @@ fields:
     - - year
       - date
 keep_recent_files: 10
-backup_before_save: true
 remember_open_files: true
 remember_windows_states: true
 types:
