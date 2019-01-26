@@ -97,14 +97,14 @@ class BibedEntryDialog(Gtk.Dialog):
             title = "Create new @{0}".format(entry.type)
         else:
             try:
-                mnemonic = getattr(defaults.fields.mnemonics,
-                                   entry.type).label
+                label = getattr(defaults.fields.labels,
+                                entry.type)
 
             except AttributeError:
                 # Poor man's solution.
-                mnemonic = entry.type.title()
+                label = entry.type.title()
 
-            title = "Edit {0} {1}".format(mnemonic, entry.key)
+            title = "Edit {0} {1}".format(label, entry.key)
 
         super().__init__(title, parent, use_header_bar=True)
 
@@ -164,9 +164,7 @@ class BibedEntryDialog(Gtk.Dialog):
     def first_focus(self):
 
         if self.entry.database is None:
-            print('NO Database')
             if not self.autoselect_destination():
-                print('NO Autoselect')
                 self.destination_popover.show_all()
                 self.destination_popover.popup()
                 self.cmb_destination.grab_focus()
@@ -181,10 +179,10 @@ class BibedEntryDialog(Gtk.Dialog):
 
     def autoselect_destination(self):
 
-        # This could be “All”
+        # This could return “All”
         selected_filename = self.parent.get_selected_filename()
 
-        # In previous case, this will be None.
+        # In previous case (eg. “All”), this will be None.
         database = self.parent.application.get_database_from_filename(
             selected_filename)
 
@@ -453,6 +451,7 @@ class BibedEntryDialog(Gtk.Dialog):
                 halign=Gtk.Align.FILL,
                 valign=Gtk.Align.CENTER,
                 width=300,
+                activates_default=True,
             )
 
             btn_compute = widget_properties(Gtk.Button(), expand=False)
@@ -515,10 +514,11 @@ class BibedEntryDialog(Gtk.Dialog):
             classes=['linked']
         )
 
-        mnemonics = defaults.fields.mnemonics
+        fields_labels = defaults.fields.labels
+        fields_docs   = defaults.fields.docs
 
         label, entry = build_entry_field_labelled_entry(
-            mnemonics, field_name, self.entry
+            fields_docs, fields_labels, field_name, self.entry
         )
 
         self.fields[field_name] = entry
@@ -599,12 +599,13 @@ class BibedEntryDialog(Gtk.Dialog):
             grid.set_column_spacing(GRID_COLS_SPACING)
             grid.set_row_spacing(GRID_ROWS_SPACING)
 
-            mnemonics = defaults.fields.mnemonics
+            fields_labels = defaults.fields.labels
+            fields_docs   = defaults.fields.docs
 
             if len(fields) == 1:
                 field_name = fields[0]
                 scr, txv = build_entry_field_textview(
-                    mnemonics, field_name, entry)
+                    fields_docs, field_name, entry)
 
                 for signal_name in (
                     'insert-at-cursor',
@@ -627,14 +628,16 @@ class BibedEntryDialog(Gtk.Dialog):
                         for subfield_name in field_name:
                             connect_and_attach_to_grid(
                                 *build_entry_field_labelled_entry(
-                                    mnemonics, subfield_name, entry
+                                    fields_docs, fields_labels,
+                                    subfield_name, entry
                                 ), subfield_name,
                             )
                             index += 1
                     else:
                         connect_and_attach_to_grid(
                             *build_entry_field_labelled_entry(
-                                mnemonics, field_name, entry
+                                fields_docs, fields_labels,
+                                field_name, entry
                             ), field_name,
                         )
                         index += 1
@@ -643,10 +646,16 @@ class BibedEntryDialog(Gtk.Dialog):
 
         stack = Gtk.Stack()
 
-        fields_entry_node = getattr(preferences.fields, self.entry.type)
+        try:
+            fields_entry_node = getattr(preferences.fields.by_type, self.entry.type)
+
+        except AttributeError:
+            # We have no preferences at all (user has started the
+            # app for the first time, or did not set any prefs).
+            fields_entry_node = None
 
         if fields_entry_node is None:
-            fields_entry_node = getattr(defaults.fields, self.entry.type)
+            fields_entry_node = getattr(defaults.fields.by_type, self.entry.type)
 
             # HEADS UP: attributes names are different
             #       between defaults and preferences.
@@ -656,10 +665,10 @@ class BibedEntryDialog(Gtk.Dialog):
             fields_other = fields_entry_node.optional[:]
 
             try:
-                fields_stacks = fields_entry_node.stacked[:]
+                fields_stacked = fields_entry_node.stacked[:]
 
             except TypeError:
-                fields_stacks = []
+                fields_stacked = []
 
         else:
             fields_main = fields_entry_node.main[:]
@@ -667,12 +676,12 @@ class BibedEntryDialog(Gtk.Dialog):
             fields_other = fields_entry_node.other[:]
 
             try:
-                fields_stacks = fields_entry_node.stacks[:]
+                fields_stacked = fields_entry_node.stacked[:]
 
             except TypeError:
-                fields_stacks = []
+                fields_stacked = []
 
-        for field_name in fields_stacks:
+        for field_name in fields_stacked:
             if field_name in fields_other:
                 # This can happen in defaults.
                 # TODO: chek defaults to avoid it.
@@ -687,7 +696,7 @@ class BibedEntryDialog(Gtk.Dialog):
                 self.entry, fields_secondary,
             )
 
-        for field_name in fields_stacks:
+        for field_name in fields_stacked:
             self.grids[field_name] = build_fields_grid(
                 self.entry,  # TODO: Find Mnemonic
                 [field_name],

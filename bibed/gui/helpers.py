@@ -521,19 +521,12 @@ def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state, func_ar
     return label, switch
 
 
-def build_entry_field_labelled_entry(mnemonics, field_name, entry):
+def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, entry):
 
-    field_node = getattr(mnemonics, field_name)
+    field_label = getattr(fields_labels, field_name)
+    field_doc   = getattr(fields_docs, field_name)
 
-    if field_node is None:
-        field_has_help = False
-        field_label = field_name.title()
-        field_help = ''
-
-    else:
-        field_has_help = field_node.doc is not None
-        field_label = field_node.label
-        field_help = field_node.doc
+    assert(field_label is not None)
 
     lbl = widget_properties(
         Gtk.Label(),
@@ -546,9 +539,9 @@ def build_entry_field_labelled_entry(mnemonics, field_name, entry):
 
     lbl.set_markup_with_mnemonic(
         '{label}{help}'.format(
-            label=field_label,
+            label=field_label if field_label else field_name.title(),
             help=GENERIC_HELP_SYMBOL
-            if field_has_help else ''))
+            if field_doc else ''))
 
     etr = widget_properties(
         Gtk.Entry(),
@@ -564,26 +557,14 @@ def build_entry_field_labelled_entry(mnemonics, field_name, entry):
 
     lbl.set_mnemonic_widget(etr)
 
-    if field_has_help:
-        lbl.set_tooltip_markup(field_help)
-        etr.set_tooltip_markup(field_help)
+    if field_doc:
+        lbl.set_tooltip_markup(field_doc)
+        etr.set_tooltip_markup(field_doc)
 
     return lbl, etr
 
 
-def build_entry_field_textview(mnemonics, field_name, entry):
-
-    field_node = getattr(mnemonics, field_name)
-
-    if field_node is None:
-        field_has_help = False
-        # field_label = field_name.title()
-        field_help = ''
-
-    else:
-        field_has_help = field_node.doc is not None
-        # field_label = field_node.label
-        field_help = field_node.doc
+def build_entry_field_textview(fields_docs, field_name, entry):
 
     scrolled, textview = scrolled_textview()
 
@@ -595,7 +576,9 @@ def build_entry_field_textview(mnemonics, field_name, entry):
     # textview.connect(
     #   'changed', self.on_field_changed, field_name)
 
-    if field_has_help:
+    field_help = getattr(fields_docs, field_name)
+
+    if field_help:
         textview.set_tooltip_markup(field_help)
 
     return scrolled, textview
