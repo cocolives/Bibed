@@ -151,8 +151,6 @@ class BibEdApplication(Gtk.Application):
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.filter_method)
 
-        self.preamble = Gtk.TextBuffer()
-
     def setup_inotify(self):
 
         PyinotifyEventHandler.app = self
