@@ -306,7 +306,9 @@ class AttributeDictFromYaml(AttributeDict):
             yaml.add_representer(AttributeDict, Representer.represent_dict)
             yaml.add_representer(type(None), Representer.represent_none)
 
-            f.write(yaml.dump(self, default_flow_style=False))
+            # f.write(yaml.dump(self, default_flow_style=True))
+            f.write(yaml.dump(self, default_flow_style=False,
+                              width=72, indent=2))
 
         if __debug__:
             LOGGER.debug(
