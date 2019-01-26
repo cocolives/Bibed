@@ -110,7 +110,6 @@ class BibedEntryDialog(Gtk.Dialog):
         self.set_modal(True)
         self.set_default_size(500, 500)
         self.set_border_width(BOXES_BORDER_WIDTH)
-        self.connect('hide', self.on_entry_hide)
 
         self.entry = entry
 
@@ -866,15 +865,20 @@ class BibedEntryDialog(Gtk.Dialog):
 
         popover.popdown()
 
-    def on_entry_hide(self, window):
+    def run(self, *args, **kwargs):
 
-        # We need to save
+        result = super().run(*args, **kwargs)
+
+        # We need to save before closing for
+        # treeview update to use the new entry.
         with self.save_lock:
 
             if gpod('bib_auto_save'):
                 self.clear_save_callback()
 
             self.update_entry_and_save_file()
+
+        return result
 
     def on_switch_type_clicked(self, button):
 
