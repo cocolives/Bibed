@@ -57,7 +57,8 @@ class BibedEntryDialog(Gtk.Dialog):
 
             and (
                 not self.brand_new or (
-                    self.brand_new and not self.parent.application.check_has_key(
+                    self.brand_new
+                    and not self.parent.application.check_has_key(
                         self.entry.key
                         if self.entry.key
                         else self.get_field_value('key'))
@@ -65,18 +66,28 @@ class BibedEntryDialog(Gtk.Dialog):
             )
         )
 
-        print('CAN SAVE: 1={}'.format(
-            (self.entry.key is not None or 'key' in self.changed_fields)))
-        print('CAN SAVE: and 2={}'.format(self.entry.database is not None))
-        print('CAN SAVE: and 3={}'.format(len(self.entry.fields()) > 2 or len(self.changed_fields) > 2))
-        print('CAN SAVE: and 4={}'.format(not self.brand_new))
-        print('CAN SAVE: or 5={}'.format(self.brand_new and not self.parent.application.check_has_key(
-            self.entry.key
-            if self.entry.key
-            else self.get_field_value('key'))))
-        # if __debug__:
-        #     LOGGER.debug('{}.can_save: {}'.format(self, result))
-        print('CAN SAVE: {}'.format(result))
+        if __debug__:
+            LOGGER.debug(
+                'CAN SAVE: 1={}'
+                'CAN SAVE: and 2={}'
+                'CAN SAVE: and 3={}'
+                'CAN SAVE: and (4={}'
+                'CAN SAVE: or 5)={}'
+                'CAN SAVE: FINAL={}'.format(
+                    (self.entry.key is not None
+                        or 'key' in self.changed_fields),
+                    self.entry.database is not None,
+                    (len(self.entry.fields()) > 2
+                        or len(self.changed_fields) > 2),
+                    not self.brand_new,
+                    (self.brand_new
+                     and not self.parent.applicationcheck_has_key(
+                         self.entry.key
+                         if self.entry.key
+                         else self.get_field_value('key'))
+                     )
+                )
+            )
 
         return result
 
