@@ -920,7 +920,8 @@ class BibedEntryDialog(Gtk.Dialog):
 
         if has_key:
             return (
-                'Key already taken in <span ' 'face="monospace">{filename}</span>. '
+                'Key already taken in <span '
+                'face="monospace">{filename}</span>. '
                 'Please choose another one.').format(
                     filename=os.path.basename(has_key)
             )
@@ -1034,7 +1035,8 @@ class BibedEntryDialog(Gtk.Dialog):
         if not self.changed_fields:
             if __debug__:
                 LOGGER.debug(
-                    'Entry {} did not change, avoiding superfluous save.'.format(
+                    'Entry {} did not change, '
+                    'avoiding superfluous save.'.format(
                         entry.key))
             return
 
@@ -1068,8 +1070,6 @@ class BibedEntryDialog(Gtk.Dialog):
 
         for field_name in self.changed_fields:
             entry[field_name] = self.get_field_value(field_name)
-
-
 
         if new_entry:
             # TODO: find a database !!!
