@@ -122,6 +122,7 @@ class BibEdApplication(Gtk.Application):
 
         # TODO: implement a shortcuts window.
         # from https://lazka.github.io/pgi-docs/Gtk-3.0/classes/ShortcutsWindow.html#Gtk.ShortcutsWindow  # NOQA
+        pass
 
     def setup_app_menu(self):
 
