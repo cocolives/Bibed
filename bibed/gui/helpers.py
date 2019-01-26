@@ -142,7 +142,7 @@ def debug_widget(widget):
     print('\tmargin_end={0}'.format(widget.props.margin_end))
 
 
-def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, no_show_all=False, debug=False):
+def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA
 
@@ -221,6 +221,11 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
             widget.set_can_default(True)
 
         widget.set_receives_default(True)
+
+    if activates_default:
+        if __debug__ and debug: mp('SET activate default')  # NOQA
+
+        widget.set_activates_default(True)
 
     if classes:
         if __debug__ and debug: mp('classes', classes)  # NOQA
@@ -386,7 +391,7 @@ def flat_unclickable_button_in_hbox(label_text, icon_name=None):
         Gtk.Label(label_text),
         classes=['dnd-object'],
         debug=True
-        ), False, False, 0)
+    ), False, False, 0)
     label_with_icon.set_size_request(100, 30)
 
     label_with_icon.show_all()
