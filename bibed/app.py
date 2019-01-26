@@ -343,7 +343,8 @@ class BibEdApplication(Gtk.Application):
 
         self.do_recompute_global_ids()
 
-        print('INSERTED')
+        if __debug__:
+            LOGGER.debug('Row created with entry {}.'.format(entry.key))
 
     def update_entry(self, entry):
 
@@ -354,9 +355,14 @@ class BibEdApplication(Gtk.Application):
                 # This is far from perfect, we could just update the row.
                 # But I'm tired and I want a simple way to view results.
                 # TODO: do better on next code review.
+
+                if __debug__:
+                    LOGGER.debug('Row {} (entry {}) updated.'.format(
+                        row[BibAttrs.GLOBAL_ID], entry.key
+                    ))
+
                 store.insert_after(row.iter, entry.to_list_store_row())
                 store.remove(row.iter)
-                print('UPDATED')
                 break
 
     def create_file(self, filename):
