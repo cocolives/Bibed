@@ -141,6 +141,11 @@ class BibedEntryDialog(Gtk.Dialog):
             self.entry.key is None and self.entry.database is None
         )
 
+        # Will be set to True by the update*() method.
+        # Needed by window.*row_activated*() to know
+        # if it needs to update the treeview or not.
+        self.changed = False
+
         # Direct access to fields grids.
         self.grids = {}
 
@@ -974,14 +979,11 @@ class BibedEntryDialog(Gtk.Dialog):
         if not gpod('bib_auto_save'):
             return
 
-        # TODO: if KEY changed (on new entry), check in ALL open files
-        #       if the key is not alreay taken.
-
         with self.save_lock:
             self.clear_save_callback()
 
             self.save_trigger_source = GLib.timeout_add_seconds(
-                priority=GLib.PRIORITY_DEFAULT, interval=5,
+                priority=GLib.PRIORITY_DEFAULT, interval=1,
                 function=self.on_save_trigger_callback)
 
     def on_save_clicked(self, widget, *args, **kwargs):

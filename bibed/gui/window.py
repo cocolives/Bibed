@@ -464,19 +464,24 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # value = store.get_value(treeiter, 1)
         bib_key = model[treeiter][BibAttrs.KEY]
+        global_id = model[treeiter][BibAttrs.GLOBAL_ID]
         filename = model[treeiter][BibAttrs.FILENAME]
 
         entry = files[filename].get_entry_by_key(bib_key)
+
+        # This is needed to update the treeview after modifications.
+        entry.gid = global_id
 
         assert(isinstance(entry, BibedEntry))
 
         entry_edit_dialog = BibedEntryDialog(
             parent=self, entry=entry)
 
-        response = entry_edit_dialog.run()
+        entry_edit_dialog.run()
 
-        if response == Gtk.ResponseType.OK:
-            pass
+        if entry.database is not None:
+            # Entry was saved to disk, insert it in the treeview.
+            self.application.update_entry(entry)
 
         entry_edit_dialog.destroy()
 
@@ -732,13 +737,16 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             entry_add_dialog.hide()
 
+            entry = BibedEntry.new_from_type(entry_type)
+
             entry_edit_dialog = BibedEntryDialog(
-                parent=self, entry=BibedEntry.new_from_type(entry_type))
+                parent=self, entry=entry)
 
-            response = entry_edit_dialog.run()
+            entry_edit_dialog.run()
 
-            if response == Gtk.ResponseType.OK:
-                pass
+            if entry.database is not None:
+                # Entry was saved to disk, insert it in the treeview.
+                self.application.insert_entry(entry)
 
             entry_edit_dialog.destroy()
 
