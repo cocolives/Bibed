@@ -335,6 +335,30 @@ class BibEdApplication(Gtk.Application):
 
         self.window.present()
 
+    def insert_entry(self, entry):
+
+        self.data_store.append(
+            entry.to_list_store_row()
+        )
+
+        self.do_recompute_global_ids()
+
+        print('INSERTED')
+
+    def update_entry(self, entry):
+
+        store = self.data_store
+
+        for row in store:
+            if row[BibAttrs.GLOBAL_ID] == entry.gid:
+                # This is far from perfect, we could just update the row.
+                # But I'm tired and I want a simple way to view results.
+                # TODO: do better on next code review.
+                store.insert_after(row.iter, entry.to_list_store_row())
+                store.remove(row.iter)
+                print('UPDATED')
+                break
+
     def create_file(self, filename):
         ''' Create a new BIB file, then open it in the application. '''
 
