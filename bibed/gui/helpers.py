@@ -526,7 +526,7 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
     field_label = getattr(fields_labels, field_name)
     field_doc   = getattr(fields_docs, field_name)
 
-    assert(field_label is not None)
+    assert(field_label is not None), field_name
 
     lbl = widget_properties(
         Gtk.Label(),
