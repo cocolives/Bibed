@@ -439,6 +439,7 @@ class BibEdApplication(Gtk.Application):
     def check_has_key(self, key):
 
         for filename, database in self.files.items():
+
             for entry in database.itervalues():
                 if key == entry.key:
                     return filename
@@ -556,7 +557,9 @@ class BibEdApplication(Gtk.Application):
 
         self.clear_file_from_store(filename, recompute=recompute)
 
+        # Isn't the first one redundant?
         self.files[filename] = None
+        del self.files[filename]
 
         for row in self.files_store:
             if row[0] == filename:
