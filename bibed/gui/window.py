@@ -50,7 +50,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                          GLib.Variant.new_boolean(obj.props.is_maximized)))
 
         self.connect('check-resize', self.on_resize)
-        self.connect("key-press-event", self.on_key_pressed)
+        self.connect('key-press-event', self.on_key_pressed)
 
         self.setup_icon()
 
