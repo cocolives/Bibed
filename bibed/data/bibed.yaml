@@ -550,7 +550,28 @@ fields:
     key: Entry key
     title: Title
     year: Year
+    editor: Editor(s)
+    subtitle: Subtitle
+    howpublished: How published?
+    type: Entry subtype
+    url: URL
+    urldate: URL date
+    addendum: Addendum
+    doi: DOI
+    language: Language
+    titleaddon: Title add-on
+    version: Version
+    note: Note(s)
+    comment: Comment(s)
+    organization: Organization
+    location: Location
+    month: Month
+    pubstate: Publish state
+    eprint: E-Print
+    eprinttype: E-Print type
+    eprintclass: E-Print class
 keep_recent_files: 10
+remember_last_destination: true
 remember_open_files: true
 remember_windows_states: true
 types:
