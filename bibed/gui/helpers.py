@@ -78,6 +78,37 @@ def notification_callback(notification, action_name):
     notification.close()
 
 
+def stack_switch_next(stack, reverse=False):
+
+    children = stack.get_children()
+
+    first = children[0]
+    last  = children[-1]
+
+    if reverse:
+        children = reversed(children)
+
+    visible_child = stack.get_visible_child()
+    # get_visible_child_name()[source]
+
+    make_next_visible = False
+
+    for child in children:
+        if make_next_visible:
+            stack.set_visible_child(child)
+            break
+
+        if child == visible_child:
+            if reverse and child == first:
+                stack.set_visible_child(last)
+                break
+            elif not reverse and child == last:
+                stack.set_visible_child(first)
+                break
+            else:
+                make_next_visible = True
+
+
 def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
 
     label = Gtk.Label(name=name)
