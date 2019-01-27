@@ -93,6 +93,14 @@ def set_process_title(title):
             LOGGER.warning("Setting the process title failed.")
 
 
+def ldebug(message, *args, **kwargs):
+    ''' function meant to be wrapped in an assert call. '''
+
+    LOGGER.debug(message.format(*args, **kwargs))
+
+    return True
+
+
 def ltrace_caller_name():
     ''' Print the stack previous level function name (eg. “caller”).
 
