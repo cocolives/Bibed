@@ -1,5 +1,8 @@
 
+import os
 import logging
+import datetime
+
 import bibtexparser
 
 from bibed.constants import (
@@ -228,3 +231,64 @@ class BibedEntry:
             self.quality,
             self.read_status,
         ]
+
+
+class EntryFieldCheckMixin:
+    ''' This class is meant to be subclassed by any Window/Dialog that checks entries.
+
+        .. seealso:: :class:`~bibed.gui.BibedEntryDialog`.
+    '''
+
+    def check_field_year(self, field_name, field, field_value):
+
+        field_value = field_value.strip()
+
+        if len(field_value) != 4:
+            return (
+                'Invalid year.'
+            )
+
+        try:
+            _ = int(field_value)
+
+        except Exception as e:
+            return (
+                'Invalid year, not understood: {exc}.'.format(exc=e)
+            )
+
+    def check_field_key(self, field_name, field, field_value):
+
+        # TODO: remove this test when auto-key-builder is implemented.
+        if len(field_value.strip()) <= 3:
+            return (
+                'Key cannot be empty and must be at least 3 characters long.'
+            )
+
+        has_key = self.parent.application.check_has_key(field_value)
+
+        if has_key:
+            return (
+                'Key already taken in <span '
+                'face="monospace">{filename}</span>. '
+                'Please choose another one.').format(
+                    filename=os.path.basename(has_key)
+            )
+
+    def check_field_date(self, field_name, field, field_value):
+
+        error_message = (
+            'Invalid ISO date. '
+            'Please type a date in the format YYYY-MM-DD.'
+        )
+
+        if len(field_value) < 10:
+            return error_message
+
+        try:
+            _ = datetime.date.fromisoformat(field_value)
+
+        except Exception as e:
+            return '{error_message}\nExact error is: {exception}'.format(
+                error_message=error_message, exception=e)
+
+    check_field_urldate = check_field_date
