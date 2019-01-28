@@ -103,6 +103,8 @@ fields:
       - pages
       - pagetotal
       - addendum
+      - url
+      - urldate
       - volumes
       - series
       - number
@@ -132,8 +134,6 @@ fields:
       - eprint
       - eprintclass
       - eprinttype
-      - url
-      - urldate
       required:
       - title
       - author
@@ -193,23 +193,23 @@ fields:
     booklet:
       optional:
       - subtitle
+      - type
+      - pages
+      - addendum
+      - url
+      - urldate
+      - pubstate
       - titleaddon
       - language
       - howpublished
-      - type
       - note
       - location
       - chapter
-      - pages
       - pagetotal
-      - addendum
-      - pubstate
       - doi
       - eprint
       - eprintclass
       - eprinttype
-      - url
-      - urldate
       required:
       - title
       - - author
@@ -288,9 +288,9 @@ fields:
       - eprintclass
       - eprinttype
       required:
+      - title
       - - author
         - editor
-      - title
       - - year
         - date
     movie:
@@ -314,9 +314,9 @@ fields:
       - eprintclass
       - eprinttype
       required:
+      - title
       - - author
         - editor
-      - title
       - - year
         - date
     mvbook:
@@ -383,6 +383,9 @@ fields:
     report:
       optional:
       - subtitle
+      - url
+      - urldate
+      - addendum
       - titleaddon
       - language
       - number
@@ -400,8 +403,6 @@ fields:
       - eprint
       - eprintclass
       - eprinttype
-      - url
-      - urldate
       required:
       - title
       - author
@@ -409,41 +410,44 @@ fields:
       - institution
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
     suppbook:
       optional:
       - bookauthor
       - editor
-      - editora
-      - editorb
-      - editorc
       - translator
       - annotator
-      - commentator
+      - edition
+      - volumes
+      - series
+      - number
       - introduction
       - foreword
       - afterword
       - subtitle
+      - addendum
       - titleaddon
       - maintitle
       - mainsubtitle
       - maintitleaddon
       - booksubtitle
       - booktitleaddon
+      - commentator
+      - editora
+      - editorb
+      - editorc
       - language
       - origlanguage
       - volume
       - part
-      - edition
-      - volumes
-      - series
-      - number
       - note
       - publisher
       - location
       - isbn
       - chapter
       - pages
-      - addendum
       - pubstate
       - doi
       - eprint
@@ -457,10 +461,16 @@ fields:
       - booktitle
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
     thesis:
       optional:
       - subtitle
       - titleaddon
+      - url
+      - urldate
+      - addendum
       - language
       - note
       - location
@@ -469,14 +479,11 @@ fields:
       - chapter
       - pages
       - pagetotal
-      - addendum
       - pubstate
       - doi
       - eprint
       - eprintclass
       - eprinttype
-      - url
-      - urldate
       required:
       - title
       - author
@@ -484,11 +491,15 @@ fields:
       - institution
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
     unpublished:
       optional:
       - subtitle
       - titleaddon
       - type
+      - addendum
       - eventtitle
       - eventtitleaddon
       - eventdate
@@ -499,7 +510,6 @@ fields:
       - location
       - isbn
       - month
-      - addendum
       - pubstate
       - url
       - urldate
@@ -508,6 +518,9 @@ fields:
       - author
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
   docs:
     author: The author(s) of the <span face="monospace">title</span>.
     booksubtitle: The subtitle related to the <span face="monospace">booktitle</span>.
@@ -545,6 +558,9 @@ fields:
       @@@import{2.3.8}
   labels:
     author: Author(s)
+    chapter: Chapter
+    pages: Page(s)
+    pagetotal: Total page count
     date: Date
     journaltitle: Journal title
     key: Entry key
