@@ -14,11 +14,11 @@ from bibed.constants import (
     APP_MENU_XML,
     BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
-    STORE_LIST_ARGS,
     BibAttrs,
 )
 
 from bibed.foundations import (
+    ldebug,
     # ltrace_caller_name,
     set_process_title,
     touch_file,
@@ -30,7 +30,7 @@ from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
 
 from bibed.utils import PyinotifyEventHandler
 from bibed.preferences import preferences, memories
-from bibed.database import BibedDatabase
+from bibed.database import BibedDatabase, BibedListStore
 
 from bibed.gui.window import BibEdWindow
 
@@ -68,9 +68,9 @@ class BibEdApplication(Gtk.Application):
         # To create a menu item that displays the shortcuts window,
         # associate the item with the action win.show-help-overlay.
 
+        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
         self.files = OrderedDict()
-        self.bibdb = None
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -142,9 +142,7 @@ class BibEdApplication(Gtk.Application):
         )
 
         # Stores BIB entries. Linked to self.files.values()
-        self.data_store = Gtk.ListStore(
-            *STORE_LIST_ARGS
-        )
+        self.data_store = BibedListStore()
 
         # Keep the filter data sortable along the way.
 
@@ -252,18 +250,6 @@ class BibEdApplication(Gtk.Application):
 
         return True
 
-    def do_recompute_global_ids(self):
-
-        if __debug__:
-            LOGGER.debug('do_recompute_global_ids()')
-
-        counter = 1
-        global_id = BibAttrs.GLOBAL_ID
-
-        for row in self.data_store:
-            row[global_id] = counter
-            counter += 1
-
     def do_notification(self, message):
 
         notification = Notify.Notification.new('Bibed', message)
@@ -317,8 +303,7 @@ class BibEdApplication(Gtk.Application):
                             memories.remove_open_file(filename)
 
         # make interface consistent with data.
-        self.window.sync_shown_hidden()
-        self.window.do_treeview_column_sort()
+        self.window.do_activate()
 
         if combo_set_active:
             for row in self.files_store:
@@ -335,41 +320,10 @@ class BibEdApplication(Gtk.Application):
 
         self.window.present()
 
-    def insert_entry(self, entry):
-
-        self.data_store.append(
-            entry.to_list_store_row()
-        )
-
-        self.do_recompute_global_ids()
-
-        if __debug__:
-            LOGGER.debug('Row created with entry {}.'.format(entry.key))
-
-    def update_entry(self, entry):
-
-        store = self.data_store
-
-        for row in store:
-            if row[BibAttrs.GLOBAL_ID] == entry.gid:
-                # This is far from perfect, we could just update the row.
-                # But I'm tired and I want a simple way to view results.
-                # TODO: do better on next code review.
-
-                if __debug__:
-                    LOGGER.debug('Row {} (entry {}) updated.'.format(
-                        row[BibAttrs.GLOBAL_ID], entry.key
-                    ))
-
-                store.insert_after(row.iter, entry.to_list_store_row())
-                store.remove(row.iter)
-                break
-
     def create_file(self, filename):
         ''' Create a new BIB file, then open it in the application. '''
 
-        if __debug__:
-            LOGGER.debug('create_file({})'.format(filename))
+        assert ldebug('create_file({})', filename)
 
         touch_file(filename)
 
@@ -378,9 +332,7 @@ class BibEdApplication(Gtk.Application):
     def open_file(self, filename, recompute=True):
         ''' Add a file to the application. '''
 
-        if __debug__:
-            LOGGER.debug('open_file({}, recompute={})'.format(
-                filename, recompute))
+        assert ldebug('open_file({}, recompute={})', filename, recompute)
 
         # print(ltrace_caller_name())
 
@@ -477,17 +429,15 @@ class BibEdApplication(Gtk.Application):
     def load_file_contents(self, filename, clear_first=False, recompute=True):
         ''' Fill the GtkTreeStore with BIB data. '''
 
-        if __debug__:
-            LOGGER.debug(
-                'load_file_contents({}, clear_first={}, recompute={})'.format(
-                    filename, clear_first, recompute))
+        assert ldebug(
+            'load_file_contents({}, clear_first={}, recompute={})',
+            filename, clear_first, recompute
+        )
 
         new_bibdb = BibedDatabase(filename, self)
 
         if clear_first:
-            if __debug__:
-                LOGGER.debug(
-                    'load_file_contents({0}): store cleared.'.format(filename))
+            assert ldebug('load_file_contents({0}): store cleared.', filename)
 
             # self.window.treeview.set_editable(False)
             self.clear_file_from_store(filename, recompute=False)
@@ -500,20 +450,18 @@ class BibEdApplication(Gtk.Application):
                 entry.to_list_store_row()
             )
 
-        if __debug__:
-            LOGGER.debug('load_file_contents({}): end.'.format(filename))
+        assert ldebug('load_file_contents({}): end.', filename)
 
         if recompute:
-            self.do_recompute_global_ids()
+            self.data_store.do_recompute_global_ids()
 
         self.window.update_title()
 
     def clear_file_from_store(self, filename=None, recompute=True):
         ''' Clear the data store from one or more file contents. '''
 
-        if __debug__:
-            LOGGER.debug('clear_file_from_store({}, recompute={})'.format(
-                filename, recompute))
+        assert ldebug(
+            'clear_file_from_store({}, recompute={})', filename, recompute)
 
         if filename is None:
             # clear ALL data.
@@ -529,7 +477,7 @@ class BibEdApplication(Gtk.Application):
                     store.remove(row.iter)
 
         if recompute:
-            self.do_recompute_global_ids()
+            self.data_store.do_recompute_global_ids()
 
     def save_file_to_disk(self, filename):
 
@@ -546,9 +494,9 @@ class BibEdApplication(Gtk.Application):
     def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
         ''' Close a file and impact changes. '''
 
-        if __debug__:
-            LOGGER.debug('close_file({}, save_before={}, recompute={})'.format(
-                filename, save_before, recompute))
+        assert ldebug(
+            'close_file({}, save_before={}, recompute={})',
+            filename, save_before, recompute)
 
         self.inotify_remove_watch(filename)
 
@@ -669,10 +617,7 @@ class BibEdApplication(Gtk.Application):
         if self.file_modify_lock.acquire(blocking=False) is False:
             return
 
-        if __debug__:
-            LOGGER.debug(
-                'Programming reload of {0} when idle.'.format(
-                    event.pathname))
+        assert ldebug('Programming reload of {0} when idle.', event.pathname)
 
         GLib.idle_add(self.on_file_modify_callback, event)
 
@@ -681,8 +626,7 @@ class BibEdApplication(Gtk.Application):
 
         filename = event.pathname
 
-        if __debug__:
-            LOGGER.debug('on_file_modify_callback({})'.format(filename))
+        assert ldebug('on_file_modify_callback({})', filename)
 
         time.sleep(1)
 
