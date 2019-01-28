@@ -1,6 +1,7 @@
 import os
 import logging
 
+from bibed.foundations import ldebug
 from bibed.constants import (
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
@@ -38,6 +39,46 @@ def get_screen_resolution():
         Gdk.Display.get_primary_monitor()
 
     return screensize
+
+
+def get_children_recursive(start_node, reverse=True):
+    ''' Get all children of :param:`start_node`, recursively.
+
+        .. note:: this function will reverse results by default, probably
+            because of a bug or a misunderstanding of myself at some point.
+
+            For some reason, returning children “as is”, without reversing
+            the list, gives results inversed of what I thought about.
+
+            You can still get “as is” result by setting :param:`reverse`
+            to `False`.
+
+        .. versionadded:: 0.9-develop
+    '''
+
+    # assert ldebug('CONTAINER {}', start_node)
+
+    # Get Bin before Container, else ScrolledWindow returns
+    # the Viewport instead of the real child.
+
+    children = []
+
+    if isinstance(start_node, Gtk.Bin):
+        child = start_node.get_child()
+        # assert ldebug('YIELD {}', child)
+        children.append(child)
+        children.extend(get_children_recursive(child, reverse=False))
+
+    elif isinstance(start_node, Gtk.Container):
+        for child in start_node.get_children():
+            # assert ldebug('YIELD {}', child)
+            children.append(child)
+            children.extend(get_children_recursive(child, reverse=False))
+
+    if reverse:
+        return reversed(children)
+
+    return children
 
 
 def find_child_by_name(start_node, widget_name):
@@ -79,6 +120,7 @@ def notification_callback(notification, action_name):
 
 
 def stack_switch_next(stack, reverse=False):
+    ''' Switch to next or previous stack level, and return the one switched to. '''
 
     children = stack.get_children()
 
@@ -96,15 +138,16 @@ def stack_switch_next(stack, reverse=False):
     for child in children:
         if make_next_visible:
             stack.set_visible_child(child)
-            break
+            return child
 
         if child == visible_child:
             if reverse and child == first:
                 stack.set_visible_child(last)
-                break
+                return last
+
             elif not reverse and child == last:
                 stack.set_visible_child(first)
-                break
+                return first
             else:
                 make_next_visible = True
 
@@ -510,6 +553,8 @@ def scrolled_textview():
 
     # self.textview.get_buffer().set_text('Nothing yet here.')
 
+    tv.set_wrap_mode(Gtk.WrapMode.WORD)
+
     sw.add(tv)
 
     return sw, tv
@@ -557,7 +602,13 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
     field_label = getattr(fields_labels, field_name)
     field_doc   = getattr(fields_docs, field_name)
 
-    assert(field_label is not None), field_name
+    # TODO: remove these ldebug() calls
+    # when every field is documented / labelled.
+
+    if field_label is None:
+        ldebug('\t>>> Field {} has no label', field_name)
+    if field_doc is None:
+        ldebug('\t>>> Field {} has no documentation', field_name)
 
     lbl = widget_properties(
         Gtk.Label(),
