@@ -712,14 +712,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             if filename is None or filename == 'All':
                 # No search, no filename; get ALL data, unfiltered.
                 self.treeview.set_model(self.application.data_store)
-                self.treeview.col_id.props.visible = False
-                self.treeview.col_global_id.props.visible = True
 
             else:
-                if self.treeview.col_global_id.props.visible:
-                    self.treeview.col_global_id.props.visible = False
-                    self.treeview.col_id.props.visible = True
-
                 refilter()
 
         self.update_title()

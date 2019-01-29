@@ -47,24 +47,24 @@ class BibedMainTreeView(Gtk.TreeView):
         # We get better search via global SearchEntry
         self.set_enable_search(False)
 
+        self.setup_treeview_columns()
+
         # Not usable because columns are not fixed size. Bummer.
         # self.set_fixed_height_mode(True)
 
-        self.col_global_id = self.add_treeview_text_column(
-            '#', BibAttrs.GLOBAL_ID)
-        self.col_id = self.add_treeview_text_column('#', BibAttrs.ID)
-        self.col_id.props.visible = False
+        self.set_tooltip_column(BibAttrs.TOOLTIP)
 
-        self.col_type = self.add_treeview_text_column('type', BibAttrs.TYPE)
+        self.connect('row-activated', self.on_treeview_row_activated)
 
-        # File column
-        # URL column
-        # DOI column
+    def setup_treeview_columns(self):
 
         # TODO: integrate a pixbuf for "tags" and create tooltip with tags.
-        self.col_key = self.add_treeview_text_column(
+        self.col_key = self.setup_text_column(
             'key', BibAttrs.KEY, resizable=True,
             min=100, max=150, ellipsize=Pango.EllipsizeMode.START)
+
+        # File column
+        # DOI column
 
         self.col_url = self.setup_pixbuf_column(
             'U', BibAttrs.URL, self.get_url_cell_column,
@@ -78,26 +78,18 @@ class BibedMainTreeView(Gtk.TreeView):
         self.col_comment = self.setup_pixbuf_column(
             'C', BibAttrs.COMMENT, self.get_comment_cell_column)
 
-        self.col_author = self.add_treeview_text_column(
+        self.col_author = self.setup_text_column(
             'author', BibAttrs.AUTHOR, resizable=True,
             min=130, max=200, ellipsize=Pango.EllipsizeMode.END)
-        self.col_title = self.add_treeview_text_column(
+        self.col_title = self.setup_text_column(
             'title', BibAttrs.TITLE, resizable=True, expand=True,
             min=300, ellipsize=Pango.EllipsizeMode.MIDDLE)
-        self.col_journal = self.add_treeview_text_column(
+        self.col_journal = self.setup_text_column(
             'journal', BibAttrs.JOURNAL, resizable=True,
             min=130, max=200, ellipsize=Pango.EllipsizeMode.END)
 
-        self.col_year = self.add_treeview_text_column(
+        self.col_year = self.setup_text_column(
             'year', BibAttrs.YEAR, xalign=1)
-
-        self.set_tooltip_column(BibAttrs.TOOLTIP)
-
-        self.connect('row-activated', self.on_treeview_row_activated)
-
-    def do_status_change(self, message):
-
-        return self.window.do_status_change(message)
 
     def setup_pixbufs(self):
 
@@ -116,6 +108,45 @@ class BibedMainTreeView(Gtk.TreeView):
                     temp_dict[status] = None
 
             setattr(self, attr_name, temp_dict)
+
+    def setup_text_column(self, name, store_num, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
+
+        if ellipsize is None:
+            ellipsize = Pango.EllipsizeMode.NONE
+
+        column = Gtk.TreeViewColumn(name)
+
+        column.connect('clicked', self.on_treeview_column_clicked)
+
+        if xalign is not None:
+            cellrender = Gtk.CellRendererText(
+                xalign=xalign, ellipsize=ellipsize)
+        else:
+            cellrender = Gtk.CellRendererText(ellipsize=ellipsize)
+
+        column.pack_start(cellrender, True)
+        column.add_attribute(cellrender, "text", store_num)
+        column.set_sort_column_id(store_num)
+
+        if resizable:
+            column.set_resizable(True)
+
+        if expand:
+            column.set_expand(True)
+
+        if min is not None:
+            # column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+            column.set_min_width(min)
+            column.set_fixed_width(min)
+
+        if max is not None:
+            # column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
+            column.set_max_width(min)
+
+            # column.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
+        self.append_column(column)
+
+        return column
 
     def setup_pixbuf_column(self, title, store_num, renderer_method, signal_method=None):
 
@@ -162,45 +193,6 @@ class BibedMainTreeView(Gtk.TreeView):
                 'pixbuf', self.url_pixbufs[
                     model.get_value(iter, BibAttrs.URL) != ''])
 
-    def add_treeview_text_column(self, name, store_num, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
-
-        if ellipsize is None:
-            ellipsize = Pango.EllipsizeMode.NONE
-
-        column = Gtk.TreeViewColumn(name)
-
-        column.connect('clicked', self.on_treeview_column_clicked)
-
-        if xalign is not None:
-            cellrender = Gtk.CellRendererText(
-                xalign=xalign, ellipsize=ellipsize)
-        else:
-            cellrender = Gtk.CellRendererText(ellipsize=ellipsize)
-
-        column.pack_start(cellrender, True)
-        column.add_attribute(cellrender, "text", store_num)
-        column.set_sort_column_id(store_num)
-
-        if resizable:
-            column.set_resizable(True)
-
-        if expand:
-            column.set_expand(True)
-
-        if min is not None:
-            # column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            column.set_min_width(min)
-            column.set_fixed_width(min)
-
-        if max is not None:
-            # column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            column.set_max_width(min)
-
-            # column.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
-        self.append_column(column)
-
-        return column
-
     def columns_autosize(self, current_width):
         # Remove 1 else the treeview gets a few pixels too wide.
         # The last column will compensate any "missing" pixels,
@@ -242,6 +234,10 @@ class BibedMainTreeView(Gtk.TreeView):
         # TODO: make clear while I need to substract 1.
         #       make all counters equal everywhere.
         return self.main_model.get_iter(gid - 1)
+
+    def do_status_change(self, message):
+
+        return self.window.do_status_change(message)
 
     def do_column_sort(self):
 
