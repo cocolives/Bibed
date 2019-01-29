@@ -398,10 +398,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
          self.swi_url_action_opens_browser) = build_label_and_switch(
             '<b>URLs open in browser</b>\n'
             '<span foreground="grey" size="small">'
-            'Enabling this makes Control-U and URL-icon click open the url\n'
-            'directly in a new tab of your prefered web browser, while\n'
-            'Shift-Control-U will copy the URL to clipboard.\n'
-            'Disabling it makes the opposite.</span>',
+            'Enabling this makes <span face="monospace">Control-U</span> and URL-icon click open the url directly\n'
+            'in a new tab of your prefered web browser, while <span face="monospace">Shift-Control-U</span> will\n'
+            'copy the URL to clipboard. Disabling it makes the opposite.</span>',
             self.on_switch_activated,
             gpod('url_action_opens_browser'),
             func_args=('url_action_opens_browser', )
