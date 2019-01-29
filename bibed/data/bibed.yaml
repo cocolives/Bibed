@@ -94,6 +94,7 @@ fields:
       stacked:
       - abstract
       - comment
+      - keywords
     book:
       optional:
       - subtitle
@@ -142,6 +143,7 @@ fields:
       stacked:
       - abstract
       - comment
+      - keywords
     bookinbook:
       optional:
       - bookauthor
@@ -190,6 +192,10 @@ fields:
       - booktitle
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
     booklet:
       optional:
       - subtitle
@@ -219,6 +225,7 @@ fields:
       stacked:
       - abstract
       - comment
+      - keywords
     inbook:
       optional:
       - bookauthor
@@ -267,6 +274,10 @@ fields:
       - booktitle
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
     misc:
       optional:
       - subtitle
@@ -293,6 +304,10 @@ fields:
         - editor
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
     movie:
       optional:
       - subtitle
@@ -357,6 +372,10 @@ fields:
       - author
       - - year
         - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
     online:
       optional:
       - subtitle
@@ -380,6 +399,10 @@ fields:
       - - year
         - date
       - url
+      stacked:
+      - abstract
+      - comment
+      - keywords
     report:
       optional:
       - subtitle
@@ -413,6 +436,7 @@ fields:
       stacked:
       - abstract
       - comment
+      - keywords
     suppbook:
       optional:
       - bookauthor
@@ -464,6 +488,7 @@ fields:
       stacked:
       - abstract
       - comment
+      - keywords
     thesis:
       optional:
       - subtitle
@@ -494,6 +519,7 @@ fields:
       stacked:
       - abstract
       - comment
+      - keywords
     unpublished:
       optional:
       - subtitle
@@ -521,6 +547,7 @@ fields:
       stacked:
       - abstract
       - comment
+      - keywords
   docs:
     author: The author(s) of the <span face="monospace">title</span>.
     booksubtitle: The subtitle related to the <span face="monospace">booktitle</span>.
