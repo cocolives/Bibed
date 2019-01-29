@@ -188,7 +188,8 @@ class BibedEntry():
             tooltips.append('<b>Comment:</b> {}'.format(self.comment))
 
         if self.keywords:
-            tooltips.append('<b>Keywords:</b> {}'.format(self.keywords))
+            tooltips.append('<b>Keywords:</b> {}'.format(
+                ', '.join(self.keywords)))
 
         abstract = self.get_field('abstract', default='')
 
@@ -196,13 +197,13 @@ class BibedEntry():
             abstract = abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] \
                 + (abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] and '[…]')
 
-            tooltips.append('Abstract:\n{abstract}.'.format(
+            tooltips.append('<b>Abstract</b>:\n{abstract}.'.format(
                 abstract=abstract))
 
         timestamp = self.get_field('timestamp', default='')
 
         if timestamp:
-            tooltips.append('Added to database {timestamp}.'.format(
+            tooltips.append('Added to database <b>{timestamp}</b>.'.format(
                 timestamp=timestamp))
 
         return '\n\n'.join(tooltips)
