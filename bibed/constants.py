@@ -8,32 +8,42 @@ BIBED_DATA_DIR = os.path.join(os.path.realpath(
 BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
 
+def icon(name):
+    return os.path.join(BIBED_ICONS_DIR, name)
+
+
 class Anything:
     pass
 
 
 BibAttrs = Anything()
 
+# Sync this with STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
 BibAttrs.GLOBAL_ID = 0
 BibAttrs.FILENAME  = 1
 BibAttrs.ID        = 2
-BibAttrs.TYPE      = 3
-BibAttrs.KEY       = 4
-BibAttrs.FILE      = 5
-BibAttrs.URL       = 6
-BibAttrs.DOI       = 7
-BibAttrs.AUTHOR    = 8
-BibAttrs.TITLE     = 9
-BibAttrs.JOURNAL   = 10
-BibAttrs.YEAR      = 11
-BibAttrs.DATE      = 12
-BibAttrs.QUALITY   = 13
-BibAttrs.READ      = 14
+BibAttrs.TOOLTIP   = 3
+BibAttrs.TYPE      = 4
+BibAttrs.KEY       = 5
+BibAttrs.FILE      = 6
+BibAttrs.URL       = 7
+BibAttrs.DOI       = 8
+BibAttrs.AUTHOR    = 9
+BibAttrs.TITLE     = 10
+BibAttrs.SUBTITLE  = 11
+BibAttrs.JOURNAL   = 12
+BibAttrs.YEAR      = 13
+BibAttrs.DATE      = 14
+BibAttrs.QUALITY   = 15
+BibAttrs.READ      = 16
+BibAttrs.COMMENT   = 17
+
 
 STORE_LIST_ARGS = [
     int,  # global ID / counter across all files
     str,  # store origin (filename / ID)
     int,  # id / counter in current file
+    str,  # Row tooltip (for treeview)
     str,  # BIB entry type
     str,  # BIB key
     str,  # file (PDF)
@@ -41,20 +51,23 @@ STORE_LIST_ARGS = [
     str,  # DOI
     str,  # author
     str,  # title
+    str,  # subtitle
     str,  # journal
     int,  # year
     str,  # date
     str,  # quality
     str,  # read status
+    str, # has comments
 ]
 
+# See GUI constants later for icons.
 JABREF_QUALITY_KEYWORDS = [
     'qualityAssured',
 ]
 
 JABREF_READ_KEYWORDS = [
-    'read',
     'skimmed',
+    'read',
 ]
 
 PREFERENCES_FILENAME = 'bibed.yaml'
@@ -102,6 +115,8 @@ FILES_COMBO_DEFAULT_WIDTH = 25
 
 RESIZE_SIZE_MULTIPLIER = 0.15
 
+CELLRENDERER_PIXBUF_PADDING = 2
+
 PANGO_BIG_FONT_SIZES = [
     14336,
     16384,
@@ -113,6 +128,25 @@ PANGO_BIG_FONT_SIZES = [
 
 HELP_POPOVER_LABEL_MARGIN = 10
 
+# expressed in characters
+ABSTRACT_MAX_LENGHT_IN_TOOLTIPS = 512
+
 GENERIC_HELP_SYMBOL = (
     '<span color="grey"><sup><small>(?)</small></sup></span>'
 )
+
+READ_STATUS_PIXBUFS = {
+    'read': None,
+    '': icon('16x16/book.png'),
+    'skimmed': icon('16x16/book-open.png'),
+}
+
+QUALITY_STATUS_PIXBUFS = {
+    '': None,
+    'qualityAssured': icon('16x16/ranked.png'),
+}
+
+COMMENT_PIXBUFS = {
+    False: None,
+    True: icon('16x16/comment.png'),
+}
