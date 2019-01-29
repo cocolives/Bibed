@@ -97,6 +97,8 @@ class BibedDatabase:
 
     def backup(self):
 
+        assert ldebug('BACKUP {} before save.', self.filename)
+
         dirname = os.path.dirname(self.filename)
         basename = os.path.basename(self.filename)
 
@@ -115,8 +117,13 @@ class BibedDatabase:
             LOGGER.exception('Problem while backing up file before save.')
 
     def save(self):
+        ''' … '''
+
+        assert ldebug('SAVE {} before locking.', self.filename)
 
         with self.application.no_watch(self.filename):
+
+            assert ldebug('SAVE {} in lock.', self.filename)
 
             if gpod('backup_before_save'):
                 self.backup()
@@ -161,10 +168,12 @@ class BibedListStore(Gtk.ListStore):
                 # But I'm tired and I want a simple way to view results.
                 # TODO: do better on next code review.
 
-                assert ldebug('Row {} (entry {}) updated.',
+                self.insert_after(row.iter, entry.to_list_store_row())
+                self.remove(row.iter)
+
+                assert ldebug(
+                    'Row {} (entry {}) updated.',
                     row[BibAttrs.GLOBAL_ID], entry.key
                 )
 
-                self.insert_after(row.iter, entry.to_list_store_row())
-                self.remove(row.iter)
                 break
