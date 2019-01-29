@@ -57,7 +57,7 @@ STORE_LIST_ARGS = [
     str,  # date
     str,  # quality
     str,  # read status
-    str, # has comments
+    str,  # has comments
 ]
 
 # See GUI constants later for icons.
@@ -128,7 +128,10 @@ PANGO_BIG_FONT_SIZES = [
 
 HELP_POPOVER_LABEL_MARGIN = 10
 
-# expressed in characters
+# Expressed in number of keywords (which can eventually be multi-words)
+MAX_KEYWORDS_IN_TOOLTIPS = 20
+
+# expressed in number of characters
 ABSTRACT_MAX_LENGHT_IN_TOOLTIPS = 512
 
 GENERIC_HELP_SYMBOL = (
@@ -149,4 +152,9 @@ QUALITY_STATUS_PIXBUFS = {
 COMMENT_PIXBUFS = {
     False: None,
     True: icon('16x16/comment.png'),
+}
+
+URL_PIXBUFS = {
+    False: None,
+    True: icon('16x16/url.png'),
 }
