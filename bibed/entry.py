@@ -6,8 +6,9 @@ import datetime
 import bibtexparser
 
 from bibed.constants import (
-    JABREF_QUALITY_KEYWORDS,
     JABREF_READ_KEYWORDS,
+    JABREF_QUALITY_KEYWORDS,
+    MAX_KEYWORDS_IN_TOOLTIPS,
     ABSTRACT_MAX_LENGHT_IN_TOOLTIPS,
 )
 
@@ -83,13 +84,35 @@ class BibedEntry():
         self.gid = 0
 
         # Proxy keywords here for faster operations.
-        self._internal_keywords = [
-            x.strip()
-            for x in self.entry.get('keywords', '').split(',')
-            if x.strip() != ''
+        self._internal_keywords = self._internal_split_keywords(
+            self.entry.get('keywords', ''))
+
+    def _internal_split_keywords(self, value):
+
+        return [
+            expression.strip()
+            for expression in value.split(',')
+            if expression.strip() != ''
         ]
 
-    def translate(self, name):
+    def _internal_add_keywords(self, keywords):
+
+        self._internal_keywords.extend(keywords)
+
+        self.entry['keywords'] = ', '.join(self._internal_keywords)
+
+    def _internal_remove_keywords(self, keywords):
+
+        for kw in keywords:
+            try:
+                self._internal_keywords.remove(kw)
+
+            except IndexError:
+                pass
+
+        self.entry['keywords'] = ', '.join(self._internal_keywords)
+
+    def _internal_translate(self, name):
         ''' Translation Bibed ←→ bibtexparser. '''
 
         if name == 'key':
@@ -107,26 +130,52 @@ class BibedEntry():
     def __setitem__(self, item_name, value):
         ''' Translation Bibed ←→ bibtexparser. '''
 
-        self.entry[self.translate(item_name)] = value
+        # TODO: keep this method or not ?
+        #       we have more and more proxy specifics.
+        #       Keeping this could lead to inconsistencies and bugs.
+
+        self.entry[self._internal_translate(item_name)] = value
 
     def __getitem__(self, item_name):
 
-        return self.entry[self.translate(item_name)]
+        # TODO: keep this method or not ?
+        #       we have more and more proxy specifics.
+        #       Keeping this could lead to inconsistencies and bugs.
+
+        return self.entry[self._internal_translate(item_name)]
 
     def get_field(self, name, default=None):
 
-        name = self.translate(name)
+        name = self._internal_translate(name)
 
         if default is None:
             return bibtexparser_as_text(self.entry[name])
+
+        if name == 'keywords':
+            return self.keywords
 
         return bibtexparser_as_text(self.entry.get(name, default))
 
     def set_field(self, name, value):
 
-        name = self.translate(name)
+        name = self._internal_translate(name)
 
-        self.entry[name] = value
+        try:
+            setter = getattr(self, 'set_field_{}'.format(name))
+
+        except AttributeError:
+            self.entry[name] = value
+
+        else:
+            setter(value)
+
+    def set_field_keywords(self, value):
+
+        kw = self._internal_split_keywords(value)
+
+        self._internal_keywords = kw + [self.read_status] + [self.quality]
+
+        self.entry['keywords'] = ','.join(self._internal_keywords)
 
     @property
     def type(self):
@@ -167,14 +216,15 @@ class BibedEntry():
         tooltips = []
 
         subtitle = self.get_field('subtitle', default='')
+        year     = self.year
 
         base_tooltip = (
             '<big><i>{title}</i></big>\n{subtitle}'
-            'by <b>{author}</b> ({year})'.format(
+            'by <b>{author}</b>{year}'.format(
                 title=self.title,
                 subtitle='<i>{}</i>\n'.format(subtitle) if subtitle else '',
                 author=self.author,
-                year=self.year,
+                year=' ({year})'.format(year=year) if year else '',
             )
         )
 
@@ -187,18 +237,34 @@ class BibedEntry():
         if self.comment:
             tooltips.append('<b>Comment:</b> {}'.format(self.comment))
 
-        if self.keywords:
-            tooltips.append('<b>Keywords:</b> {}'.format(
-                ', '.join(self.keywords)))
-
         abstract = self.get_field('abstract', default='')
 
         if abstract:
             abstract = abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] \
-                + (abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] and '[…]')
+                + (abstract[ABSTRACT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
 
-            tooltips.append('<b>Abstract</b>:\n{abstract}.'.format(
+            tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
                 abstract=abstract))
+
+        keywords = self._internal_split_keywords(self.keywords)
+
+        if keywords:
+            if len(keywords) > MAX_KEYWORDS_IN_TOOLTIPS:
+                kw_text = '{}{}'.format(
+                    ', '.join(keywords[:MAX_KEYWORDS_IN_TOOLTIPS]),
+                    ', and {} other(s).'.format(
+                        len(keywords[MAX_KEYWORDS_IN_TOOLTIPS:])
+                    ),
+                )
+            else:
+                kw_text = ', '.join(keywords)
+
+            tooltips.append('<b>Keywords:</b> {}'.format(kw_text))
+
+        url = self.get_field('url', '')
+
+        if url:
+            tooltips.append('<b>URL:</b> <a href="{url}">{url}</a>'.format(url=url))
 
         timestamp = self.get_field('timestamp', default='')
 
@@ -260,7 +326,7 @@ class BibedEntry():
             except ValueError:
                 pass
 
-        return keywords
+        return ', '.join(keywords)
 
     @property
     def quality(self):
@@ -288,44 +354,27 @@ class BibedEntry():
         # See constants.py
         return ''
 
-    def add_keywords(self, keywords):
-
-        self._internal_keywords.extend(keywords)
-
-        self.entry['keywords'] = ', '.join(self._internal_keywords)
-
-    def remove_keywords(self, keywords):
-
-        for kw in keywords:
-            try:
-                self._internal_keywords.remove(kw)
-
-            except IndexError:
-                pass
-
-        self.entry['keywords'] = ', '.join(self._internal_keywords)
-
     def toggle_quality(self):
 
         if self.quality == '':
-            self.add_keywords([JABREF_QUALITY_KEYWORDS[0]])
+            self._internal_add_keywords([JABREF_QUALITY_KEYWORDS[0]])
 
         else:
-            self.remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
+            self._internal_remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
 
     def cycle_read_status(self):
 
         read_status = self.read_status
 
         if read_status == '':
-            self.add_keywords([JABREF_READ_KEYWORDS[0]])
+            self._internal_add_keywords([JABREF_READ_KEYWORDS[0]])
 
         elif read_status == JABREF_READ_KEYWORDS[0]:
-            self.remove_keywords([JABREF_READ_KEYWORDS[0]])
-            self.add_keywords([JABREF_READ_KEYWORDS[1]])
+            self._internal_remove_keywords([JABREF_READ_KEYWORDS[0]])
+            self._internal_add_keywords([JABREF_READ_KEYWORDS[1]])
 
         else:
-            self.remove_keywords([JABREF_READ_KEYWORDS[1]])
+            self._internal_remove_keywords([JABREF_READ_KEYWORDS[1]])
 
     def to_list_store_row(self):
         ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''
