@@ -376,6 +376,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # keyval_name = Gdk.keyval_name(keyval)
         # if ctrl and keyval_name == 's':
 
+        if ctrl and keyval == Gdk.KEY_c:
+
+            self.treeview.copy_current_row_to_clipboard()
+
         if ctrl and keyval == Gdk.KEY_s:
 
             if gpod('bib_auto_save'):
@@ -537,7 +541,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             for filename in filenames:
                 self.application.open_file(filename, recompute=False)
 
-            self.application.do_recompute_global_ids()
+            self.treeview.main_model.do_recompute_global_ids()
 
         elif response == Gtk.ResponseType.CANCEL:
             pass
@@ -561,7 +565,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 self.application.close_file(filename, recompute=False)
 
             # Useless, we closed everything.
-            # self.application.do_recompute_global_ids()
+            # self.treeview.do_recompute_global_ids()
 
         else:
             self.application.close_file(self.get_selected_filename())

@@ -718,7 +718,10 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             else:
                 index = 0
                 for field_name in fields:
+
                     if isinstance(field_name, list):
+                        # list in list: cf. defaults.fields.by_type.required
+                        # where some fields are required by tuples.
                         for subfield_name in field_name:
                             connect_and_attach_to_grid(
                                 *build_entry_field_labelled_entry(
@@ -908,6 +911,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             new_entry_key.grab_focus()
             return
 
+        # TODO: look for old key in other entries comments, note, addendum…
+        #       there are probably other fields where the key can be.
+
         # put old key in 'aliases'
         if 'ids' in self.entry.fields():
             self.entry['ids'] += ', {}'.format(self.entry.key)
@@ -1089,8 +1095,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             self.clear_save_callback()
 
             self.save_trigger_source = GLib.timeout_add_seconds(
-                priority=GLib.PRIORITY_DEFAULT, interval=1,
-                function=self.on_save_trigger_callback)
+                1, self.on_save_trigger_callback)
 
     def on_save_clicked(self, widget, *args, **kwargs):
 
@@ -1132,9 +1137,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         entry = self.entry
 
-        LOGGER.info('Save {0}@{1}: [{2}]'.format(
-            entry.key, entry.type, ', '.join(self.changed_fields)
-        ))
+        assert ldebug('Entering update_entry_and_save_file()…')
 
         if not self.changed_fields:
             assert ldebug('Entry {} did not change, avoiding superfluous save.',
@@ -1150,9 +1153,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             if not self.check_biblatex_entry():
                 return
 
-        LOGGER.info('Fields changed on {0}@{1}: [{2}]'.format(
-            entry.key, entry.type, ', '.join(self.changed_fields)
-        ))
+        LOGGER.info(
+            'update_entry_and_save_file(): will save {0}@{1}({2})'.format(
+                entry.key, entry.type, ', '.join(self.changed_fields)))
 
         key_updated = False
         new_entry   = False

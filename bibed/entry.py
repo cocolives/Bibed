@@ -8,9 +8,11 @@ import bibtexparser
 from bibed.constants import (
     JABREF_QUALITY_KEYWORDS,
     JABREF_READ_KEYWORDS,
+    ABSTRACT_MAX_LENGHT_IN_TOOLTIPS,
 )
 
 from bibed.preferences import defaults, preferences
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +26,7 @@ bibtexparser_as_text = bibtexparser.bibdatabase.as_text
 # —————————————————————————————————————————————————————————————————— Classes
 
 
-class BibedEntry:
+class BibedEntry():
 
     @classmethod
     def new_from_type(cls, entry_type):
@@ -65,30 +67,27 @@ class BibedEntry:
         return result
 
     def __init__(self, database, entry, index):
+
+        # The raw bibtextparser entry.
         self.entry = entry
-        self.index = index
+
+        # Our BibedDatabase.
         self.database = database
 
-        # This is needed to update the treeview after modifications.
+        # Index in the database file.
+        # == index in the bibtexparser entries list.
+        self.index = index
+
+        # Global ID (across multiple files). This is
+        # needed to update the treeview after modifications.
         self.gid = 0
 
-    @property
-    def type(self):
-        return self.entry['ENTRYTYPE']
-
-    @type.setter
-    def type(self, value):
-        self.entry['ENTRYTYPE'] = value
-
-    @property
-    def key(self):
-        return self.entry.get('ID', None)
-
-    @key.setter
-    def key(self, value):
-
-        # TODO: check key on the fly
-        self.entry['ID'] = value
+        # Proxy keywords here for faster operations.
+        self._internal_keywords = [
+            x.strip()
+            for x in self.entry.get('keywords', '').split(',')
+            if x.strip() != ''
+        ]
 
     def translate(self, name):
         ''' Translation Bibed ←→ bibtexparser. '''
@@ -129,8 +128,84 @@ class BibedEntry:
 
         self.entry[name] = value
 
-    def __kw_split(self):
-        return self.entry.get('keywords', '').split(',')
+    @property
+    def type(self):
+        return self.entry['ENTRYTYPE']
+
+    @type.setter
+    def type(self, value):
+        self.entry['ENTRYTYPE'] = value
+
+    @property
+    def key(self):
+        return self.entry.get('ID', None)
+
+    @key.setter
+    def key(self, value):
+
+        # TODO: check key validity on the fly ?
+        #       this should be implemented higher
+        #       in the GUI check_field*() methods.
+        self.entry['ID'] = value
+
+    @property
+    def title(self):
+        return self.entry.get('title', '')
+
+    @property
+    def comment(self):
+        return self.entry.get('comment', '')
+
+    @comment.setter
+    def comment(self, value):
+
+        self.entry['comment'] = value
+
+    @property
+    def tooltip(self):
+
+        tooltips = []
+
+        subtitle = self.get_field('subtitle', default='')
+
+        base_tooltip = (
+            '<big><i>{title}</i></big>\n{subtitle}'
+            'by <b>{author}</b> ({year})'.format(
+                title=self.title,
+                subtitle='<i>{}</i>\n'.format(subtitle) if subtitle else '',
+                author=self.author,
+                year=self.year,
+            )
+        )
+
+        if self.journal:
+            base_tooltip += ', published in <b><i>{journal}</i></b>'.format(
+                journal=self.journal)
+
+        tooltips.append(base_tooltip)
+
+        if self.comment:
+            tooltips.append('<b>Comment:</b> {}'.format(self.comment))
+
+        if self.keywords:
+            tooltips.append('<b>Keywords:</b> {}'.format(self.keywords))
+
+        abstract = self.get_field('abstract', default='')
+
+        if abstract:
+            abstract = abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] \
+                + (abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] and '[…]')
+
+            tooltips.append('Abstract:\n{abstract}.'.format(
+                abstract=abstract))
+
+        timestamp = self.get_field('timestamp', default='')
+
+        if timestamp:
+            tooltips.append('Added to database {timestamp}.'.format(
+                timestamp=timestamp))
+
+        return '\n\n'.join(tooltips)
 
     @property
     def journal(self):
@@ -175,7 +250,8 @@ class BibedEntry:
     def keywords(self):
         ''' Return entry keywords without JabRef internals. '''
 
-        keywords = self.__kw_split()
+        # HEADS UP: copy(), else we alter _internal_keywords!
+        keywords = self._internal_keywords[:]
 
         for kw in JABREF_QUALITY_KEYWORDS + JABREF_READ_KEYWORDS:
             try:
@@ -189,7 +265,7 @@ class BibedEntry:
     def quality(self):
         ''' Get the JabRef quality from keywords. '''
 
-        keywords = self.__kw_split()
+        keywords = self._internal_keywords
 
         for kw in JABREF_QUALITY_KEYWORDS:
             if kw in keywords:
@@ -201,13 +277,54 @@ class BibedEntry:
     def read_status(self):
         ''' Get the JabRef read status from keywords. '''
 
-        keywords = self.__kw_split()
+        keywords = self._internal_keywords
 
         for kw in JABREF_READ_KEYWORDS:
             if kw in keywords:
                 return kw
 
+        # NO keyword means book unread.
+        # See constants.py
         return ''
+
+    def add_keywords(self, keywords):
+
+        self._internal_keywords.extend(keywords)
+
+        self.entry['keywords'] = ', '.join(self._internal_keywords)
+
+    def remove_keywords(self, keywords):
+
+        for kw in keywords:
+            try:
+                self._internal_keywords.remove(kw)
+
+            except IndexError:
+                pass
+
+        self.entry['keywords'] = ', '.join(self._internal_keywords)
+
+    def toggle_quality(self):
+
+        if self.quality == '':
+            self.add_keywords([JABREF_QUALITY_KEYWORDS[0]])
+
+        else:
+            self.remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
+
+    def cycle_read_status(self):
+
+        read_status = self.read_status
+
+        if read_status == '':
+            self.add_keywords([JABREF_READ_KEYWORDS[0]])
+
+        elif read_status == JABREF_READ_KEYWORDS[0]:
+            self.remove_keywords([JABREF_READ_KEYWORDS[0]])
+            self.add_keywords([JABREF_READ_KEYWORDS[1]])
+
+        else:
+            self.remove_keywords([JABREF_READ_KEYWORDS[1]])
 
     def to_list_store_row(self):
         ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''
@@ -218,6 +335,7 @@ class BibedEntry:
             self.gid,  # global_id, computed by app.
             self.database.filename,
             self.index,
+            self.tooltip,
             self.type,
             self.key,
             fields.get('file', ''),
@@ -225,11 +343,13 @@ class BibedEntry:
             fields.get('doi', ''),
             self.author,
             fields.get('title', ''),
+            fields.get('subtitle', ''),
             self.journal,
             self.year,
             fields.get('date', ''),
             self.quality,
             self.read_status,
+            self.comment,
         ]
 
 

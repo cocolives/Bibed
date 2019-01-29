@@ -70,6 +70,7 @@ class BibEdApplication(Gtk.Application):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
+        self.save_trigger_source = None
         self.files = OrderedDict()
 
     def do_startup(self):
@@ -245,7 +246,9 @@ class BibEdApplication(Gtk.Application):
 
         for word in full_text:
             if word not in model[iter][BibAttrs.AUTHOR].lower() \
-                    and word not in model[iter][BibAttrs.TITLE].lower():
+                and word not in model[iter][BibAttrs.TITLE].lower() \
+                and word not in model[iter][BibAttrs.SUBTITLE].lower() \
+                    and word not in model[iter][BibAttrs.COMMENT].lower():
                 return False
 
         return True
@@ -446,9 +449,7 @@ class BibEdApplication(Gtk.Application):
         self.files[filename] = new_bibdb
 
         for entry in new_bibdb.values():
-            self.data_store.append(
-                entry.to_list_store_row()
-            )
+            self.data_store.append(entry.to_list_store_row())
 
         assert ldebug('load_file_contents({}): end.', filename)
 
@@ -479,17 +480,10 @@ class BibEdApplication(Gtk.Application):
         if recompute:
             self.data_store.do_recompute_global_ids()
 
-    def save_file_to_disk(self, filename):
+    def save_file(self, filename):
 
-        self.file_modify_lock.acquire()
-
-        # TODO: write here.
-
-        try:
-            self.file_modify_lock.release()
-
-        except Exception as e:
-            LOGGER.exception(e)
+        # the database save() method locks and disables inotify.
+        self.files[filename].save()
 
     def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
         ''' Close a file and impact changes. '''
@@ -501,7 +495,8 @@ class BibEdApplication(Gtk.Application):
         self.inotify_remove_watch(filename)
 
         if save_before:
-            self.save_file_to_disk(filename)
+            self.clear_save_callback()
+            self.save_file(filename)
 
         self.clear_file_from_store(filename, recompute=recompute)
 
@@ -637,3 +632,40 @@ class BibEdApplication(Gtk.Application):
 
         # Remove the callback from IDLE list.
         return False
+
+    def trigger_save(self, filename):
+        ''' function called by anywhere in the code to trigger a save().
+
+            This method acts as a proxy, can be called 10 times a second,
+            and will just trigger *one* save operation one second after the
+            first call.
+
+        '''
+
+        if self.file_modify_lock.acquire(blocking=False) is False:
+            return
+
+        assert ldebug('Programming save of {0} in 1 second.', filename)
+
+        self.save_trigger_source = GLib.timeout_add_seconds(
+            1, self.save_file_callback, filename)
+
+    def save_file_callback(self, filename):
+
+        # The trigger acquired the lock to avoid concurrent / parallel save().
+        # We need to release to allow the database save() method to re-lock.
+        self.file_modify_lock.release()
+
+        self.save_file(filename)
+
+    def clear_save_callback(self):
+
+        if self.save_trigger_source:
+            # Remove the in-progress save()
+            try:
+                GLib.source_remove(self.save_trigger_source)
+
+            except Exception:
+                # The callback finished while we were blocked on the lock,
+                # or GLib didn't automatically wipe self.save_trigger_source.
+                pass

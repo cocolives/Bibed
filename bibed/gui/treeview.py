@@ -1,17 +1,21 @@
 import logging
 
+from bibed.foundations import ldebug
 from bibed.constants import (
-    # BIBED_ICONS_DIR,
-    FILES_COMBO_DEFAULT_WIDTH,
     RESIZE_SIZE_MULTIPLIER,
     BibAttrs,
+    COMMENT_PIXBUFS,
+    READ_STATUS_PIXBUFS,
+    QUALITY_STATUS_PIXBUFS,
+    CELLRENDERER_PIXBUF_PADDING,
 )
 
 from bibed.preferences import memories  # , gpod
 from bibed.entry import BibedEntry
 
+from bibed.gui.renderers import CellRendererTogglePixbuf
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gui.gtk import Gtk, Pango
+from bibed.gui.gtk import Gtk, Pango, GdkPixbuf
 
 
 LOGGER = logging.getLogger(__name__)
@@ -36,8 +40,13 @@ class BibedMainTreeView(Gtk.TreeView):
 
         super().__init__(*args, **kwargs)
 
+        self.setup_pixbufs()
+
         # We get better search via global SearchEntry
         self.set_enable_search(False)
+
+        # Not usable because columns are not fixed size. Bummer.
+        # self.set_fixed_height_mode(True)
 
         self.col_global_id = self.add_treeview_text_column(
             '#', BibAttrs.GLOBAL_ID)
@@ -46,11 +55,24 @@ class BibedMainTreeView(Gtk.TreeView):
 
         self.col_type = self.add_treeview_text_column('type', BibAttrs.TYPE)
 
-        # missing columns (icons)
+        # File column
+        # URL column
+        # DOI column
 
+        # TODO: integrate a pixbuf for "tags" and create tooltip with tags.
         self.col_key = self.add_treeview_text_column(
             'key', BibAttrs.KEY, resizable=True,
             min=100, max=150, ellipsize=Pango.EllipsizeMode.START)
+
+        self.col_quality = self.setup_pixbuf_column(
+            'Q', BibAttrs.QUALITY, self.get_quality_cell_column,
+            self.on_quality_clicked)
+        self.col_read = self.setup_pixbuf_column(
+            'R', BibAttrs.READ, self.get_read_cell_column,
+            self.on_read_clicked)
+        self.col_comment = self.setup_pixbuf_column(
+            'C', BibAttrs.COMMENT, self.get_comment_cell_column)
+
         self.col_author = self.add_treeview_text_column(
             'author', BibAttrs.AUTHOR, resizable=True,
             min=130, max=200, ellipsize=Pango.EllipsizeMode.END)
@@ -64,18 +86,82 @@ class BibedMainTreeView(Gtk.TreeView):
         self.col_year = self.add_treeview_text_column(
             'year', BibAttrs.YEAR, xalign=1)
 
-        # missing columns (icons)
-
-        select = self.get_selection()
-        select.connect("changed", self.on_treeview_selection_changed)
+        self.set_tooltip_column(BibAttrs.TOOLTIP)
 
         self.connect('row-activated', self.on_treeview_row_activated)
-
-        select.unselect_all()
 
     def do_status_change(self, message):
 
         return self.window.do_status_change(message)
+
+    def setup_pixbufs(self):
+
+        self.read_status_pixbufs = {}
+
+        for status, icon in READ_STATUS_PIXBUFS.items():
+            if icon:
+                self.read_status_pixbufs[status] = \
+                    GdkPixbuf.Pixbuf.new_from_file(icon)
+            else:
+                self.read_status_pixbufs[status] = None
+
+        self.quality_status_pixbufs = {}
+
+        for status, icon in QUALITY_STATUS_PIXBUFS.items():
+            if icon:
+                self.quality_status_pixbufs[status] = \
+                    GdkPixbuf.Pixbuf.new_from_file(icon)
+            else:
+                self.quality_status_pixbufs[status] = None
+
+        self.comment_pixbufs = {}
+
+        for status, icon in COMMENT_PIXBUFS.items():
+            if icon:
+                self.comment_pixbufs[status] = \
+                    GdkPixbuf.Pixbuf.new_from_file(icon)
+            else:
+                self.comment_pixbufs[status] = None
+
+    def setup_pixbuf_column(self, title, store_num, renderer_method, signal_method=None):
+
+        if signal_method:
+            renderer = CellRendererTogglePixbuf()
+
+        else:
+            renderer = Gtk.CellRendererPixbuf()
+            renderer.set_padding(CELLRENDERER_PIXBUF_PADDING,
+                                 CELLRENDERER_PIXBUF_PADDING)
+
+        column = Gtk.TreeViewColumn(title)
+        column.pack_start(renderer, False)
+
+        column.connect('clicked', self.on_treeview_column_clicked)
+        column.set_sort_column_id(store_num)
+
+        column.set_cell_data_func(renderer, renderer_method)
+
+        if signal_method is not None:
+            renderer.connect('clicked', signal_method)
+
+        self.append_column(column)
+
+        return column
+
+    def get_read_cell_column(self, col, cell, model, iter, user_data):
+            cell.set_property(
+                'pixbuf', self.read_status_pixbufs[
+                    model.get_value(iter, BibAttrs.READ)])
+
+    def get_quality_cell_column(self, col, cell, model, iter, user_data):
+            cell.set_property(
+                'pixbuf', self.quality_status_pixbufs[
+                    model.get_value(iter, BibAttrs.QUALITY)])
+
+    def get_comment_cell_column(self, col, cell, model, iter, user_data):
+            cell.set_property(
+                'pixbuf', self.comment_pixbufs[
+                    model.get_value(iter, BibAttrs.COMMENT) != ''])
 
     def add_treeview_text_column(self, name, store_num, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
 
@@ -126,7 +212,76 @@ class BibedMainTreeView(Gtk.TreeView):
         self.col_author.set_min_width(column_width)
         self.col_journal.set_min_width(column_width)
 
-        self.columns_autosize()
+    def get_entry_by_path(self, path, with_global_id=False, return_iter=False):
+
+        # Are we on the list store, or a filter ?
+        model     = self.get_model()
+        treeiter  = model.get_iter(path)
+        bib_key   = model[treeiter][BibAttrs.KEY]
+        filename  = model[treeiter][BibAttrs.FILENAME]
+
+        entry = self.application.files[filename].get_entry_by_key(bib_key)
+
+        if with_global_id:
+            entry.gid = model[treeiter][BibAttrs.GLOBAL_ID]
+
+        if return_iter:
+            return (entry, treeiter, )
+
+        return entry
+
+    def get_main_iter_by_gid(self, gid):
+
+        # for row in self.main_model:
+        #     if row[BibAttrs.GLOBAL_ID] == gid:
+        #         return row.iter
+
+        # TODO: make clear while I need to substract 1.
+        #       make all counters equal everywhere.
+        return self.main_model.get_iter(gid - 1)
+
+    def do_column_sort(self):
+
+        if memories.treeview_sort_column is not None:
+
+            for col in self.get_columns():
+                if col.props.title == memories.treeview_sort_column:
+
+                    # print('COL', col.props.title)
+                    # print(col.get_sort_order())
+                    col.props.sort_order = memories.treeview_sort_order
+                    # print(col.get_sort_order())
+
+                    # print(col.get_sort_indicator())
+                    col.props.sort_indicator = memories.treeview_sort_indicator
+                    # print(col.get_sort_indicator())
+                    break
+
+    def on_quality_clicked(self, renderer, path):
+
+        entry = self.get_entry_by_path(path, with_global_id=True)
+
+        entry.toggle_quality()
+
+        self.main_model[
+            self.get_main_iter_by_gid(entry.gid)
+        ][BibAttrs.QUALITY] = entry.quality
+
+        # if gpod('bib_auto_save'):
+        self.application.trigger_save(entry.database.filename)
+
+    def on_read_clicked(self, renderer, path):
+
+        entry = self.get_entry_by_path(path, with_global_id=True)
+
+        entry.cycle_read_status()
+
+        self.main_model[
+            self.get_main_iter_by_gid(entry.gid)
+        ][BibAttrs.READ] = entry.read_status
+
+        # if gpod('bib_auto_save'):
+        self.application.trigger_save(entry.database.filename)
 
     def on_treeview_column_clicked(self, column):
 
@@ -151,21 +306,8 @@ class BibedMainTreeView(Gtk.TreeView):
 
     def on_treeview_row_activated(self, treeview, path, column):
 
-        # Are we on the list store, or a filter ?
-        model = self.get_model()
-        files = self.application.files
-
-        treeiter = model.get_iter(path)
-
-        # value = store.get_value(treeiter, 1)
-        bib_key = model[treeiter][BibAttrs.KEY]
-        global_id = model[treeiter][BibAttrs.GLOBAL_ID]
-        filename = model[treeiter][BibAttrs.FILENAME]
-
-        entry = files[filename].get_entry_by_key(bib_key)
-
-        # This is needed to update the treeview after modifications.
-        entry.gid = global_id
+        # GLOBAL_ID is needed to update the treeview after modifications.
+        entry = self.get_entry_by_path(path, with_global_id=True)
 
         assert(isinstance(entry, BibedEntry))
 
@@ -183,12 +325,18 @@ class BibedMainTreeView(Gtk.TreeView):
 
         entry_edit_dialog.destroy()
 
-    def on_treeview_selection_changed(self, selection):
+    def copy_current_row_to_clipboard(self):
+
+        selection = self.get_selection()
+
+        # Code to add to connect a method to new selection.
+        # selection.connect('changed', self.on_treeview_selection_changed)
+        # selection.unselect_all()
 
         model, treeiter = selection.get_selected()
 
         if treeiter is None:
-            self.do_status_change("Nothing selected.")
+            self.do_status_change("Nothing selected; nothing copied to clipboard.")
 
         else:
             bib_key = model[treeiter][BibAttrs.KEY]
@@ -204,19 +352,3 @@ class BibedMainTreeView(Gtk.TreeView):
             else:
                 self.do_status_change(
                     "Selected row {0}.".format(model[treeiter][BibAttrs.ID]))
-
-    def do_column_sort(self):
-
-        if memories.treeview_sort_column is not None:
-            # print('setting column')
-
-            for col in self.get_columns():
-                if col.props.title == memories.treeview_sort_column:
-
-                    # print('COL', col.props.title)
-                    # print(col.get_sort_order())
-                    col.props.sort_order = memories.treeview_sort_order
-                    # print(col.get_sort_order())
-                    # print(col.get_sort_indicator())
-                    col.props.sort_indicator = memories.treeview_sort_indicator
-                    # print(col.get_sort_indicator())
