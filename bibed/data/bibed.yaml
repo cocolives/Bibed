@@ -50,6 +50,23 @@ docs:
     title: Missing and omissible data
 ensure_biblatex_checks: false
 fields:
+  aliases:
+    annotation:
+    - annote
+    eprintclass:
+    - primaryclass
+    eprinttype:
+    - archiveprefix
+    file:
+    - pdf
+    institution:
+    - school
+    journaltitle:
+    - journal
+    location:
+    - adress
+    sortkey:
+    - key
   by_type:
     article:
       optional:
@@ -584,35 +601,35 @@ fields:
       as this is compatible with plain years too and supports many more features.
       @@@import{2.3.8}
   labels:
+    addendum: Addendum
     author: Author(s)
     chapter: Chapter
-    pages: Page(s)
-    pagetotal: Total page count
+    comment: Comment(s)
     date: Date
+    doi: DOI
+    editor: Editor(s)
+    eprint: E-Print
+    eprintclass: E-Print class
+    eprinttype: E-Print type
+    howpublished: How published?
     journaltitle: Journal title
     key: Entry key
-    title: Title
-    year: Year
-    editor: Editor(s)
+    language: Language
+    location: Location
+    month: Month
+    note: Note(s)
+    organization: Organization
+    pages: Page(s)
+    pagetotal: Total page count
+    pubstate: Publish state
     subtitle: Subtitle
-    howpublished: How published?
+    title: Title
+    titleaddon: Title add-on
     type: Entry subtype
     url: URL
     urldate: URL date
-    addendum: Addendum
-    doi: DOI
-    language: Language
-    titleaddon: Title add-on
     version: Version
-    note: Note(s)
-    comment: Comment(s)
-    organization: Organization
-    location: Location
-    month: Month
-    pubstate: Publish state
-    eprint: E-Print
-    eprinttype: E-Print type
-    eprintclass: E-Print class
+    year: Year
 keep_recent_files: 10
 remember_last_destination: true
 remember_open_files: true
@@ -776,3 +793,4 @@ types:
   - bibnote
   - set
   - xdata
+url_action_opens_browser: true
