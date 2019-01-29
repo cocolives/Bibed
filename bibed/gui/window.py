@@ -346,7 +346,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.cmb_files.set_size_request(150, -1)
         self.cmb_files.queue_resize()
 
-        self.treeview.columns_autosize(current_width=current_width)
+        self.treeview.set_columns_widths(current_width)
 
     def on_search_filter_changed(self, entry):
         ''' Signal: chain the global filter method. '''

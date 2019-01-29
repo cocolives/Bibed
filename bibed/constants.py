@@ -113,8 +113,19 @@ SEARCH_WIDTH_EXPANDED = 30
 
 FILES_COMBO_DEFAULT_WIDTH = 25
 
-RESIZE_SIZE_MULTIPLIER = 0.15
+# TODO: remove this when search / combo are implemented as sidebar / searchbar
+RESIZE_SIZE_MULTIPLIER = 0.20
 
+# Expressed in percentiles of 1
+COL_KEY_WIDTH = 0.125
+COL_AUTHOR_WIDTH = 0.15
+COL_JOURNAL_WIDTH = 0.15
+COL_YEAR_WIDTH = 0.04
+# NOTE: col_title_width will be computed from remaining space.
+
+# Expressed in pixels
+COL_PIXBUF_WIDTH = 24
+COL_SEPARATOR_WIDTH = 1
 CELLRENDERER_PIXBUF_PADDING = 2
 
 PANGO_BIG_FONT_SIZES = [
