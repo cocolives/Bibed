@@ -10,6 +10,7 @@ from bibed.constants import (
     QUALITY_STATUS_PIXBUFS,
     CELLRENDERER_PIXBUF_PADDING,
     COL_KEY_WIDTH,
+    COL_TYPE_WIDTH,
     COL_YEAR_WIDTH,
     COL_PIXBUF_WIDTH,
     COL_AUTHOR_WIDTH,
@@ -81,13 +82,17 @@ class BibedMainTreeView(Gtk.TreeView):
 
     def setup_treeview_columns(self):
 
-        # TODO: integrate a pixbuf for "tags" and create tooltip with tags.
         self.col_key = self.setup_text_column(
-            'key', BibAttrs.KEY, resizable=True,
+            'key', BibAttrs.KEY,
             ellipsize=Pango.EllipsizeMode.START)
+
+        self.col_type = self.setup_text_column(
+            'type', BibAttrs.TYPE)
 
         # File column
         # DOI column
+
+        # TODO: integrate a pixbuf for 'tags' (keywords) ?
 
         self.col_url = self.setup_pixbuf_column(
             'U', BibAttrs.URL,
@@ -200,21 +205,26 @@ class BibedMainTreeView(Gtk.TreeView):
 
     def set_columns_widths(self, width):
 
-        col_key_width     = width * COL_KEY_WIDTH
-        col_author_width  = width * COL_AUTHOR_WIDTH
-        col_journal_width = width * COL_JOURNAL_WIDTH
-        col_year_width    = width * COL_YEAR_WIDTH
-        col_title_width   = width - (
+        col_key_width     = round(width * COL_KEY_WIDTH)
+        col_type_width    = round(width * COL_TYPE_WIDTH)
+        col_author_width  = round(width * COL_AUTHOR_WIDTH)
+        col_journal_width = round(width * COL_JOURNAL_WIDTH)
+        col_year_width    = round(width * COL_YEAR_WIDTH)
+        col_title_width   = round(width - (
             col_key_width + col_author_width
             + col_journal_width + col_year_width
+            + col_type_width
             + 4 * COL_PIXBUF_WIDTH
-        ) - COL_SEPARATOR_WIDTH * 7
+        ) - COL_SEPARATOR_WIDTH * 9)
+
+        print(col_key_width, col_type_width, col_author_width, col_journal_width, col_year_width, col_title_width, )
 
         self.col_key.set_fixed_width(col_key_width)
+        self.col_type.set_fixed_width(col_type_width)
         self.col_author.set_fixed_width(col_author_width)
         self.col_journal.set_fixed_width(col_journal_width)
-        self.col_year.set_fixed_width(col_year_width)
         self.col_title.set_fixed_width(col_title_width)
+        self.col_year.set_fixed_width(col_year_width)
 
     def get_entry_by_path(self, path, with_global_id=False, return_iter=False, only_store_entry=False):
 

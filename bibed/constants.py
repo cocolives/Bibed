@@ -117,10 +117,11 @@ FILES_COMBO_DEFAULT_WIDTH = 25
 RESIZE_SIZE_MULTIPLIER = 0.20
 
 # Expressed in percentiles of 1
-COL_KEY_WIDTH = 0.125
-COL_AUTHOR_WIDTH = 0.15
+COL_KEY_WIDTH     = 0.10
+COL_TYPE_WIDTH    = 0.06
+COL_AUTHOR_WIDTH  = 0.15
 COL_JOURNAL_WIDTH = 0.15
-COL_YEAR_WIDTH = 0.04
+COL_YEAR_WIDTH    = 0.04
 # NOTE: col_title_width will be computed from remaining space.
 
 # Expressed in pixels

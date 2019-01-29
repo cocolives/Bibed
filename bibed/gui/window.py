@@ -63,6 +63,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
             if remembered_dimensions is not None:
                 dimensions = remembered_dimensions
 
+        # TODO: check dimensions are not > screen_size, then lower them.
+        #       20190129: I've had a 23487923 pixels windows which made
+        #       Bibed crash at startup, don't know how nor why.
+
         self.set_default_size(*dimensions)
 
         # keep for resize() operations smothing.
