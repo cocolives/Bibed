@@ -1,9 +1,11 @@
 import logging
+import webbrowser
 
-from bibed.foundations import ldebug
+# from bibed.foundations import ldebug
 from bibed.constants import (
     RESIZE_SIZE_MULTIPLIER,
     BibAttrs,
+    URL_PIXBUFS,
     COMMENT_PIXBUFS,
     READ_STATUS_PIXBUFS,
     QUALITY_STATUS_PIXBUFS,
@@ -64,6 +66,9 @@ class BibedMainTreeView(Gtk.TreeView):
             'key', BibAttrs.KEY, resizable=True,
             min=100, max=150, ellipsize=Pango.EllipsizeMode.START)
 
+        self.col_url = self.setup_pixbuf_column(
+            'U', BibAttrs.URL, self.get_url_cell_column,
+            self.on_url_clicked)
         self.col_quality = self.setup_pixbuf_column(
             'Q', BibAttrs.QUALITY, self.get_quality_cell_column,
             self.on_quality_clicked)
@@ -96,32 +101,21 @@ class BibedMainTreeView(Gtk.TreeView):
 
     def setup_pixbufs(self):
 
-        self.read_status_pixbufs = {}
+        for attr_name, constant_dict in (
+            ('quality_status_pixbufs', QUALITY_STATUS_PIXBUFS),
+            ('read_status_pixbufs', READ_STATUS_PIXBUFS),
+            ('comment_pixbufs', COMMENT_PIXBUFS),
+            ('url_pixbufs', URL_PIXBUFS),
+        ):
+            temp_dict = {}
 
-        for status, icon in READ_STATUS_PIXBUFS.items():
-            if icon:
-                self.read_status_pixbufs[status] = \
-                    GdkPixbuf.Pixbuf.new_from_file(icon)
-            else:
-                self.read_status_pixbufs[status] = None
+            for status, icon in constant_dict.items():
+                if icon:
+                    temp_dict[status] = GdkPixbuf.Pixbuf.new_from_file(icon)
+                else:
+                    temp_dict[status] = None
 
-        self.quality_status_pixbufs = {}
-
-        for status, icon in QUALITY_STATUS_PIXBUFS.items():
-            if icon:
-                self.quality_status_pixbufs[status] = \
-                    GdkPixbuf.Pixbuf.new_from_file(icon)
-            else:
-                self.quality_status_pixbufs[status] = None
-
-        self.comment_pixbufs = {}
-
-        for status, icon in COMMENT_PIXBUFS.items():
-            if icon:
-                self.comment_pixbufs[status] = \
-                    GdkPixbuf.Pixbuf.new_from_file(icon)
-            else:
-                self.comment_pixbufs[status] = None
+            setattr(self, attr_name, temp_dict)
 
     def setup_pixbuf_column(self, title, store_num, renderer_method, signal_method=None):
 
@@ -162,6 +156,11 @@ class BibedMainTreeView(Gtk.TreeView):
             cell.set_property(
                 'pixbuf', self.comment_pixbufs[
                     model.get_value(iter, BibAttrs.COMMENT) != ''])
+
+    def get_url_cell_column(self, col, cell, model, iter, user_data):
+            cell.set_property(
+                'pixbuf', self.url_pixbufs[
+                    model.get_value(iter, BibAttrs.URL) != ''])
 
     def add_treeview_text_column(self, name, store_num, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
 
@@ -212,11 +211,15 @@ class BibedMainTreeView(Gtk.TreeView):
         self.col_author.set_min_width(column_width)
         self.col_journal.set_min_width(column_width)
 
-    def get_entry_by_path(self, path, with_global_id=False, return_iter=False):
+    def get_entry_by_path(self, path, with_global_id=False, return_iter=False, only_store_entry=False):
 
         # Are we on the list store, or a filter ?
         model     = self.get_model()
         treeiter  = model.get_iter(path)
+
+        if only_store_entry:
+            return model[treeiter]
+
         bib_key   = model[treeiter][BibAttrs.KEY]
         filename  = model[treeiter][BibAttrs.FILENAME]
 
@@ -283,6 +286,11 @@ class BibedMainTreeView(Gtk.TreeView):
         # if gpod('bib_auto_save'):
         self.application.trigger_save(entry.database.filename)
 
+    def on_url_clicked(self, renderer, path):
+
+        self.open_url_in_webbrowser(
+            entry=self.get_entry_by_path(path, only_store_entry=True))
+
     def on_treeview_column_clicked(self, column):
 
         coltit = column.props.title
@@ -325,7 +333,7 @@ class BibedMainTreeView(Gtk.TreeView):
 
         entry_edit_dialog.destroy()
 
-    def copy_current_row_to_clipboard(self):
+    def get_selected_store_entry(self):
 
         selection = self.get_selection()
 
@@ -336,19 +344,73 @@ class BibedMainTreeView(Gtk.TreeView):
         model, treeiter = selection.get_selected()
 
         if treeiter is None:
-            self.do_status_change("Nothing selected; nothing copied to clipboard.")
+            return None
+        else:
+            return model[treeiter]
+
+    def copy_to_clipboard_or_action(self, field_index, transform_func=None, action_func=None, action_message=None, entry=None):
+
+        if entry is None:
+            store_entry = self.get_selected_store_entry()
+        else:
+            store_entry = entry
+
+        if store_entry is None:
+            self.do_status_change(
+                'Nothing selected; nothing copied to clipboard.')
+            return
+
+        entry_gid  = store_entry[BibAttrs.GLOBAL_ID]
+        entry_data = store_entry[field_index]
+
+        if entry_data:
+            transformed_data = (
+                entry_data if transform_func is None
+                else transform_func(entry_data)
+            )
+
+            if action_func is None:
+                self.clipboard.set_text(transformed_data, len=-1)
+
+                self.do_status_change(
+                    '“{data}” copied to clipboard (from entry {key}).'.format(
+                        data=transformed_data, key=entry_gid))
+
+            else:
+                action_func(transformed_data)
+
+                self.do_status_change(
+                    '“{data}” {message} (from entry {key}).'.format(
+                        data=transformed_data,
+                        message=('run through {func}'.format(
+                            action_func.__name__
+                            if action_message is None
+                            else action_message)
+                        ),
+                        key=entry_gid,
+                    )
+                )
 
         else:
-            bib_key = model[treeiter][BibAttrs.KEY]
+            self.do_status_change('Selected entry {key}.'.format(key=entry_gid))
 
-            if bib_key:
-                to_copy = BibedEntry.single_bibkey_format(bib_key)
+    def copy_raw_key_to_clipboard(self, entry=None):
+        return self.copy_to_clipboard_or_action(BibAttrs.KEY, entry=entry)
 
-                self.clipboard.set_text(to_copy, len=-1)
+    def copy_url_to_clipboard(self, entry=None):
+        return self.copy_to_clipboard_or_action(BibAttrs.URL, entry=entry)
 
-                self.do_status_change(
-                    "“{1}” copied to clipboard (from row {0}).".format(
-                        model[treeiter][BibAttrs.ID], to_copy))
-            else:
-                self.do_status_change(
-                    "Selected row {0}.".format(model[treeiter][BibAttrs.ID]))
+    def copy_single_key_to_clipboard(self, entry=None):
+        return self.copy_to_clipboard_or_action(
+            BibAttrs.KEY,
+            transform_func=BibedEntry.single_bibkey_format,
+            entry=entry,
+        )
+
+    def open_url_in_webbrowser(self, entry=None):
+        return self.copy_to_clipboard_or_action(
+            BibAttrs.KEY,
+            action_func=webbrowser.open_new_tab,
+            action_message='opened in web browser',
+            entry=entry,
+        )
