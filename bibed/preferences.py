@@ -22,7 +22,7 @@ def gpod(preference_name):
             need dedicated handlers, anyway.
     '''
 
-    assert('.' not in preference_name)
+    assert '.' not in preference_name, preference_name
 
     pref = getattr(preferences, preference_name)
 

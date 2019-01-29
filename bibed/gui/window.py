@@ -1,17 +1,15 @@
 
-import os
 import logging
 
 # from bibed.foundations import ltrace_caller_name
 
 from bibed.constants import (
     APP_NAME,
-    BIBED_ICONS_DIR,
+    # BIBED_ICONS_DIR,
     SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
     FILES_COMBO_DEFAULT_WIDTH,
     RESIZE_SIZE_MULTIPLIER,
-    BibAttrs,
 )
 
 from bibed.preferences import memories, gpod
@@ -24,9 +22,10 @@ from bibed.gui.helpers import (
     remove_classes,
 )
 from bibed.gui.preferences import BibedPreferencesDialog
+from bibed.gui.treeview import BibedMainTreeView
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, GdkPixbuf, Pango
+from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
 
 
 LOGGER = logging.getLogger(__name__)
@@ -51,7 +50,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                          GLib.Variant.new_boolean(obj.props.is_maximized)))
 
         self.connect('check-resize', self.on_resize)
-        self.connect("key-press-event", self.on_key_pressed)
+        self.connect('key-press-event', self.on_key_pressed)
 
         self.setup_icon()
 
@@ -63,6 +62,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             if remembered_dimensions is not None:
                 dimensions = remembered_dimensions
+
+        # TODO: check dimensions are not > screen_size, then lower them.
+        #       20190129: I've had a 23487923 pixels windows which made
+        #       Bibed crash at startup, don't know how nor why.
 
         self.set_default_size(*dimensions)
 
@@ -77,8 +80,6 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # ———————————————————————————————————————————————————————— BibEd Window
 
         self.application = kwargs['application']
-
-        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
         self.setup_treeview()
         self.setup_textview()
@@ -259,92 +260,19 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def setup_treeview(self):
 
         self.treeview_sw = Gtk.ScrolledWindow()
-        # scrolledwindow.set_hexpand(True)
-        # self.treeview_sw.set_vexpand(True)
         self.treeview_sw.set_policy(
             Gtk.PolicyType.NEVER,
             Gtk.PolicyType.AUTOMATIC
         )
 
-        self.treeview = Gtk.TreeView(model=self.application.data_store)
-
-        # We get better search via global SearchEntry
-        self.treeview.set_enable_search(False)
-
-        self.col_global_id = self.add_treeview_text_column(
-            '#', BibAttrs.GLOBAL_ID)
-        self.col_id = self.add_treeview_text_column('#', BibAttrs.ID)
-        self.col_id.props.visible = False
-
-        self.col_type = self.add_treeview_text_column('type', BibAttrs.TYPE)
-
-        # missing columns (icons)
-
-        self.col_key = self.add_treeview_text_column(
-            'key', BibAttrs.KEY, resizable=True,
-            min=100, max=150, ellipsize=Pango.EllipsizeMode.START)
-        self.col_author = self.add_treeview_text_column(
-            'author', BibAttrs.AUTHOR, resizable=True,
-            min=130, max=200, ellipsize=Pango.EllipsizeMode.END)
-        self.col_title = self.add_treeview_text_column(
-            'title', BibAttrs.TITLE, resizable=True, expand=True,
-            min=300, ellipsize=Pango.EllipsizeMode.MIDDLE)
-        self.col_journal = self.add_treeview_text_column(
-            'journal', BibAttrs.JOURNAL, resizable=True,
-            min=130, max=200, ellipsize=Pango.EllipsizeMode.END)
-
-        self.col_year = self.add_treeview_text_column(
-            'year', BibAttrs.YEAR, xalign=1)
-
-        # missing columns (icons)
+        self.treeview = BibedMainTreeView(
+            model=self.application.data_store,
+            application=self.application,
+            clipboard=self.application.clipboard,
+            window=self,
+        )
 
         self.treeview_sw.add(self.treeview)
-
-        select = self.treeview.get_selection()
-        select.connect("changed", self.on_treeview_selection_changed)
-
-        self.treeview.connect('row-activated', self.on_treeview_row_activated)
-
-        select.unselect_all()
-
-    def add_treeview_text_column(self, name, store_num, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
-
-        if ellipsize is None:
-            ellipsize = Pango.EllipsizeMode.NONE
-
-        column = Gtk.TreeViewColumn(name)
-
-        column.connect('clicked', self.on_treeview_column_clicked)
-
-        if xalign is not None:
-            cellrender = Gtk.CellRendererText(
-                xalign=xalign, ellipsize=ellipsize)
-        else:
-            cellrender = Gtk.CellRendererText(ellipsize=ellipsize)
-
-        column.pack_start(cellrender, True)
-        column.add_attribute(cellrender, "text", store_num)
-        column.set_sort_column_id(store_num)
-
-        if resizable:
-            column.set_resizable(True)
-
-        if expand:
-            column.set_expand(True)
-
-        if min is not None:
-            # column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            column.set_min_width(min)
-            column.set_fixed_width(min)
-
-        if max is not None:
-            # column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
-            column.set_max_width(min)
-
-            # column.set_sizing(Gtk.TreeViewColumnSizing.AUTOSIZE)
-        self.treeview.append_column(column)
-
-        return column
 
     def update_title(self):
 
@@ -416,96 +344,13 @@ class BibEdWindow(Gtk.ApplicationWindow):
         if gpod('remember_windows_states'):
             memories.main_window_dimensions = self.current_size
 
-        # Remove 1 else the treeview gets a few pixels too wide.
-        # The last column will compensate any "missing" pixels,
-        # and we get no horizontal scrollbar.
-        column_width = round(current_width * RESIZE_SIZE_MULTIPLIER) - 1
-
         self.cmb_files_renderer.props.max_width_chars = (
             FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
         )
         self.cmb_files.set_size_request(150, -1)
         self.cmb_files.queue_resize()
 
-        self.col_key.set_min_width(column_width)
-        self.col_author.set_min_width(column_width)
-        self.col_journal.set_min_width(column_width)
-
-        self.treeview.columns_autosize()
-
-    def on_treeview_column_clicked(self, column):
-
-        coltit = column.props.title
-        colidc = column.props.sort_indicator
-        colord = column.props.sort_order
-
-        if memories.treeview_sort_column is None:
-            memories.treeview_sort_column = coltit
-            memories.treeview_sort_indicator = colidc
-            memories.treeview_sort_order = colord
-
-        else:
-            if memories.treeview_sort_column != coltit:
-                memories.treeview_sort_column = coltit
-
-            if memories.treeview_sort_indicator != colidc:
-                memories.treeview_sort_indicator = colidc
-
-            if memories.treeview_sort_order != colord:
-                memories.treeview_sort_order = colord
-
-    def on_treeview_row_activated(self, treeview, path, column):
-
-        # Are we on the list store, or a filter ?
-        model = self.treeview.get_model()
-        files = self.application.files
-
-        treeiter = model.get_iter(path)
-
-        # value = store.get_value(treeiter, 1)
-        bib_key = model[treeiter][BibAttrs.KEY]
-        global_id = model[treeiter][BibAttrs.GLOBAL_ID]
-        filename = model[treeiter][BibAttrs.FILENAME]
-
-        entry = files[filename].get_entry_by_key(bib_key)
-
-        # This is needed to update the treeview after modifications.
-        entry.gid = global_id
-
-        assert(isinstance(entry, BibedEntry))
-
-        entry_edit_dialog = BibedEntryDialog(
-            parent=self, entry=entry)
-
-        entry_edit_dialog.run()
-
-        if entry.database is not None:
-            # Entry was saved to disk, insert it in the treeview.
-            self.application.update_entry(entry)
-
-        entry_edit_dialog.destroy()
-
-    def on_treeview_selection_changed(self, selection):
-
-        model, treeiter = selection.get_selected()
-
-        if treeiter is None:
-            self.do_status_change("Nothing selected.")
-
-        else:
-            bib_key = model[treeiter][BibAttrs.KEY]
-
-            if bib_key:
-                to_copy = BibedEntry.single_bibkey_format(bib_key)
-
-                self.clipboard.set_text(to_copy, len=-1)
-
-                self.do_status_change(
-                    "“{1}” copied to clipboard (from row {0}).".format(
-                        model[treeiter][BibAttrs.ID], to_copy))
-            else:
-                self.do_status_change(
-                    "Selected row {0}.".format(model[treeiter][BibAttrs.ID]))
+        self.treeview.set_columns_widths(current_width)
 
     def on_search_filter_changed(self, entry):
         ''' Signal: chain the global filter method. '''
@@ -528,14 +373,46 @@ class BibEdWindow(Gtk.ApplicationWindow):
         keyval = event.keyval
         # state = event.state
 
+        # TODO: convert all of these to proper accels.
+        #       See  http://gtk.10911.n7.nabble.com/GdkModifiers-bitmask-and-GDK-SHIFT-MASK-question-td4404.html
+        #       And https://stackoverflow.com/a/10890393/654755
+        #       Control+Shift-u → Control+U
+        #
+
         # check the event modifiers (can also use SHIFTMASK, etc)
         ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
+        # shift = (event.state & Gdk.ModifierType.SHIFT_MASK)
+        ctrl_shift = (
+            event.state & (Gdk.ModifierType.CONTROL_MASK
+                           | Gdk.ModifierType.SHIFT_MASK)
+        )
 
         # Alternative way of knowing key pressed.
         # keyval_name = Gdk.keyval_name(keyval)
         # if ctrl and keyval_name == 's':
 
-        if ctrl and keyval == Gdk.KEY_s:
+        if ctrl and keyval == Gdk.KEY_c:
+            self.treeview.copy_single_key_to_clipboard()
+
+        if ctrl and keyval == Gdk.KEY_k:
+            self.treeview.copy_raw_key_to_clipboard()
+
+        elif ctrl and keyval == Gdk.KEY_u:
+
+            if gpod('url_action_opens_browser'):
+                self.treeview.open_url_in_webbrowser()
+            else:
+                self.treeview.copy_url_to_clipboard()
+
+        elif ctrl_shift and keyval == Gdk.KEY_U:
+            # NOTE: the upper case 'U'
+
+            if gpod('url_action_opens_browser'):
+                self.treeview.copy_url_to_clipboard()
+            else:
+                self.treeview.open_url_in_webbrowser()
+
+        elif ctrl and keyval == Gdk.KEY_s:
 
             if gpod('bib_auto_save'):
                 # propagate signal, we do not need to save.
@@ -696,7 +573,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             for filename in filenames:
                 self.application.open_file(filename, recompute=False)
 
-            self.application.do_recompute_global_ids()
+            self.treeview.main_model.do_recompute_global_ids()
 
         elif response == Gtk.ResponseType.CANCEL:
             pass
@@ -720,7 +597,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 self.application.close_file(filename, recompute=False)
 
             # Useless, we closed everything.
-            # self.application.do_recompute_global_ids()
+            # self.treeview.do_recompute_global_ids()
 
         else:
             self.application.close_file(self.get_selected_filename())
@@ -744,9 +621,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             entry_edit_dialog.run()
 
-            if entry.database is not None:
+            # TODO: convert this test to Gtk.Response.OK and CANCEL
+            #       to know if we need to insert/update or not.
+            if entry.database is not None and entry_edit_dialog.can_save:
+                # TODO: update list_store directly.
                 # Entry was saved to disk, insert it in the treeview.
-                self.application.insert_entry(entry)
+                self.treeview.main_model.insert_entry(entry)
 
             entry_edit_dialog.destroy()
 
@@ -787,21 +667,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         return self.search.get_text().strip()
 
-    def do_treeview_column_sort(self):
+    def do_activate(self):
 
-        if memories.treeview_sort_column is not None:
-            # print('setting column')
-
-            for col in self.treeview.get_columns():
-                if col.props.title == memories.treeview_sort_column:
-
-                    # print('COL', col.props.title)
-                    # print(col.get_sort_order())
-                    col.props.sort_order = memories.treeview_sort_order
-                    # print(col.get_sort_order())
-                    # print(col.get_sort_indicator())
-                    col.props.sort_indicator = memories.treeview_sort_indicator
-                    # print(col.get_sort_indicator())
+        self.sync_shown_hidden()
+        self.treeview.do_column_sort()
 
     def do_status_change(self, message):
         self.statusbar.push(
@@ -847,14 +716,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             if filename is None or filename == 'All':
                 # No search, no filename; get ALL data, unfiltered.
                 self.treeview.set_model(self.application.data_store)
-                self.col_id.props.visible = False
-                self.col_global_id.props.visible = True
 
             else:
-                if self.col_global_id.props.visible:
-                    self.col_global_id.props.visible = False
-                    self.col_id.props.visible = True
-
                 refilter()
 
         self.update_title()

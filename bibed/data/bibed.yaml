@@ -13,586 +13,696 @@ accelerators:
   copy_to_clipboard_single_value: \cite{@@key@@}
 backup_before_save: true
 bib_auto_save: true
+docs:
+  missing_and_omissible_data:
+    content: "The fields marked as \u2018required\u2019 are not strictly required\
+      \ in all cases. The bibliography styles which come with this package\
+      \ can get by with as little as a <span face=\"monospace\">title</span>\
+      \ field for most entry types. A book published anonymously, a periodical\
+      \ without an explicit editor, or a software manual without an explicit\
+      \ author should pose no problem as far as the bibliography is concerned.\
+      \ Citation styles, however, may 32have different requirements. For example,\
+      \ an author-year citation scheme obviously requires an <span face=\"\
+      monospace\">author</span>/<span face=\"monospace\">editor</span> and\
+      \ a <span face=\"monospace\">year</span> field. \n\nYou may generally\
+      \ use the <span face=\"monospace\">label</span> field to provide a substitute\
+      \ for any missing data required for citations. How the <span face=\"\
+      monospace\">label</span> field is employed depends on the citation style.\
+      \ The author-year citation styles which come with this package use the\
+      \ <span face=\"monospace\">label</span> field as a fallback if either\
+      \ the <span face=\"monospace\">author</span>/<span face=\"monospace\"\
+      >editor</span> or the <span face=\"monospace\">year</span> is missing.\
+      \ The numeric styles, on the other hand, do not use it at all since\
+      \ the numeric scheme is independent of the available data. The author-title\
+      \ styles ignore it as well, because the bare <span face=\"monospace\"\
+      >title</span> is usually sufficient to form a unique citation and a\
+      \ title is expected to be available in any case. The <span face=\"monospace\"\
+      >label</span> field may also be used to override the non-numeric portion\
+      \ of the automatically generated <span face=\"monospace\">labelalpha</span>\
+      \ field used by alphabetic citation styles.  \n\nNote that traditional\
+      \ BibTeX styles support a <span face=\"monospace\">key</span> field\
+      \ which is used for alphabetizing if both <span face=\"monospace\">author</span>\
+      \ and <span face=\"monospace\">editor</span> are missing. The biblatex\
+      \ package treats <span face=\"monospace\">key</span> as an alias for\
+      \ <span face=\"monospace\">sortkey</span>. In addition to that, it offers\
+      \ very fine-grained sorting controls. Use the <span face=\"monospace\"\
+      >label</span> field as a fallback label for citations."
+    title: Missing and omissible data
 ensure_biblatex_checks: false
 fields:
-  article:
-    doc: An article in a journal, magazine, newspaper, or other periodical which forms
-      a self-contained unit with its own title. The title of the periodical is given
-      in the <span face="monospace">journaltitle</span> field. If the issue has its
-      own title in addition to the main title of the periodical, it goes in the <span
-      face="monospace">issuetitle</span> field. Note that <span face="monospace">editor</span>
-      and related fields refer to the journal while <span face="monospace">translator</span>
-      and related fields refer to the article.
-    optional:
-    - subtitle
-    - url
-    - urldate
-    - journalsubtitle
-    - series
-    - volume
-    - number
-    - issn
-    - doi
-    - issue
-    - month
-    - addendum
-    - translator
-    - annotator
-    - commentator
-    - titleaddon
-    - editor
-    - editora
-    - editorb
-    - editorc
-    - issuetitle
-    - issuesubtitle
-    - language
-    - origlanguage
-    - eid
-    - pages
-    - version
-    - note
-    - pubstate
-    - eprint
-    - eprintclass
-    - eprinttype
-    required:
-    - title
-    - author
-    - journaltitle
-    - - year
-      - date
-    stacked:
-    - abstract
-    - comment
-  book:
-    doc: A single-volume book with one or more authors where the authors share credit
-      for the work as a whole. This entry type also covers the function of the <span
-      weight="bold" face="monospace">@inbook</span> type of traditional BibTeX.
-    optional:
-    - subtitle
-    - publisher
-    - isbn
-    - edition
-    - pages
-    - pagetotal
-    - addendum
-    - volumes
-    - series
-    - number
-    - foreword
-    - afterword
-    - introduction
-    - editor
-    - editora
-    - editorb
-    - editorc
-    - translator
-    - annotator
-    - commentator
-    - titleaddon
-    - maintitle
-    - mainsubtitle
-    - maintitleaddon
-    - language
-    - origlanguage
-    - volume
-    - part
-    - note
-    - location
-    - chapter
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - - year
-      - date
-  bookinbook:
-    optional:
-    - bookauthor
-    - editor
-    - editora
-    - editorb
-    - editorc
-    - translator
-    - annotator
-    - commentator
-    - introduction
-    - foreword
-    - afterword
-    - subtitle
-    - titleaddon
-    - maintitle
-    - mainsubtitle
-    - maintitleaddon
-    - booksubtitle
-    - booktitleaddon
-    - language
-    - origlanguage
-    - volume
-    - part
-    - edition
-    - volumes
-    - series
-    - number
-    - note
-    - publisher
-    - location
-    - isbn
-    - chapter
-    - pages
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - booktitle
-    - - year
-      - date
-  booklet:
-    doc: A book-like work without a formal publisher or sponsoring institution. Use
-      the field <span face="monospace">howpublished</span> to supply publishing information
-      in free format, if applicable. The field <span face="monospace">type</span>
-      may be useful as well.
-    optional:
-    - subtitle
-    - titleaddon
-    - language
-    - howpublished
-    - type
-    - note
-    - location
-    - chapter
-    - pages
-    - pagetotal
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - - author
+  aliases:
+    annotation:
+    - annote
+    eprintclass:
+    - primaryclass
+    eprinttype:
+    - archiveprefix
+    file:
+    - pdf
+    institution:
+    - school
+    journaltitle:
+    - journal
+    location:
+    - adress
+    sortkey:
+    - key
+  by_type:
+    article:
+      optional:
+      - subtitle
+      - url
+      - urldate
+      - journalsubtitle
+      - series
+      - volume
+      - number
+      - issn
+      - doi
+      - issue
+      - month
+      - addendum
+      - translator
+      - annotator
+      - commentator
+      - titleaddon
       - editor
-    - - year
-      - date
-  doc:
+      - editora
+      - editorb
+      - editorc
+      - issuetitle
+      - issuesubtitle
+      - language
+      - origlanguage
+      - eid
+      - pages
+      - version
+      - note
+      - pubstate
+      - eprint
+      - eprintclass
+      - eprinttype
+      required:
+      - title
+      - author
+      - journaltitle
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    book:
+      optional:
+      - subtitle
+      - publisher
+      - isbn
+      - edition
+      - pages
+      - pagetotal
+      - addendum
+      - url
+      - urldate
+      - volumes
+      - series
+      - number
+      - foreword
+      - afterword
+      - introduction
+      - editor
+      - editora
+      - editorb
+      - editorc
+      - translator
+      - annotator
+      - commentator
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - language
+      - origlanguage
+      - volume
+      - part
+      - note
+      - location
+      - chapter
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      required:
+      - title
+      - author
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    bookinbook:
+      optional:
+      - bookauthor
+      - editor
+      - editora
+      - editorb
+      - editorc
+      - translator
+      - annotator
+      - commentator
+      - introduction
+      - foreword
+      - afterword
+      - subtitle
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - booksubtitle
+      - booktitleaddon
+      - language
+      - origlanguage
+      - volume
+      - part
+      - edition
+      - volumes
+      - series
+      - number
+      - note
+      - publisher
+      - location
+      - isbn
+      - chapter
+      - pages
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - title
+      - author
+      - booktitle
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    booklet:
+      optional:
+      - subtitle
+      - type
+      - pages
+      - addendum
+      - url
+      - urldate
+      - pubstate
+      - titleaddon
+      - language
+      - howpublished
+      - note
+      - location
+      - chapter
+      - pagetotal
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      required:
+      - title
+      - - author
+        - editor
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    inbook:
+      optional:
+      - bookauthor
+      - editor
+      - editora
+      - editorb
+      - editorc
+      - translator
+      - annotator
+      - commentator
+      - introduction
+      - foreword
+      - afterword
+      - subtitle
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - booksubtitle
+      - booktitleaddon
+      - language
+      - origlanguage
+      - volume
+      - part
+      - edition
+      - volumes
+      - series
+      - number
+      - note
+      - publisher
+      - location
+      - isbn
+      - chapter
+      - pages
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - title
+      - author
+      - booktitle
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    misc:
+      optional:
+      - subtitle
+      - howpublished
+      - type
+      - url
+      - urldate
+      - addendum
+      - doi
+      - language
+      - titleaddon
+      - version
+      - note
+      - organization
+      - location
+      - month
+      - pubstate
+      - eprint
+      - eprintclass
+      - eprinttype
+      required:
+      - title
+      - - author
+        - editor
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    movie:
+      optional:
+      - subtitle
+      - howpublished
+      - type
+      - url
+      - urldate
+      - addendum
+      - doi
+      - language
+      - titleaddon
+      - version
+      - note
+      - organization
+      - location
+      - month
+      - pubstate
+      - eprint
+      - eprintclass
+      - eprinttype
+      required:
+      - title
+      - - author
+        - editor
+      - - year
+        - date
+    mvbook:
+      optional:
+      - editor
+      - editora
+      - editorb
+      - editorc
+      - translator
+      - annotator
+      - commentator
+      - introduction
+      - foreword
+      - afterword
+      - subtitle
+      - titleaddon
+      - language
+      - origlanguage
+      - edition
+      - volumes
+      - series
+      - number
+      - note
+      - publisher
+      - location
+      - isbn
+      - pagetotal
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - title
+      - author
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    online:
+      optional:
+      - subtitle
+      - titleaddon
+      - language
+      - version
+      - note
+      - organization
+      - month
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - urldate
+      required:
+      - title
+      - - author
+        - editor
+      - - year
+        - date
+      - url
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    report:
+      optional:
+      - subtitle
+      - url
+      - urldate
+      - addendum
+      - titleaddon
+      - language
+      - number
+      - version
+      - note
+      - location
+      - month
+      - isrn
+      - chapter
+      - pages
+      - pagetotal
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      required:
+      - title
+      - author
+      - type
+      - institution
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    suppbook:
+      optional:
+      - bookauthor
+      - editor
+      - translator
+      - annotator
+      - edition
+      - volumes
+      - series
+      - number
+      - introduction
+      - foreword
+      - afterword
+      - subtitle
+      - addendum
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - booksubtitle
+      - booktitleaddon
+      - commentator
+      - editora
+      - editorb
+      - editorc
+      - language
+      - origlanguage
+      - volume
+      - part
+      - note
+      - publisher
+      - location
+      - isbn
+      - chapter
+      - pages
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - title
+      - author
+      - booktitle
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    thesis:
+      optional:
+      - subtitle
+      - titleaddon
+      - url
+      - urldate
+      - addendum
+      - language
+      - note
+      - location
+      - month
+      - isbn
+      - chapter
+      - pages
+      - pagetotal
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      required:
+      - title
+      - author
+      - type
+      - institution
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    unpublished:
+      optional:
+      - subtitle
+      - titleaddon
+      - type
+      - addendum
+      - eventtitle
+      - eventtitleaddon
+      - eventdate
+      - venue
+      - language
+      - howpublished
+      - note
+      - location
+      - isbn
+      - month
+      - pubstate
+      - url
+      - urldate
+      required:
+      - title
+      - author
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+  docs:
+    author: The author(s) of the <span face="monospace">title</span>.
     booksubtitle: The subtitle related to the <span face="monospace">booktitle</span>.
-      If the <span face="monospace">subtitle</span> field refers to a work which is
-      part of a larger publication, a possible <span face="monospace">subtitle</span>
+      If the <span face="monospace">subtitle</span> field refers to a work
+      which is part of a larger publication, a possible <span face="monospace">subtitle</span>
       of the main work is given in this field. See also @@@seealso{defaults.fields.doc.subtitle}.
-    booktitle: If the <span face="monospace">title</span> field indicates the title
-      of a work which is part of a larger publication, the title of the main work
-      is given in this field. See also @@@seealso{defaults.fields.doc.title}.
-    booktitleaddon: An annex to the <span face="monospace">booktitle</span>, to be
-      printed in a different font.
+    booktitle: If the <span face="monospace">title</span> field indicates
+      the title of a work which is part of a larger publication, the title
+      of the main work is given in this field. See also @@@seealso{defaults.fields.doc.title}.
+    booktitleaddon: An annex to the <span face="monospace">booktitle</span>,
+      to be printed in a different font.
+    date: 'The publication date. See also <span face="monospace">month</span>
+      and <span face="monospace">year</span>.
+
+
+      @@@import{2.3.8}'
     doi: The Digital Object Identifier of the work.
-    edition: "The edition of a printed publication. This must be an integer, not an\
-      \ ordinal. Don\u2019t say <span face=\"monospace\">edition={First}</span> or\
-      \ <span face=\"monospace\">edition={1st}</span> but <span face=\"monospace\"\
-      >edition={1}</span>. The bibliography style converts this to a language dependent\
-      \ ordinal. It is also possible to give the edition as a literal string, for\
-      \ example \u201CThird, revised and expanded edition\u201D."
+    edition: "The edition of a printed publication. This must be an integer,\
+      \ not an ordinal. Don\u2019t say <span face=\"monospace\">edition={First}</span>\
+      \ or <span face=\"monospace\">edition={1st}</span> but <span face=\"\
+      monospace\">edition={1}</span>. The bibliography style converts this\
+      \ to a language dependent ordinal. It is also possible to give the edition\
+      \ as a literal string, for example \u201CThird, revised and expanded\
+      \ edition\u201D."
     editorial_roles:
       content: '@@@import{2.3.6}.'
       title: Editorial Roles
-    missing_and_omissible_data:
-      content: "The fields marked as \u2018required\u2019 are not strictly required\
-        \ in all cases. The bibliography styles which come with this package can get\
-        \ by with as little as a <span face=\"monospace\">title</span> field for most\
-        \ entry types. A book published anonymously, a periodical without an explicit\
-        \ editor, or a software manual without an explicit author should pose no problem\
-        \ as far as the bibliography is concerned. Citation styles, however, may 32have\
-        \ different requirements. For example, an author-year citation scheme obviously\
-        \ requires an <span face=\"monospace\">author</span>/<span face=\"monospace\"\
-        >editor</span> and a <span face=\"monospace\">year</span> field. \n\nYou may\
-        \ generally use the <span face=\"monospace\">label</span> field to provide\
-        \ a substitute for any missing data required for citations. How the <span\
-        \ face=\"monospace\">label</span> field is employed depends on the citation\
-        \ style. The author-year citation styles which come with this package use\
-        \ the <span face=\"monospace\">label</span> field as a fallback if either\
-        \ the <span face=\"monospace\">author</span>/<span face=\"monospace\">editor</span>\
-        \ or the <span face=\"monospace\">year</span> is missing. The numeric styles,\
-        \ on the other hand, do not use it at all since the numeric scheme is independent\
-        \ of the available data. The author-title styles ignore it as well, because\
-        \ the bare <span face=\"monospace\">title</span> is usually sufficient to\
-        \ form a unique citation and a title is expected to be available in any case.\
-        \ The <span face=\"monospace\">label</span> field may also be used to override\
-        \ the non-numeric portion of the automatically generated <span face=\"monospace\"\
-        >labelalpha</span> field used by alphabetic citation styles.  \n\nNote that\
-        \ traditional BibTeX styles support a <span face=\"monospace\">key</span>\
-        \ field which is used for alphabetizing if both <span face=\"monospace\">author</span>\
-        \ and <span face=\"monospace\">editor</span> are missing. The biblatex package\
-        \ treats <span face=\"monospace\">key</span> as an alias for <span face=\"\
-        monospace\">sortkey</span>. In addition to that, it offers very fine-grained\
-        \ sorting controls. Use the <span face=\"monospace\">label</span> field as\
-        \ a fallback label for citations."
-      title: Missing and omissible data
-  inbook:
-    doc: Use the <span weight="bold" face="monospace">@inbook</span> entry type for
-      a self-contained part of a book with its own title only. It relates to <span
-      weight="bold" face="monospace">@book</span> just like <span weight="bold" face="monospace">@incollection</span>
-      relates to <span weight="bold" face="monospace">@collection</span>. If you want
-      to refer to a chapter or section of a book, simply use the book type and add
-      a chapter and/or pages field. Whether a bibliography should at all include references
-      to chapters or sections is controversial because a chapter is not a bibliographic
-      entity.
-    optional:
-    - bookauthor
-    - editor
-    - editora
-    - editorb
-    - editorc
-    - translator
-    - annotator
-    - commentator
-    - introduction
-    - foreword
-    - afterword
-    - subtitle
-    - titleaddon
-    - maintitle
-    - mainsubtitle
-    - maintitleaddon
-    - booksubtitle
-    - booktitleaddon
-    - language
-    - origlanguage
-    - volume
-    - part
-    - edition
-    - volumes
-    - series
-    - number
-    - note
-    - publisher
-    - location
-    - isbn
-    - chapter
-    - pages
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - booktitle
-    - - year
-      - date
-  misc:
-    doc: A fallback type for entries which do not fit into any other category. Use
-      the field <span face="monospace">howpublished</span> to supply publishing information
-      in free format, if applicable. The field type may be useful as well. <span face="monospace">author</span>,
-      <span face="monospace">editor</span>, and <span face="monospace">year</span>
-      are omissible in terms of @@@cite{defaults.fields.doc.missing_and_omissible_data}.
-  mnemonics:
-    author:
-      doc: The author(s) of the <span face="monospace">title</span>.
-      label: Author(s)
-    date:
-      doc: 'The publication date. See also <span face="monospace">month</span> and
-        <span face="monospace">year</span>.
-
-
-        @@@import{2.3.8}'
-      label: Date
-    journaltitle:
-      doc: The name of a journal, a newspaper, or some other periodical.
-      label: Journal title
-    key:
-      doc: The bibliography entry unique key.
-      label: Entry key
-    title:
-      doc: The title of the work.
-      label: Title
-    year:
-      doc: The year of publication. This field is a literal field only when given
-        explicitly in the data (for plain BibTeX compatibility for example). It is
-        however better to use the <span face="monospace">date</span> field as this
-        is compatible with plain years too and supports many more features. @@@import{2.3.8}
-      label: Year
-  movie:
-    doc: Motion pictures. See also <span weight="bold" face="monospace">@video</span>.
-    optional:
-    - subtitle
-    - howpublished
-    - type
-    - url
-    - urldate
-    - addendum
-    - doi
-    - language
-    - titleaddon
-    - version
-    - note
-    - organization
-    - location
-    - month
-    - pubstate
-    - eprint
-    - eprintclass
-    - eprinttype
-    required:
-    - - author
-      - editor
-    - title
-    - - year
-      - date
-  mvbook:
-    doc: A multi-volume <span weight="bold" face="monospace">@book</span>. For backwards
-      compatibility, multi-volume books are also supported by the entry type <span
-      weight="bold" face="monospace">@book</span>. However, it is advisable to make
-      use of the dedicated entry type <span weight="bold" face="monospace">@mvbook</span>.
-    optional:
-    - editor
-    - editora
-    - editorb
-    - editorc
-    - translator
-    - annotator
-    - commentator
-    - introduction
-    - foreword
-    - afterword
-    - subtitle
-    - titleaddon
-    - language
-    - origlanguage
-    - edition
-    - volumes
-    - series
-    - number
-    - note
-    - publisher
-    - location
-    - isbn
-    - pagetotal
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - - year
-      - date
-  online:
-    doc: An online resource. <span face="monospace">author</span>, <span face="monospace">editor</span>,
-      and <span face="monospace">year</span> are omissible in terms of @@@cite{defaults.fields.doc.missing_and_omissible_data}.
-      This entry type is intended for sources such as web sites which are intrinsically
-      online resources. Note that all entry types support the <span face="monospace">url</span>
-      field. For example, when adding an article from an online journal, it may be
-      preferable to use the <span weight="bold" face="monospace">@article</span> type
-      and its <span face="monospace">url</span> field.
-    optional:
-    - subtitle
-    - titleaddon
-    - language
-    - version
-    - note
-    - organization
-    - month
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - urldate
-    required:
-    - title
-    - - author
-      - editor
-    - - year
-      - date
-    - url
-  report:
-    doc: A technical report, research report, or white paper published by a university
-      or some other institution. Use the <span face="monospace">type</span> field
-      to specify the type of report. The sponsoring institution goes in the <span
-      face="monospace">institution</span> field.
-    optional:
-    - subtitle
-    - titleaddon
-    - language
-    - number
-    - version
-    - note
-    - location
-    - month
-    - isrn
-    - chapter
-    - pages
-    - pagetotal
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - type
-    - institution
-    - - year
-      - date
-  suppbook:
-    doc: Supplemental material in a <span weight="bold" face="monospace">@book</span>.
-      This type is closely related to the <span weight="bold" face="monospace">@inbook</span>
-      entry type. While <span weight="bold" face="monospace">@inbook</span> is primarily
-      intended for a part of a book with its own title (e. g., a single essay in a
-      collection of essays by the same author), this type is provided for elements
-      such as prefaces, introductions, forewords, afterwords, etc. which often have
-      a generic title only. Style guides may require such items to be formatted differently
-      from other <span weight="bold" face="monospace">@inbook</span> items. The standard
-      styles will treat this entry type as an alias for <span weight="bold" face="monospace">@inbook</span>.
-    optional:
-    - bookauthor
-    - editor
-    - editora
-    - editorb
-    - editorc
-    - translator
-    - annotator
-    - commentator
-    - introduction
-    - foreword
-    - afterword
-    - subtitle
-    - titleaddon
-    - maintitle
-    - mainsubtitle
-    - maintitleaddon
-    - booksubtitle
-    - booktitleaddon
-    - language
-    - origlanguage
-    - volume
-    - part
-    - edition
-    - volumes
-    - series
-    - number
-    - note
-    - publisher
-    - location
-    - isbn
-    - chapter
-    - pages
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - booktitle
-    - - year
-      - date
-  thesis:
-    doc: A thesis written for an educational institution to satisfy the requirements
-      for a degree. Use the <span face="monospace">type</span> field to specify the
-      type of thesis.
-    optional:
-    - subtitle
-    - titleaddon
-    - language
-    - note
-    - location
-    - month
-    - isbn
-    - chapter
-    - pages
-    - pagetotal
-    - addendum
-    - pubstate
-    - doi
-    - eprint
-    - eprintclass
-    - eprinttype
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - type
-    - institution
-    - - year
-      - date
-  unpublished:
-    doc: A work with an author and a title which has not been formally published,
-      such as a manuscript or the script of a talk. Use the fields <span face="monospace">howpublished</span>
-      and <span face="monospace">note</span> to supply additional information in free
-      format, if applicable.
-    optional:
-    - subtitle
-    - titleaddon
-    - type
-    - eventtitle
-    - eventtitleaddon
-    - eventdate
-    - venue
-    - language
-    - howpublished
-    - note
-    - location
-    - isbn
-    - month
-    - addendum
-    - pubstate
-    - url
-    - urldate
-    required:
-    - title
-    - author
-    - - year
-      - date
+    journaltitle: The name of a journal, a newspaper, or some other periodical.
+    key: The bibliography entry unique key.
+    title: The title of the work.
+    year: The year of publication. This field is a literal field only when
+      given explicitly in the data (for plain BibTeX compatibility for example).
+      It is however better to use the <span face="monospace">date</span> field
+      as this is compatible with plain years too and supports many more features.
+      @@@import{2.3.8}
+  labels:
+    addendum: Addendum
+    author: Author(s)
+    chapter: Chapter
+    comment: Comment(s)
+    date: Date
+    doi: DOI
+    editor: Editor(s)
+    eprint: E-Print
+    eprintclass: E-Print class
+    eprinttype: E-Print type
+    howpublished: How published?
+    journaltitle: Journal title
+    key: Entry key
+    language: Language
+    location: Location
+    month: Month
+    note: Note(s)
+    organization: Organization
+    pages: Page(s)
+    pagetotal: Total page count
+    pubstate: Publish state
+    subtitle: Subtitle
+    title: Title
+    titleaddon: Title add-on
+    type: Entry subtype
+    url: URL
+    urldate: URL date
+    version: Version
+    year: Year
 keep_recent_files: 10
+remember_last_destination: true
 remember_open_files: true
 remember_windows_states: true
 types:
-  main:
-  - article
-  - book
-  - booklet
-  - thesis
-  - report
-  - online
-  - misc
-  - movie
-  - video
-  mnemonics:
+  docs:
+    article: An article in a journal, magazine, newspaper, or other periodical
+      which forms a self-contained unit with its own title. The title of the
+      periodical is given in the <span face="monospace">journaltitle</span>
+      field. If the issue has its own title in addition to the main title
+      of the periodical, it goes in the <span face="monospace">issuetitle</span>
+      field. Note that <span face="monospace">editor</span> and related fields
+      refer to the journal while <span face="monospace">translator</span>
+      and related fields refer to the article.
+    book: A single-volume book with one or more authors where the authors
+      share credit for the work as a whole. This entry type also covers the
+      function of the <span weight="bold" face="monospace">@inbook</span>
+      type of traditional BibTeX.
+    booklet: A book-like work without a formal publisher or sponsoring institution.
+      Use the field <span face="monospace">howpublished</span> to supply publishing
+      information in free format, if applicable. The field <span face="monospace">type</span>
+      may be useful as well.
+    inbook: Use the <span weight="bold" face="monospace">@inbook</span> entry
+      type for a self-contained part of a book with its own title only. It
+      relates to <span weight="bold" face="monospace">@book</span> just like
+      <span weight="bold" face="monospace">@incollection</span> relates to
+      <span weight="bold" face="monospace">@collection</span>. If you want
+      to refer to a chapter or section of a book, simply use the book type
+      and add a chapter and/or pages field. Whether a bibliography should
+      at all include references to chapters or sections is controversial because
+      a chapter is not a bibliographic entity.
+    misc: A fallback type for entries which do not fit into any other category.
+      Use the field <span face="monospace">howpublished</span> to supply publishing
+      information in free format, if applicable. The field type may be useful
+      as well. <span face="monospace">author</span>, <span face="monospace">editor</span>,
+      and <span face="monospace">year</span> are omissible in terms of @@@cite{defaults.fields.doc.missing_and_omissible_data}.
+    movie: Motion pictures. See also <span weight="bold" face="monospace">@video</span>.
+    mvbook: A multi-volume <span weight="bold" face="monospace">@book</span>.
+      For backwards compatibility, multi-volume books are also supported by
+      the entry type <span weight="bold" face="monospace">@book</span>. However,
+      it is advisable to make use of the dedicated entry type <span weight="bold"
+      face="monospace">@mvbook</span>.
+    online: An online resource. <span face="monospace">author</span>, <span
+      face="monospace">editor</span>, and <span face="monospace">year</span>
+      are omissible in terms of @@@cite{defaults.fields.doc.missing_and_omissible_data}.
+      This entry type is intended for sources such as web sites which are
+      intrinsically online resources. Note that all entry types support the
+      <span face="monospace">url</span> field. For example, when adding an
+      article from an online journal, it may be preferable to use the <span
+      weight="bold" face="monospace">@article</span> type and its <span face="monospace">url</span>
+      field.
+    report: A technical report, research report, or white paper published
+      by a university or some other institution. Use the <span face="monospace">type</span>
+      field to specify the type of report. The sponsoring institution goes
+      in the <span face="monospace">institution</span> field.
+    suppbook: Supplemental material in a <span weight="bold" face="monospace">@book</span>.
+      This type is closely related to the <span weight="bold" face="monospace">@inbook</span>
+      entry type. While <span weight="bold" face="monospace">@inbook</span>
+      is primarily intended for a part of a book with its own title (e. g.,
+      a single essay in a collection of essays by the same author), this type
+      is provided for elements such as prefaces, introductions, forewords,
+      afterwords, etc. which often have a generic title only. Style guides
+      may require such items to be formatted differently from other <span
+      weight="bold" face="monospace">@inbook</span> items. The standard styles
+      will treat this entry type as an alias for <span weight="bold" face="monospace">@inbook</span>.
+    thesis: A thesis written for an educational institution to satisfy the
+      requirements for a degree. Use the <span face="monospace">type</span>
+      field to specify the type of thesis.
+    unpublished: A work with an author and a title which has not been formally
+      published, such as a manuscript or the script of a talk. Use the fields
+      <span face="monospace">howpublished</span> and <span face="monospace">note</span>
+      to supply additional information in free format, if applicable.
+  labels:
     article: _Article
     artwork: Artwork
     audio: Au_dio
@@ -637,6 +747,16 @@ types:
     thesis: _Thesis
     video: _Video
     xdata: eXtended data
+  main:
+  - article
+  - book
+  - booklet
+  - thesis
+  - report
+  - online
+  - misc
+  - movie
+  - video
   other:
   - periodical
   - collection
@@ -673,3 +793,4 @@ types:
   - bibnote
   - set
   - xdata
+url_action_opens_browser: true

@@ -392,6 +392,32 @@ class BibedPreferencesDialog(Gtk.Dialog):
             Gtk.PositionType.BOTTOM,
             2, 1)
 
+        # ———————————————————————————————————————————— Remember open files
+
+        (self.lbl_url_action_opens_browser,
+         self.swi_url_action_opens_browser) = build_label_and_switch(
+            '<b>URLs open in browser</b>\n'
+            '<span foreground="grey" size="small">'
+            'Enabling this makes <span face="monospace">Control-U</span> and URL-icon click open the url directly\n'
+            'in a new tab of your prefered web browser, while <span face="monospace">Shift-Control-U</span> will\n'
+            'copy the URL to clipboard. Disabling it makes the opposite.</span>',
+            self.on_switch_activated,
+            gpod('url_action_opens_browser'),
+            func_args=('url_action_opens_browser', )
+        )
+
+        pa.attach_next_to(
+            self.lbl_url_action_opens_browser,
+            self.lbl_copy_single_help,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pa.attach_next_to(
+            self.swi_url_action_opens_browser,
+            self.lbl_url_action_opens_browser,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
         # ———————————————————————————————————————————————————— End widgets
 
         self.page_accels = pa

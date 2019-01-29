@@ -72,7 +72,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
             grid.set_column_spacing(GRID_COLS_SPACING * size_multiplier)
             grid.set_row_spacing(GRID_ROWS_SPACING * size_multiplier)
 
-            mnemonics = defaults.types.mnemonics
+            types_labels = defaults.types.labels
 
             divider = round(math.sqrt(len(children)))
 
@@ -91,19 +91,20 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                     valign=Gtk.Align.CENTER,
                 )
 
-                type_node = getattr(defaults.fields, child_name)
-                type_has_help = (
-                    type_node is not None and type_node.doc is not None
-                )
+                type_node = getattr(defaults.fields.by_type, child_name)
+                type_doc  = getattr(defaults.types.docs, child_name)
+
                 type_has_fields = (
                     type_node is not None and type_node.required is not None
                 )
 
+                assert(getattr(types_labels, child_name) is not None)
+
                 label.set_markup_with_mnemonic(
                     btn_markup.format(
-                        size=size, label=mnemonics[child_name],
+                        size=size, label=getattr(types_labels, child_name),
                         help=GENERIC_HELP_SYMBOL
-                        if type_has_help else ''))
+                        if type_doc else ''))
 
                 btn = widget_properties(
                     Gtk.Button(),
@@ -121,8 +122,8 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                     # We cannot implement edition for now.
                     btn.set_sensitive(False)
 
-                if type_has_help:
-                        btn.set_tooltip_markup(type_node.doc)
+                if type_doc:
+                        btn.set_tooltip_markup(type_doc)
 
                 grid.attach(
                     btn,

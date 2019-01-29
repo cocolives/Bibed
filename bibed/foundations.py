@@ -93,6 +93,14 @@ def set_process_title(title):
             LOGGER.warning("Setting the process title failed.")
 
 
+def ldebug(message, *args, **kwargs):
+    ''' function meant to be wrapped in an assert call. '''
+
+    LOGGER.debug(message.format(*args, **kwargs))
+
+    return True
+
+
 def ltrace_caller_name():
     ''' Print the stack previous level function name (eg. “caller”).
 
@@ -123,9 +131,7 @@ def touch_file(filename):
         with open(filename, 'w') as f:
             f.write('\n')
 
-        if __debug__:
-            LOGGER.debug(
-                'touch_file(): created “{}”.'.format(filename))
+        assert ldebug('touch_file(): created “{}”.', filename)
 
 
 # ———————————————————————————————————————————————————————————————— Classes
@@ -260,20 +266,14 @@ class AttributeDictFromYaml(AttributeDict):
 
         super().__init__(ydata, default=True, *args, **kwargs)
 
-        if __debug__:
-            LOGGER.debug(
-                '{0} loaded from “{1}”.'.format(
-                    self.__class__.__name__, self.filename))
+        assert ldebug('{0} loaded from “{1}”.',
+                      self.__class__.__name__, self.filename)
 
     def __setattr__(self, prop, val):
 
-        if __debug__:
-            # This should not obstruct the
-            # interpreter in normal conditions.
-            LOGGER.debug(
-                '{0}.__setattr__({1}={2}) was {3}.'.format(
-                    self.__class__.__name__, prop, val,
-                    getattr(self, prop)))
+        assert ldebug(
+            '{0}.__setattr__({1}={2}) was {3}.',
+            self.__class__.__name__, prop, val, getattr(self, prop))
 
         super().__setattr__(prop, val)
 
@@ -282,13 +282,9 @@ class AttributeDictFromYaml(AttributeDict):
 
     def __delattr__(self, prop):
 
-        if __debug__:
-            # This should not obstruct the
-            # interpreter in normal conditions.
-            LOGGER.debug(
-                '{0}.__detattr__({1}) was {2}.'.format(
-                    self.__class__.__name__, prop,
-                    getattr(self, prop)))
+        assert ldebug(
+            '{0}.__detattr__({1}) was {2}.',
+            self.__class__.__name__, prop, getattr(self, prop))
 
         super().__delattr__(prop)
 
@@ -306,12 +302,12 @@ class AttributeDictFromYaml(AttributeDict):
             yaml.add_representer(AttributeDict, Representer.represent_dict)
             yaml.add_representer(type(None), Representer.represent_none)
 
-            f.write(yaml.dump(self, default_flow_style=False))
+            # f.write(yaml.dump(self, default_flow_style=True))
+            f.write(yaml.dump(self, default_flow_style=False,
+                              width=72, indent=2))
 
-        if __debug__:
-            LOGGER.debug(
-                '{0} saved to “{1}”.'.format(
-                    self.__class__.__name__, self.filename))
+        assert ldebug(
+            '{0} saved to “{1}”.', self.__class__.__name__, self.filename)
 
 
 class Singleton(type):
@@ -325,10 +321,7 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton,
                                         cls).__call__(*args, **kwargs)
 
-            if __debug__:
-                LOGGER.debug(
-                    '__call__ Singleton for {0}.'.format(
-                        cls.__name__))
+            assert ldebug('__call__ Singleton for {0}.', cls.__name__)
 
         return cls._instances[cls]
 
@@ -339,11 +332,23 @@ class NoWatchContextManager:
     def __init__(self, application, filename):
         self.application = application
         self.filename = filename
+        self.reenable_inotify = True
 
     def __enter__(self):
-        self.application.inotify_remove_watch(self.filename)
+        try:
+            self.application.inotify_remove_watch(self.filename)
+
+        except KeyError:
+            # When called from application.close_file(),
+            # the inotify watch has already been removed.
+            self.reenable_inotify = False
+
+        assert ldebug('Locking application.file_modify_lock.')
         self.application.file_modify_lock.acquire()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        assert ldebug('Releasing application.file_modify_lock.')
         self.application.file_modify_lock.release()
-        self.application.inotify_add_watch(self.filename)
+
+        if self.reenable_inotify:
+            self.application.inotify_add_watch(self.filename)

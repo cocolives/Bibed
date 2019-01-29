@@ -2,7 +2,7 @@
 import os
 import logging
 
-# from bibed.foundations import ltrace_caller_name
+from bibed.foundations import ldebug  # , ltrace_caller_name
 
 from collections import OrderedDict
 from threading import Lock
@@ -15,12 +15,15 @@ from bibed.constants import (
     # GENERIC_HELP_SYMBOL,
 )
 
-from bibed.preferences import defaults, preferences, gpod
+from bibed.preferences import defaults, preferences, memories, gpod
+from bibed.entry import EntryFieldCheckMixin
 
 from bibed.gui.helpers import (
     widget_properties,
     label_with_markup,
     in_scrolled,
+    get_children_recursive,
+    stack_switch_next,
     add_classes, remove_classes,
     find_child_by_name,
     # frame_defaults,
@@ -31,12 +34,12 @@ from bibed.gui.helpers import (
     grid_with_common_params,
 )
 
-from bibed.gui.gtk import GLib, Gtk, Gio
+from bibed.gui.gtk import GLib, Gtk, Gdk, Gio
 
 LOGGER = logging.getLogger(__name__)
 
 
-class BibedEntryDialog(Gtk.Dialog):
+class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     @property
     def needs_save(self):
@@ -46,48 +49,55 @@ class BibedEntryDialog(Gtk.Dialog):
     @property
     def can_save(self):
 
+        entry_has_key = (self.entry.key is not None or 'key' in self.changed_fields)
+        entry_has_database = self.entry.database is not None
+
+        if self.brand_new:
+            # `bibtexparser` fails when there is an entry with only a key.
+            # We need at least a field more than ID and ENTRYTYPE.
+            entry_has_more_than_id_and_type = len(self.changed_fields) > 1
+
+            key_is_unique = not self.parent.application.check_has_key(
+                self.entry.key
+                if self.entry.key
+                else self.get_field_value('key')
+            )
+
+        else:
+            # This has already been checked by other methods.
+            entry_has_more_than_id_and_type = True
+            key_is_unique = True
+
+        entry_is_new = self.brand_new
+        entry_is_known = not entry_is_new
+
         result = (
-            (self.entry.key is not None or 'key' in self.changed_fields)
-
-            and self.entry.database is not None
-
-            # bibtexparser fails when there is an entry with only a key.
-            # We need more than ID and ENTRYTYPE.
-            and (len(self.entry.fields()) > 2 or len(self.changed_fields) > 2)
-
+            entry_has_key
+            and entry_has_database
+            and entry_has_more_than_id_and_type
             and (
-                not self.brand_new or (
-                    self.brand_new
-                    and not self.parent.application.check_has_key(
-                        self.entry.key
-                        if self.entry.key
-                        else self.get_field_value('key'))
+                entry_is_known or (
+                    entry_is_new and key_is_unique
                 )
             )
         )
 
-        if __debug__:
-            LOGGER.debug(
-                'CAN SAVE: 1={}'
-                'CAN SAVE: and 2={}'
-                'CAN SAVE: and 3={}'
-                'CAN SAVE: and (4={}'
-                'CAN SAVE: or 5)={}'
-                'CAN SAVE: FINAL={}'.format(
-                    (self.entry.key is not None
-                        or 'key' in self.changed_fields),
-                    self.entry.database is not None,
-                    (len(self.entry.fields()) > 2
-                        or len(self.changed_fields) > 2),
-                    not self.brand_new,
-                    (self.brand_new
-                     and not self.parent.applicationcheck_has_key(
-                         self.entry.key
-                         if self.entry.key
-                         else self.get_field_value('key'))
-                     )
-                )
-            )
+        assert ldebug(
+            '\nCAN SAVE: entry_has_key={entry_has_key}\n'
+            'CAN SAVE: and entry_has_database={entry_has_database}\n'
+            'CAN SAVE: and entry_has_more_than_id_and_type'
+            '={entry_has_more_than_id_and_type}\n'
+            'CAN SAVE: and (entry_is_known={entry_is_known}\n'
+            'CAN SAVE: or (entry_is_new={entry_is_new} and key_is_unique={key_is_unique})\n'
+            'CAN SAVE: FINAL={result}',
+            entry_has_key=entry_has_key,
+            entry_has_database=entry_has_database,
+            entry_has_more_than_id_and_type=entry_has_more_than_id_and_type,
+            entry_is_known=entry_is_known,
+            entry_is_new=entry_is_new,
+            key_is_unique=key_is_unique,
+            result=result,
+        )
 
         return result
 
@@ -96,15 +106,13 @@ class BibedEntryDialog(Gtk.Dialog):
         if entry.key is None:
             title = "Create new @{0}".format(entry.type)
         else:
-            try:
-                mnemonic = getattr(defaults.fields.mnemonics,
-                                   entry.type).label
+            label = getattr(defaults.fields.labels, entry.type)
 
-            except AttributeError:
+            if label is None:
                 # Poor man's solution.
-                mnemonic = entry.type.title()
+                label = entry.type.title()
 
-            title = "Edit {0} {1}".format(mnemonic, entry.key)
+            title = "Edit {0} {1}".format(label, entry.key)
 
         super().__init__(title, parent, use_header_bar=True)
 
@@ -149,6 +157,8 @@ class BibedEntryDialog(Gtk.Dialog):
         # Direct access to fields grids.
         self.grids = {}
 
+        self.connect('key-press-event', self.on_key_pressed)
+
         self.box = self.get_content_area()
 
         self.setup_headerbar()
@@ -161,51 +171,142 @@ class BibedEntryDialog(Gtk.Dialog):
 
         self.first_focus()
 
+    def on_key_pressed(self, widget, event):
+
+        keyval = event.keyval
+        # state = event.state
+
+        # check the event modifiers (can also use SHIFTMASK, etc)
+        ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
+
+        if ctrl and keyval == Gdk.KEY_s:
+
+            LOGGER.info('Control-S pressed in dialog (no action yet).')
+
+        elif ctrl and keyval == Gdk.KEY_r:
+
+            LOGGER.info('Control-R pressed in dialog (no action yet).')
+
+        elif ctrl and keyval == Gdk.KEY_d:
+            # Should open Location popover.
+            LOGGER.info('Control-D pressed in dialog (no action yet).')
+
+        elif ctrl and keyval in (Gdk.KEY_Page_Down, Gdk.KEY_Page_Up):
+
+            # TODO: switch previous / next entry.
+
+            # Should show previous/next treeview entry.
+            LOGGER.info('Control-Page-[UP/DOWN] pressed in dialog (no action yet).')
+
+        elif not ctrl:
+            if keyval == Gdk.KEY_Page_Down:
+                self.select_first_sensitive_field(
+                    stack_switch_next(self.stack)
+                )
+
+            elif keyval == Gdk.KEY_Page_Up:
+                self.select_first_sensitive_field(
+                    stack_switch_next(self.stack, reverse=True)
+                )
+
+            else:
+                # The keycode combination was not handled, propagate.
+                return False
+
+        else:
+            # The keycode combination was not handled, propagate.
+            return False
+
+        # Stop propagation of signal, we handled it.
+        return True
+
     def first_focus(self):
 
+        if self.brand_new:
+            field = self.fields['key']
+            field.emit('changed')
+
         if self.entry.database is None:
-            print('NO Database')
             if not self.autoselect_destination():
-                print('NO Autoselect')
                 self.destination_popover.show_all()
                 self.destination_popover.popup()
                 self.cmb_destination.grab_focus()
 
         else:
-            # Focus the first sensitive field
-            # (eg. 'key' for new entries, 'title' for existing).
-            for val in self.fields.values():
-                if val.get_sensitive():
-                    val.grab_focus()
-                    break
+            self.select_first_sensitive_field()
+
+    def select_first_sensitive_field(self, root=None):
+
+        if root is None:
+            fields = self.fields.values()
+
+        else:
+            fields = [
+                child
+                for child in get_children_recursive(root)
+                if (isinstance(child, Gtk.Entry)
+                    or isinstance(child, Gtk.TextView))
+            ]
+
+        # assert ldebug('{}', [f.get_name() for f in fields])
+
+        # Focus the first sensitive field
+        # (eg. 'key' for new entries, 'title' for existing).
+        for val in fields:
+            if val.get_sensitive() and val.is_visible():
+                val.grab_focus()
+                # assert ldebug('Focused {}', val.get_name())
+                break
 
     def autoselect_destination(self):
 
-        # This could be “All”
+        get_database = self.parent.application.get_database_from_filename
+
+        last_selected_filename = (
+            memories.last_destination
+            if gpod('remember_last_destination')
+            else None
+        )
+
+        if last_selected_filename not in self.parent.application.get_open_files_names():
+            # User will select a new one,
+            # don't remember an invalid destination.
+            try:
+                del memories.last_destination
+
+            except AttributeError:
+                pass
+
+            last_selected_filename = None
+
+        # The “current” file in main window. Takes precedences on memories.
         selected_filename = self.parent.get_selected_filename()
 
-        # In previous case, this will be None.
-        database = self.parent.application.get_database_from_filename(
-            selected_filename)
+        # In previous case (eg. “All”), this will be None.
+        database = get_database(selected_filename)
+
+        if not database:
+            if last_selected_filename is not None:
+                selected_filename = last_selected_filename
+                database = get_database(selected_filename)
 
         if selected_filename and database:
-
             combo = self.cmb_destination
 
-            combo.handler_block_by_func(
-                self.on_destination_changed)
+            combo.handler_block_by_func(self.on_destination_changed)
 
             for row in combo.get_model():
                 if row[0] == selected_filename:
                     combo.set_active_iter(row.iter)
                     break
 
-            combo.handler_unblock_by_func(
-                self.on_destination_changed)
+            combo.handler_unblock_by_func(self.on_destination_changed)
 
             if self.entry.database is None:
-
                 self.entry.database = database
+
+                if memories.last_destination != selected_filename:
+                    memories.last_destination = selected_filename
 
                 return True
 
@@ -218,7 +319,6 @@ class BibedEntryDialog(Gtk.Dialog):
             expand=Gtk.Orientation.HORIZONTAL,
             margin_bottom=GRID_ROWS_SPACING,
             no_show_all=True,
-            debug=True,
         )
 
         self.lbl_infobar = label_with_markup(
@@ -453,6 +553,7 @@ class BibedEntryDialog(Gtk.Dialog):
                 halign=Gtk.Align.FILL,
                 valign=Gtk.Align.CENTER,
                 width=300,
+                activates_default=True,
             )
 
             btn_compute = widget_properties(Gtk.Button(), expand=False)
@@ -515,10 +616,11 @@ class BibedEntryDialog(Gtk.Dialog):
             classes=['linked']
         )
 
-        mnemonics = defaults.fields.mnemonics
+        fields_labels = defaults.fields.labels
+        fields_docs   = defaults.fields.docs
 
         label, entry = build_entry_field_labelled_entry(
-            mnemonics, field_name, self.entry
+            fields_docs, fields_labels, field_name, self.entry
         )
 
         self.fields[field_name] = entry
@@ -599,23 +701,16 @@ class BibedEntryDialog(Gtk.Dialog):
             grid.set_column_spacing(GRID_COLS_SPACING)
             grid.set_row_spacing(GRID_ROWS_SPACING)
 
-            mnemonics = defaults.fields.mnemonics
+            fields_labels = defaults.fields.labels
+            fields_docs   = defaults.fields.docs
 
             if len(fields) == 1:
                 field_name = fields[0]
                 scr, txv = build_entry_field_textview(
-                    mnemonics, field_name, entry)
+                    fields_docs, field_name, entry)
 
-                for signal_name in (
-                    'insert-at-cursor',
-                    'delete-from-cursor',
-                        'paste-clipboard', ):
-
-                    txv.connect(
-                        signal_name,
-                        self.on_field_changed,
-                        field_name
-                    )
+                txv.get_buffer().connect(
+                    'changed', self.on_field_changed, field_name)
 
                 self.fields[field_name] = txv
                 grid.attach(scr, 0, 0, 1, 1)
@@ -623,18 +718,24 @@ class BibedEntryDialog(Gtk.Dialog):
             else:
                 index = 0
                 for field_name in fields:
+
                     if isinstance(field_name, list):
+                        # list in list: cf. defaults.fields.by_type.required
+                        # where some fields are required by tuples.
                         for subfield_name in field_name:
                             connect_and_attach_to_grid(
                                 *build_entry_field_labelled_entry(
-                                    mnemonics, subfield_name, entry
+                                    fields_docs, fields_labels,
+                                    subfield_name, entry
                                 ), subfield_name,
                             )
                             index += 1
+
                     else:
                         connect_and_attach_to_grid(
                             *build_entry_field_labelled_entry(
-                                mnemonics, field_name, entry
+                                fields_docs, fields_labels,
+                                field_name, entry
                             ), field_name,
                         )
                         index += 1
@@ -643,10 +744,16 @@ class BibedEntryDialog(Gtk.Dialog):
 
         stack = Gtk.Stack()
 
-        fields_entry_node = getattr(preferences.fields, self.entry.type)
+        try:
+            fields_entry_node = getattr(preferences.fields.by_type, self.entry.type)
+
+        except AttributeError:
+            # We have no preferences at all (user has started the
+            # app for the first time, or did not set any prefs).
+            fields_entry_node = None
 
         if fields_entry_node is None:
-            fields_entry_node = getattr(defaults.fields, self.entry.type)
+            fields_entry_node = getattr(defaults.fields.by_type, self.entry.type)
 
             # HEADS UP: attributes names are different
             #       between defaults and preferences.
@@ -656,10 +763,10 @@ class BibedEntryDialog(Gtk.Dialog):
             fields_other = fields_entry_node.optional[:]
 
             try:
-                fields_stacks = fields_entry_node.stacked[:]
+                fields_stacked = fields_entry_node.stacked[:]
 
             except TypeError:
-                fields_stacks = []
+                fields_stacked = []
 
         else:
             fields_main = fields_entry_node.main[:]
@@ -667,12 +774,12 @@ class BibedEntryDialog(Gtk.Dialog):
             fields_other = fields_entry_node.other[:]
 
             try:
-                fields_stacks = fields_entry_node.stacks[:]
+                fields_stacked = fields_entry_node.stacked[:]
 
             except TypeError:
-                fields_stacks = []
+                fields_stacked = []
 
-        for field_name in fields_stacks:
+        for field_name in fields_stacked:
             if field_name in fields_other:
                 # This can happen in defaults.
                 # TODO: chek defaults to avoid it.
@@ -687,7 +794,7 @@ class BibedEntryDialog(Gtk.Dialog):
                 self.entry, fields_secondary,
             )
 
-        for field_name in fields_stacks:
+        for field_name in fields_stacked:
             self.grids[field_name] = build_fields_grid(
                 self.entry,  # TODO: Find Mnemonic
                 [field_name],
@@ -781,9 +888,10 @@ class BibedEntryDialog(Gtk.Dialog):
             popover.popdown()
             return
 
-        if __debug__:
-            LOGGER.debug('Renaming key from {0} to {1}.'.format(
-                self.entry.key, new_key))
+        assert ldebug(
+            'Renaming key from {0} to {1}.',
+            self.entry.key, new_key
+        )
 
         # TODO: why does get_parent() fails here ?
         #       See TODO/comment in __init__().
@@ -802,6 +910,9 @@ class BibedEntryDialog(Gtk.Dialog):
             add_classes(new_entry_key, ('error', ))
             new_entry_key.grab_focus()
             return
+
+        # TODO: look for old key in other entries comments, note, addendum…
+        #       there are probably other fields where the key can be.
 
         # put old key in 'aliases'
         if 'ids' in self.entry.fields():
@@ -918,63 +1029,64 @@ class BibedEntryDialog(Gtk.Dialog):
         else:
             pass
 
-    def check_field_key(self):
+    def get_field_value(self, field_name, widget=None):
 
-        has_key = self.parent.application.check_has_key(
-            self.fields['key'].get_text())
-
-        if has_key:
-            return (
-                'Key already taken in <span '
-                'face="monospace">{filename}</span>. '
-                'Please choose another one.').format(
-                    filename=os.path.basename(has_key)
-            )
-
-    def get_field_value(self, field_name):
-
-        widget = self.fields[field_name]
+        if widget is None:
+            widget = self.fields[field_name]
 
         if isinstance(widget, Gtk.Entry):
             return widget.get_text()
 
         elif isinstance(widget, Gtk.TextView):
-            return widget.get_textbuffer().get_text()
+            buffer = widget.get_buffer()
+            return buffer.get_text(
+                buffer.get_start_iter(),
+                buffer.get_end_iter(),
+                False,
+            )
 
         else:
             LOGGER.warning('Unhandled changed field {}'.format(field_name))
             return None
 
-    def on_field_changed(self, entry, field_name):
-
-        # Multiple updates to same widget will be
-        # recorded only once, thanks to the set.
-        self.changed_fields.add(field_name)
-
-        if __debug__:
-            LOGGER.debug('Field {} changed.'.format(field_name))
+    def __check_field_wrapper(self, field_name, field):
 
         try:
             check_method = getattr(self, 'check_field_{}'.format(field_name))
 
         except AttributeError:
-            pass
+            # No check method, we assume any value is OK.
+            return True
+
+        field_value = self.get_field_value(field_name, field)
+
+        error = check_method(field_name, field, field_value)
+
+        if error:
+            # TODO: implement error label in dialog, under
+            add_classes(self.fields[field_name], ['error'])
+            self.message_error(error)
+
+            LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
+
+            return False
 
         else:
-            error = check_method()
+            remove_classes(self.fields[field_name], ['error'])
+            self.close_infobar()
 
-            if error:
-                # TODO: implement error label in dialog, under
-                add_classes(self.fields[field_name], ['error'])
-                self.message_error(error)
+        return True
 
-                LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
+    def on_field_changed(self, entry, field_name):
 
-                return
+        assert ldebug('Field {} eventually changed.', field_name)
 
-            else:
-                remove_classes(self.fields[field_name], ['error'])
-                self.close_infobar()
+        if not self.__check_field_wrapper(field_name, entry):
+            return
+
+        # Multiple updates to same widget will be
+        # recorded only once, thanks to the set.
+        self.changed_fields.add(field_name)
 
         if not gpod('bib_auto_save'):
             return
@@ -983,8 +1095,7 @@ class BibedEntryDialog(Gtk.Dialog):
             self.clear_save_callback()
 
             self.save_trigger_source = GLib.timeout_add_seconds(
-                priority=GLib.PRIORITY_DEFAULT, interval=1,
-                function=self.on_save_trigger_callback)
+                1, self.on_save_trigger_callback)
 
     def on_save_clicked(self, widget, *args, **kwargs):
 
@@ -993,9 +1104,7 @@ class BibedEntryDialog(Gtk.Dialog):
 
     def on_save_trigger_callback(self, *args, **kwargs):
 
-        if __debug__:
-            LOGGER.debug('on_save_trigger_callback({})'.format(
-                self.entry.key))
+        assert ldebug('on_save_trigger_callback({})', self.entry.key)
 
         with self.save_lock:
             self.update_entry_and_save_file()
@@ -1016,46 +1125,37 @@ class BibedEntryDialog(Gtk.Dialog):
                 # or GLib didn't automatically wipe self.save_trigger_source.
                 pass
 
-    def check_entry(self):
+    def check_biblatex_entry(self):
 
         LOGGER.warning(
-            'IMPLEMENT {}.check_entry()'.format(
+            'IMPLEMENT {}.check_biblatex_entry()'.format(
                 self.__class__.__name__))
 
         return True
 
     def update_entry_and_save_file(self):
 
-        # print(ltrace_caller_name())
-
         entry = self.entry
 
-        LOGGER.info('Save {0}: [{1}]'.format(
-            entry.key, ', '.join(self.changed_fields)
-        ))
+        assert ldebug('Entering update_entry_and_save_file()…')
 
         if not self.changed_fields:
-            if __debug__:
-                LOGGER.debug(
-                    'Entry {} did not change, '
-                    'avoiding superfluous save.'.format(
-                        entry.key))
+            assert ldebug('Entry {} did not change, avoiding superfluous save.',
+                          entry.key)
             return
 
         if not self.can_save:
-            if __debug__:
-                LOGGER.debug(
-                    'Entry {} cannot save yet, aborting save().'.format(
-                        entry.key))
+            assert ldebug('Entry {} cannot save yet, aborting save().',
+                          entry.key)
             return
 
         if gpod('ensure_biblatex_checks'):
-            if not self.check_entry():
+            if not self.check_biblatex_entry():
                 return
 
-        LOGGER.info('Fields changed on {0}: [{1}]'.format(
-            entry.key, ', '.join(self.changed_fields)
-        ))
+        LOGGER.info(
+            'update_entry_and_save_file(): will save {0}@{1}({2})'.format(
+                entry.key, entry.type, ', '.join(self.changed_fields)))
 
         key_updated = False
         new_entry   = False
@@ -1074,14 +1174,10 @@ class BibedEntryDialog(Gtk.Dialog):
             entry[field_name] = self.get_field_value(field_name)
 
         if new_entry:
-            # TODO: find a database !!!
             entry.database.add_entry(entry)
 
         elif key_updated:
             entry.database.move_entry(entry)
-
-        # In other case (just some fields updated), the job is
-        # already done. We just have to dump the file to disk.
 
         entry.database.save()
 

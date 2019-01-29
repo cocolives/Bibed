@@ -1,6 +1,7 @@
 import os
 import logging
 
+from bibed.foundations import ldebug
 from bibed.constants import (
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
@@ -40,6 +41,46 @@ def get_screen_resolution():
     return screensize
 
 
+def get_children_recursive(start_node, reverse=True):
+    ''' Get all children of :param:`start_node`, recursively.
+
+        .. note:: this function will reverse results by default, probably
+            because of a bug or a misunderstanding of myself at some point.
+
+            For some reason, returning children “as is”, without reversing
+            the list, gives results inversed of what I thought about.
+
+            You can still get “as is” result by setting :param:`reverse`
+            to `False`.
+
+        .. versionadded:: 0.9-develop
+    '''
+
+    # assert ldebug('CONTAINER {}', start_node)
+
+    # Get Bin before Container, else ScrolledWindow returns
+    # the Viewport instead of the real child.
+
+    children = []
+
+    if isinstance(start_node, Gtk.Bin):
+        child = start_node.get_child()
+        # assert ldebug('YIELD {}', child)
+        children.append(child)
+        children.extend(get_children_recursive(child, reverse=False))
+
+    elif isinstance(start_node, Gtk.Container):
+        for child in start_node.get_children():
+            # assert ldebug('YIELD {}', child)
+            children.append(child)
+            children.extend(get_children_recursive(child, reverse=False))
+
+    if reverse:
+        return reversed(children)
+
+    return children
+
+
 def find_child_by_name(start_node, widget_name):
 
     if start_node.get_name() == widget_name:
@@ -76,6 +117,39 @@ def notification_callback(notification, action_name):
     #        notification.show()
 
     notification.close()
+
+
+def stack_switch_next(stack, reverse=False):
+    ''' Switch to next or previous stack level, and return the one switched to. '''
+
+    children = stack.get_children()
+
+    first = children[0]
+    last  = children[-1]
+
+    if reverse:
+        children = reversed(children)
+
+    visible_child = stack.get_visible_child()
+    # get_visible_child_name()[source]
+
+    make_next_visible = False
+
+    for child in children:
+        if make_next_visible:
+            stack.set_visible_child(child)
+            return child
+
+        if child == visible_child:
+            if reverse and child == first:
+                stack.set_visible_child(last)
+                return last
+
+            elif not reverse and child == last:
+                stack.set_visible_child(first)
+                return first
+            else:
+                make_next_visible = True
 
 
 def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
@@ -142,7 +216,7 @@ def debug_widget(widget):
     print('\tmargin_end={0}'.format(widget.props.margin_end))
 
 
-def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, no_show_all=False, debug=False):
+def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA
 
@@ -221,6 +295,11 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
             widget.set_can_default(True)
 
         widget.set_receives_default(True)
+
+    if activates_default:
+        if __debug__ and debug: mp('SET activate default')  # NOQA
+
+        widget.set_activates_default(True)
 
     if classes:
         if __debug__ and debug: mp('classes', classes)  # NOQA
@@ -386,7 +465,7 @@ def flat_unclickable_button_in_hbox(label_text, icon_name=None):
         Gtk.Label(label_text),
         classes=['dnd-object'],
         debug=True
-        ), False, False, 0)
+    ), False, False, 0)
     label_with_icon.set_size_request(100, 30)
 
     label_with_icon.show_all()
@@ -474,6 +553,8 @@ def scrolled_textview():
 
     # self.textview.get_buffer().set_text('Nothing yet here.')
 
+    tv.set_wrap_mode(Gtk.WrapMode.WORD)
+
     sw.add(tv)
 
     return sw, tv
@@ -516,19 +597,18 @@ def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state, func_ar
     return label, switch
 
 
-def build_entry_field_labelled_entry(mnemonics, field_name, entry):
+def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, entry):
 
-    field_node = getattr(mnemonics, field_name)
+    field_label = getattr(fields_labels, field_name)
+    field_doc   = getattr(fields_docs, field_name)
 
-    if field_node is None:
-        field_has_help = False
-        field_label = field_name.title()
-        field_help = ''
+    # TODO: remove these ldebug() calls
+    # when every field is documented / labelled.
 
-    else:
-        field_has_help = field_node.doc is not None
-        field_label = field_node.label
-        field_help = field_node.doc
+    if field_label is None:
+        ldebug('\t>>> Field {} has no label', field_name)
+    if field_doc is None:
+        ldebug('\t>>> Field {} has no documentation', field_name)
 
     lbl = widget_properties(
         Gtk.Label(),
@@ -541,9 +621,9 @@ def build_entry_field_labelled_entry(mnemonics, field_name, entry):
 
     lbl.set_markup_with_mnemonic(
         '{label}{help}'.format(
-            label=field_label,
+            label=field_label if field_label else field_name.title(),
             help=GENERIC_HELP_SYMBOL
-            if field_has_help else ''))
+            if field_doc else ''))
 
     etr = widget_properties(
         Gtk.Entry(),
@@ -559,26 +639,14 @@ def build_entry_field_labelled_entry(mnemonics, field_name, entry):
 
     lbl.set_mnemonic_widget(etr)
 
-    if field_has_help:
-        lbl.set_tooltip_markup(field_help)
-        etr.set_tooltip_markup(field_help)
+    if field_doc:
+        lbl.set_tooltip_markup(field_doc)
+        etr.set_tooltip_markup(field_doc)
 
     return lbl, etr
 
 
-def build_entry_field_textview(mnemonics, field_name, entry):
-
-    field_node = getattr(mnemonics, field_name)
-
-    if field_node is None:
-        field_has_help = False
-        # field_label = field_name.title()
-        field_help = ''
-
-    else:
-        field_has_help = field_node.doc is not None
-        # field_label = field_node.label
-        field_help = field_node.doc
+def build_entry_field_textview(fields_docs, field_name, entry):
 
     scrolled, textview = scrolled_textview()
 
@@ -590,7 +658,9 @@ def build_entry_field_textview(mnemonics, field_name, entry):
     # textview.connect(
     #   'changed', self.on_field_changed, field_name)
 
-    if field_has_help:
+    field_help = getattr(fields_docs, field_name)
+
+    if field_help:
         textview.set_tooltip_markup(field_help)
 
     return scrolled, textview
