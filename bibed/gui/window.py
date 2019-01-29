@@ -369,18 +369,46 @@ class BibEdWindow(Gtk.ApplicationWindow):
         keyval = event.keyval
         # state = event.state
 
+        # TODO: convert all of these to proper accels.
+        #       See  http://gtk.10911.n7.nabble.com/GdkModifiers-bitmask-and-GDK-SHIFT-MASK-question-td4404.html
+        #       And https://stackoverflow.com/a/10890393/654755
+        #       Control+Shift-u → Control+U
+        #
+
         # check the event modifiers (can also use SHIFTMASK, etc)
         ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
+        # shift = (event.state & Gdk.ModifierType.SHIFT_MASK)
+        ctrl_shift = (
+            event.state & (Gdk.ModifierType.CONTROL_MASK
+                           | Gdk.ModifierType.SHIFT_MASK)
+        )
 
         # Alternative way of knowing key pressed.
         # keyval_name = Gdk.keyval_name(keyval)
         # if ctrl and keyval_name == 's':
 
         if ctrl and keyval == Gdk.KEY_c:
+            self.treeview.copy_single_key_to_clipboard()
 
-            self.treeview.copy_current_row_to_clipboard()
+        if ctrl and keyval == Gdk.KEY_k:
+            self.treeview.copy_raw_key_to_clipboard()
 
-        if ctrl and keyval == Gdk.KEY_s:
+        elif ctrl and keyval == Gdk.KEY_u:
+
+            if gpod('url_action_opens_browser'):
+                self.treeview.open_url_in_webbrowser()
+            else:
+                self.treeview.copy_url_to_clipboard()
+
+        elif ctrl_shift and keyval == Gdk.KEY_U:
+            # NOTE: the upper case 'U'
+
+            if gpod('url_action_opens_browser'):
+                self.treeview.copy_url_to_clipboard()
+            else:
+                self.treeview.open_url_in_webbrowser()
+
+        elif ctrl and keyval == Gdk.KEY_s:
 
             if gpod('bib_auto_save'):
                 # propagate signal, we do not need to save.
