@@ -276,7 +276,14 @@ class BibedEntry():
 
     @property
     def journal(self):
-        return self.__clean_for_display('journal')
+
+        # TODO: use journaltitle / handle aliased fields.
+
+        for field_name in ('journaltitle', 'booktitle', 'journal'):
+            field_value = self.__clean_for_display(field_name)
+
+            if field_value:
+                return field_value
 
     @property
     def author(self):
