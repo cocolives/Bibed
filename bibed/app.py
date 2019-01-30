@@ -28,7 +28,7 @@ from bibed.foundations import (
 # Import Gtk before preferences, to initialize GI.
 from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
 
-from bibed.utils import PyinotifyEventHandler
+from bibed.utils import PyinotifyEventHandler, to_lower_if_not_none
 from bibed.preferences import preferences, memories
 from bibed.database import BibedDatabase, BibedListStore
 
@@ -193,6 +193,8 @@ class BibEdApplication(Gtk.Application):
             # The window is not yet constructed
             return True
 
+        store_entry = model[iter]
+
         try:
             filter_file = self.window.get_selected_filename()
 
@@ -203,7 +205,7 @@ class BibEdApplication(Gtk.Application):
         else:
             # TODO: translate 'All'
             if filter_file != 'All':
-                if model[iter][BibAttrs.FILENAME] != filter_file:
+                if store_entry[BibAttrs.FILENAME] != filter_file:
                     # The current row is not part of displayed
                     # filename. No need to go further.
                     return False
@@ -229,26 +231,35 @@ class BibEdApplication(Gtk.Application):
 
         for key, val in specials:
             if key == 't':  # TYPE
-                if val not in model[iter][BibAttrs.TYPE].lower():
+                if val not in store_entry[BibAttrs.TYPE].lower():
                     return False
 
             if key == 'k':  # (bib) KEY
-                if val not in model[iter][BibAttrs.KEY].lower():
+                if val not in store_entry[BibAttrs.KEY].lower():
                     return False
 
             if key == 'j':
-                if val not in model[iter][BibAttrs.JOURNAL].lower():
+                if val not in store_entry[BibAttrs.JOURNAL].lower():
                     return False
 
             if key == 'y':
-                if int(val) != int(model[iter][BibAttrs.YEAR]):
+                if int(val) != int(store_entry[BibAttrs.YEAR]):
                     return False
 
+        # TODO: unaccented / delocalized search.
+
+        model_full_text_data = [
+            to_lower_if_not_none(store_entry[BibAttrs.AUTHOR]),
+            to_lower_if_not_none(store_entry[BibAttrs.TITLE]),
+            to_lower_if_not_none(store_entry[BibAttrs.JOURNAL]),
+            to_lower_if_not_none(store_entry[BibAttrs.SUBTITLE]),
+            to_lower_if_not_none(store_entry[BibAttrs.COMMENT]),
+            # NO abstract yet in data_store.
+            # to_lower_if_not_none(model[iter][BibAttrs.ABSTRACT])
+        ]
+
         for word in full_text:
-            if word not in model[iter][BibAttrs.AUTHOR].lower() \
-                and word not in model[iter][BibAttrs.TITLE].lower() \
-                and word not in model[iter][BibAttrs.SUBTITLE].lower() \
-                    and word not in model[iter][BibAttrs.COMMENT].lower():
+            if word not in ' '.join(model_full_text_data):
                 return False
 
         return True
