@@ -73,6 +73,7 @@ fields:
       - subtitle
       - url
       - urldate
+      - file
       - journalsubtitle
       - series
       - volume
@@ -118,6 +119,7 @@ fields:
       - publisher
       - isbn
       - edition
+      - file
       - pages
       - pagetotal
       - addendum
@@ -203,6 +205,7 @@ fields:
       - eprinttype
       - url
       - urldate
+      - file
       required:
       - title
       - author
@@ -221,6 +224,7 @@ fields:
       - addendum
       - url
       - urldate
+      - file
       - pubstate
       - titleaddon
       - language
@@ -285,6 +289,7 @@ fields:
       - eprinttype
       - url
       - urldate
+      - file
       required:
       - title
       - author
@@ -302,6 +307,7 @@ fields:
       - type
       - url
       - urldate
+      - file
       - addendum
       - doi
       - language
@@ -332,6 +338,7 @@ fields:
       - type
       - url
       - urldate
+      - file
       - addendum
       - doi
       - language
@@ -384,6 +391,7 @@ fields:
       - eprinttype
       - url
       - urldate
+      - file
       required:
       - title
       - author
@@ -409,6 +417,7 @@ fields:
       - eprintclass
       - eprinttype
       - urldate
+      - file
       required:
       - title
       - - author
@@ -425,6 +434,7 @@ fields:
       - subtitle
       - url
       - urldate
+      - file
       - addendum
       - titleaddon
       - language
@@ -496,6 +506,7 @@ fields:
       - eprinttype
       - url
       - urldate
+      - file
       required:
       - title
       - author
@@ -512,6 +523,7 @@ fields:
       - titleaddon
       - url
       - urldate
+      - file
       - addendum
       - language
       - note
@@ -543,6 +555,10 @@ fields:
       - titleaddon
       - type
       - addendum
+      - pubstate
+      - url
+      - urldate
+      - file
       - eventtitle
       - eventtitleaddon
       - eventdate
@@ -553,9 +569,6 @@ fields:
       - location
       - isbn
       - month
-      - pubstate
-      - url
-      - urldate
       required:
       - title
       - author
@@ -607,6 +620,7 @@ fields:
     comment: Comment(s)
     date: Date
     doi: DOI
+    isbn: ISBN
     editor: Editor(s)
     eprint: E-Print
     eprintclass: E-Print class
@@ -630,6 +644,7 @@ fields:
     urldate: URL date
     version: Version
     year: Year
+    file: File
 keep_recent_files: 10
 remember_last_destination: true
 remember_open_files: true
