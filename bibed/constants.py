@@ -18,7 +18,7 @@ class Anything:
 
 BibAttrs = Anything()
 
-# Sync this with STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
+# Sync this with DATA_STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
 BibAttrs.GLOBAL_ID = 0
 BibAttrs.FILENAME  = 1
 BibAttrs.ID        = 2
@@ -39,7 +39,7 @@ BibAttrs.READ      = 16
 BibAttrs.COMMENT   = 17
 
 
-STORE_LIST_ARGS = [
+DATA_STORE_LIST_ARGS = [
     int,  # global ID / counter across all files
     str,  # store origin (filename / ID)
     int,  # id / counter in current file

@@ -9,7 +9,7 @@ import bibtexparser
 
 from bibed.foundations import ldebug
 from bibed.constants import (
-    STORE_LIST_ARGS,
+    DATA_STORE_LIST_ARGS,
     BibAttrs,
 )
 from bibed.preferences import gpod
@@ -136,8 +136,12 @@ class BibedListStore(Gtk.ListStore):
 
     def __init__(self, *args, **kwargs):
         super().__init__(
-            *STORE_LIST_ARGS
+            *DATA_STORE_LIST_ARGS
         )
+
+        # TODO: detect aliased fields and set self.use_aliased fields.
+
+        pass
 
     def do_recompute_global_ids(self):
 
