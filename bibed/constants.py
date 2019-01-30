@@ -173,3 +173,8 @@ URL_PIXBUFS = {
     False: None,
     True: icon('16x16/url.png'),
 }
+
+FILE_PIXBUFS = {
+    False: None,
+    True: icon('16x16/pdf.png'),
+}

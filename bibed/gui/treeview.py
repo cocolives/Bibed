@@ -5,6 +5,7 @@ import webbrowser
 from bibed.constants import (
     BibAttrs,
     URL_PIXBUFS,
+    FILE_PIXBUFS,
     COMMENT_PIXBUFS,
     READ_STATUS_PIXBUFS,
     QUALITY_STATUS_PIXBUFS,
@@ -68,6 +69,7 @@ class BibedMainTreeView(Gtk.TreeView):
             ('quality_status_pixbufs', QUALITY_STATUS_PIXBUFS),
             ('read_status_pixbufs', READ_STATUS_PIXBUFS),
             ('comment_pixbufs', COMMENT_PIXBUFS),
+            ('file_pixbufs', FILE_PIXBUFS),
             ('url_pixbufs', URL_PIXBUFS),
         ):
             temp_dict = {}
@@ -89,11 +91,14 @@ class BibedMainTreeView(Gtk.TreeView):
         self.col_type = self.setup_text_column(
             'type', BibAttrs.TYPE)
 
-        # File column
         # DOI column
 
         # TODO: integrate a pixbuf for 'tags' (keywords) ?
 
+        self.col_file = self.setup_pixbuf_column(
+            'F', BibAttrs.FILE,
+            self.get_file_cell_column,
+            self.on_file_clicked)
         self.col_url = self.setup_pixbuf_column(
             'U', BibAttrs.URL,
             self.get_url_cell_column,
@@ -203,6 +208,11 @@ class BibedMainTreeView(Gtk.TreeView):
                 'pixbuf', self.url_pixbufs[
                     model.get_value(iter, BibAttrs.URL) != ''])
 
+    def get_file_cell_column(self, col, cell, model, iter, user_data):
+            cell.set_property(
+                'pixbuf', self.file_pixbufs[
+                    model.get_value(iter, BibAttrs.FILE) != ''])
+
     def set_columns_widths(self, width):
 
         col_key_width     = round(width * COL_KEY_WIDTH)
@@ -214,10 +224,10 @@ class BibedMainTreeView(Gtk.TreeView):
             col_key_width + col_author_width
             + col_journal_width + col_year_width
             + col_type_width
-            + 4 * COL_PIXBUF_WIDTH
-        ) - COL_SEPARATOR_WIDTH * 9)
+            + 5 * COL_PIXBUF_WIDTH
+        ) - COL_SEPARATOR_WIDTH * 10)
 
-        print(col_key_width, col_type_width, col_author_width, col_journal_width, col_year_width, col_title_width, )
+        # print(col_key_width, col_type_width, col_author_width, col_journal_width, col_year_width, col_title_width, )
 
         self.col_key.set_fixed_width(col_key_width)
         self.col_type.set_fixed_width(col_type_width)
@@ -308,6 +318,11 @@ class BibedMainTreeView(Gtk.TreeView):
     def on_url_clicked(self, renderer, path):
 
         self.open_url_in_webbrowser(
+            entry=self.get_entry_by_path(path, only_store_entry=True))
+
+    def on_file_clicked(self, renderer, path):
+
+        self.open_file_in_prefered_application(
             entry=self.get_entry_by_path(path, only_store_entry=True))
 
     def on_treeview_column_clicked(self, column):
@@ -402,9 +417,9 @@ class BibedMainTreeView(Gtk.TreeView):
                     '“{data}” {message} (from entry {key}).'.format(
                         data=transformed_data,
                         message=('run through {func}'.format(
-                            action_func.__name__
+                            func=action_func.__name__)
                             if action_message is None
-                            else action_message)
+                            else action_message
                         ),
                         key=entry_gid,
                     )
@@ -428,8 +443,20 @@ class BibedMainTreeView(Gtk.TreeView):
 
     def open_url_in_webbrowser(self, entry=None):
         return self.copy_to_clipboard_or_action(
-            BibAttrs.KEY,
+            BibAttrs.URL,
             action_func=webbrowser.open_new_tab,
             action_message='opened in web browser',
             entry=entry,
         )
+
+    def open_file_in_prefered_application(self, entry=None):
+
+        # TODO: and an action to open in file browser.
+
+        # return self.copy_to_clipboard_or_action(
+        #     BibAttrs.KEY,
+        #     action_func=webbrowser.open_new_tab,
+        #     action_message='opened in web browser',
+        #     entry=entry,
+        # )
+        pass
