@@ -7,6 +7,9 @@ BIBED_DATA_DIR = os.path.join(os.path.realpath(
     os.path.abspath(os.path.dirname(__file__))), 'data')
 BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
+BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
+BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
+
 
 def icon(name):
     return os.path.join(BIBED_ICONS_DIR, name)
