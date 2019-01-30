@@ -1092,11 +1092,13 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         if not gpod('bib_auto_save'):
             return
 
-        with self.save_lock:
-            self.clear_save_callback()
+        if self.save_lock.acquire(blocking=False) is False:
+            return
 
-            self.save_trigger_source = GLib.timeout_add_seconds(
-                1, self.on_save_trigger_callback)
+        self.clear_save_callback()
+
+        self.save_trigger_source = GLib.timeout_add_seconds(
+            1, self.on_save_trigger_callback)
 
     def on_save_clicked(self, widget, *args, **kwargs):
 
@@ -1107,8 +1109,15 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         assert ldebug('on_save_trigger_callback({})', self.entry.key)
 
-        with self.save_lock:
-            self.update_entry_and_save_file()
+        # NOTE: lock is already locked by trigger launcher.
+
+        self.update_entry_and_save_file()
+
+        try:
+            self.save_lock.release()
+
+        except Exception as e:
+            LOGGER.exception(e)
 
         # Remove the callback from IDLE list.
         # Next will be triggered by future entry changes.
