@@ -10,6 +10,8 @@ from bibed.constants import (
     SEARCH_WIDTH_EXPANDED,
     FILES_COMBO_DEFAULT_WIDTH,
     RESIZE_SIZE_MULTIPLIER,
+    BIBED_ASSISTANCE_FR,
+    BIBED_ASSISTANCE_EN,
 )
 
 from bibed.preferences import memories, gpod
@@ -17,9 +19,11 @@ from bibed.utils import get_user_home_directory
 from bibed.entry import BibedEntry
 
 from bibed.gui.helpers import (
-    scrolled_textview,
+    # scrolled_textview,
     add_classes,
     remove_classes,
+    widget_properties,
+    label_with_markup,
 )
 from bibed.gui.preferences import BibedPreferencesDialog
 from bibed.gui.treeview import BibedMainTreeView
@@ -82,7 +86,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.application = kwargs['application']
 
         self.setup_treeview()
-        self.setup_textview()
+        self.setup_network()
 
         self.setup_stack()
 
@@ -110,6 +114,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
         # self.set_default_icon_list([pixbuf])
         # self.set_icon_list([pixbuf])
+        pass
 
     def setup_stack(self):
 
@@ -124,23 +129,23 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         stack.add_titled(
             self.treeview_sw,
-            "treeview",
-            "Database"
+            'database',
+            'BIB Database'
         )
 
         stack.child_set_property(
-            self.treeview_sw, "icon-name",
+            self.treeview_sw, 'icon-name',
             'accessories-dictionary-symbolic')
 
         stack.add_titled(
-            self.textview_sw,
-            "strings",
-            "BIB Strings"
+            self.lbl_network,
+            'network',
+            '{app} network'.format(app=APP_NAME)
         )
 
         stack.child_set_property(
-            self.textview_sw, "icon-name",
-            'view-list-symbolic')
+            self.lbl_network, 'icon-name',
+            'network-workgroup-symbolic')
         # 'utilities-system-monitor-symbolic'
 
         self.stack_switcher = stack_switcher
@@ -253,9 +258,25 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.headerbar = hb
 
-    def setup_textview(self):
+    def setup_network(self):
 
-        self.textview_sw, self.textview = scrolled_textview()
+        self.lbl_network = widget_properties(
+            label_with_markup(
+                '<big>Bibed Network</big>\n\n'
+                'Upcoming feature. Please wait.\n'
+                '(You have no choice, anyway :-D)\n'
+                'Come discuss it: '
+                '<a href="{discuss_en}">in english</a> '
+                '| <a href="{discuss_fr}">in french</a>'.format(
+                    discuss_en=BIBED_ASSISTANCE_EN,
+                    discuss_fr=BIBED_ASSISTANCE_FR,
+                ),
+                name='network',
+                xalign=0.5,
+                yalign=0.5,
+            ),
+            expand=True,
+        )
 
     def setup_treeview(self):
 

@@ -67,6 +67,14 @@ def make_bibed_user_dir():
             'While creating preferences directory “{}”'.format(bibed_user_dir))
 
 
+def to_lower_if_not_none(data):
+
+    if data is None:
+        return ''
+
+    return data.lower()
+
+
 # ———————————————————————————————————————————————————————————————— Classes
 
 

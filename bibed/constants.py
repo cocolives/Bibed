@@ -7,6 +7,9 @@ BIBED_DATA_DIR = os.path.join(os.path.realpath(
     os.path.abspath(os.path.dirname(__file__))), 'data')
 BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
+BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
+BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
+
 
 def icon(name):
     return os.path.join(BIBED_ICONS_DIR, name)
@@ -18,7 +21,7 @@ class Anything:
 
 BibAttrs = Anything()
 
-# Sync this with STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
+# Sync this with DATA_STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
 BibAttrs.GLOBAL_ID = 0
 BibAttrs.FILENAME  = 1
 BibAttrs.ID        = 2
@@ -39,7 +42,7 @@ BibAttrs.READ      = 16
 BibAttrs.COMMENT   = 17
 
 
-STORE_LIST_ARGS = [
+DATA_STORE_LIST_ARGS = [
     int,  # global ID / counter across all files
     str,  # store origin (filename / ID)
     int,  # id / counter in current file
@@ -169,4 +172,9 @@ COMMENT_PIXBUFS = {
 URL_PIXBUFS = {
     False: None,
     True: icon('16x16/url.png'),
+}
+
+FILE_PIXBUFS = {
+    False: None,
+    True: icon('16x16/pdf.png'),
 }
