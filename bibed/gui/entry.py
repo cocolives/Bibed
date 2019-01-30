@@ -180,21 +180,22 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         if ctrl and keyval == Gdk.KEY_s:
 
-            LOGGER.info('Control-S pressed in dialog (no action yet).')
-
-        elif ctrl and keyval == Gdk.KEY_r:
-
-            LOGGER.info('Control-R pressed in dialog (no action yet).')
+            self.btn_save.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_d:
-            # Should open Location popover.
-            LOGGER.info('Control-D pressed in dialog (no action yet).')
+
+            self.btn_destination_set.emit('clicked')
+
+        elif ctrl and keyval == Gdk.KEY_t:
+
+            # Should open switch type popover.
+
+            LOGGER.info('Control-T pressed in dialog (no action yet).')
 
         elif ctrl and keyval in (Gdk.KEY_Page_Down, Gdk.KEY_Page_Up):
 
             # TODO: switch previous / next entry.
 
-            # Should show previous/next treeview entry.
             LOGGER.info('Control-Page-[UP/DOWN] pressed in dialog (no action yet).')
 
         elif not ctrl:
@@ -554,6 +555,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                 width=300,
                 activates_default=True,
             )
+
+            if not self.brand_new:
+                entry.set_text(self.entry.key)
 
             btn_compute = widget_properties(Gtk.Button(), expand=False)
             btn_compute.connect('clicked', self.on_key_compute_clicked, entry)
@@ -996,6 +1000,11 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         if gpod('bib_auto_save'):
             self.update_entry_and_save_file(save=True)
+
+        else:
+            # If user did not save, be sure we don't
+            # insert an invalid entry in the treeview.
+            self.changed_fields = set()
 
         return result
 
