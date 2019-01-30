@@ -1,5 +1,6 @@
 
 import os
+import re
 import logging
 import datetime
 
@@ -17,6 +18,9 @@ from bibed.preferences import defaults, preferences
 
 LOGGER = logging.getLogger(__name__)
 
+# —————————————————————————————————————————————————————— regular expressions
+
+KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
 
 # ———————————————————————————————————————————————————————————————— Functions
 
@@ -37,6 +41,9 @@ class BibedEntry():
         return cls(
             None,
             {'ENTRYTYPE': entry_type},
+            # Index to -1 is checked in BibedEntryDialog
+            # to ensure the new entry is written only once
+            # into database.
             -1,
         )
 
@@ -435,10 +442,11 @@ class EntryFieldCheckMixin:
 
     def check_field_key(self, field_name, field, field_value):
 
-        # TODO: remove this test when auto-key-builder is implemented.
-        if len(field_value.strip()) <= 3:
+        field_value = field_value.strip()
+
+        if KEY_RE.match(field_value) is None:
             return (
-                'Key cannot be empty and must be at least 3 characters long.'
+                'Key must start with a letter, contain only letters and numbers; special characters allowed: “-”, “:” and “_”.'
             )
 
         has_key = self.parent.application.check_has_key(field_value)

@@ -645,9 +645,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # TODO: convert this test to Gtk.Response.OK and CANCEL
             #       to know if we need to insert/update or not.
             if entry.database is not None and entry_edit_dialog.can_save:
-                # TODO: update list_store directly.
-                # Entry was saved to disk, insert it in the treeview.
                 self.treeview.main_model.insert_entry(entry)
+                self.do_filter_data_store()
 
             entry_edit_dialog.destroy()
 

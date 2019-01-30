@@ -118,7 +118,6 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         # Will be filled by GLib.idle_add() in *save*() methods.
         self.save_trigger_source = None
-        self.save_lock = Lock()
 
         # TODO: This is probably a dupe with Gtk's get_parent(),
         #       but despite super() beiing given parent arg,
@@ -181,21 +180,22 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         if ctrl and keyval == Gdk.KEY_s:
 
-            LOGGER.info('Control-S pressed in dialog (no action yet).')
-
-        elif ctrl and keyval == Gdk.KEY_r:
-
-            LOGGER.info('Control-R pressed in dialog (no action yet).')
+            self.btn_save.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_d:
-            # Should open Location popover.
-            LOGGER.info('Control-D pressed in dialog (no action yet).')
+
+            self.btn_destination_set.emit('clicked')
+
+        elif ctrl and keyval == Gdk.KEY_t:
+
+            # Should open switch type popover.
+
+            LOGGER.info('Control-T pressed in dialog (no action yet).')
 
         elif ctrl and keyval in (Gdk.KEY_Page_Down, Gdk.KEY_Page_Up):
 
             # TODO: switch previous / next entry.
 
-            # Should show previous/next treeview entry.
             LOGGER.info('Control-Page-[UP/DOWN] pressed in dialog (no action yet).')
 
         elif not ctrl:
@@ -555,6 +555,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                 width=300,
                 activates_default=True,
             )
+
+            if not self.brand_new:
+                entry.set_text(self.entry.key)
 
             btn_compute = widget_properties(Gtk.Button(), expand=False)
             btn_compute.connect('clicked', self.on_key_compute_clicked, entry)
@@ -932,11 +935,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         self.changed_fields |= set(('key', 'ids', ))
 
-        if not gpod('bib_auto_save'):
-            return
-
-        with self.save_lock:
-            self.update_entry_and_save_file()
+        self.update_entry_and_save_file(save=gpod('bib_auto_save'))
 
         popover.popdown()
 
@@ -998,12 +997,14 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         # We need to save before closing for
         # treeview update to use the new entry.
-        with self.save_lock:
 
-            if gpod('bib_auto_save'):
-                self.clear_save_callback()
+        if gpod('bib_auto_save'):
+            self.update_entry_and_save_file(save=True)
 
-            self.update_entry_and_save_file()
+        else:
+            # If user did not save, be sure we don't
+            # insert an invalid entry in the treeview.
+            self.changed_fields = set()
 
         return result
 
@@ -1067,7 +1068,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             add_classes(self.fields[field_name], ['error'])
             self.message_error(error)
 
-            LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
+            # LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
 
             return False
 
@@ -1088,42 +1089,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         # recorded only once, thanks to the set.
         self.changed_fields.add(field_name)
 
-        if not gpod('bib_auto_save'):
-            return
-
-        with self.save_lock:
-            self.clear_save_callback()
-
-            self.save_trigger_source = GLib.timeout_add_seconds(
-                1, self.on_save_trigger_callback)
-
     def on_save_clicked(self, widget, *args, **kwargs):
 
-        with self.save_lock:
-            self.update_entry_and_save_file()
-
-    def on_save_trigger_callback(self, *args, **kwargs):
-
-        assert ldebug('on_save_trigger_callback({})', self.entry.key)
-
-        with self.save_lock:
-            self.update_entry_and_save_file()
-
-        # Remove the callback from IDLE list.
-        # Next will be triggered by future entry changes.
-        return False
-
-    def clear_save_callback(self):
-
-        if self.save_trigger_source:
-            # Remove the in-progress save()
-            try:
-                GLib.source_remove(self.save_trigger_source)
-
-            except Exception:
-                # The callback finished while we were blocked on the lock,
-                # or GLib didn't automatically wipe self.save_trigger_source.
-                pass
+        self.update_entry_and_save_file(save=True)
 
     def check_biblatex_entry(self):
 
@@ -1133,7 +1101,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         return True
 
-    def update_entry_and_save_file(self):
+    def update_entry_and_save_file(self, save=True):
 
         entry = self.entry
 
@@ -1157,7 +1125,10 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             'update_entry_and_save_file(): will save {0}@{1}({2})'.format(
                 entry.key, entry.type, ', '.join(self.changed_fields)))
 
+        # User renamed the key via popover.
         key_updated = False
+
+        # First save or auto-save.
         new_entry   = False
 
         if 'ids' in self.changed_fields:
@@ -1168,7 +1139,16 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             # Do not remove() the field, we
             # could be in 'new entry' case.
             if not key_updated:
-                new_entry = True
+
+                # This -1 value comes from BibedEntry.new_from_type().
+                if entry.index == -1:
+                    # Special case at first auto-save.
+                    # While user continues to type the key, more auto-saves
+                    # will be triggered and we need to avoid creating multiple
+                    # entries with same key (or partial same keys) in database.
+                    # We thus rely on database index, which will have been
+                    # replaced with real index value by database at first write.
+                    new_entry = True
 
         for field_name in self.changed_fields:
             entry[field_name] = self.get_field_value(field_name)
@@ -1179,7 +1159,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         elif key_updated:
             entry.database.move_entry(entry)
 
-        entry.database.save()
+        if save:
+            entry.database.save()
 
         # Reset changed fields now that everything is saved.
         self.changed_fields = set()
