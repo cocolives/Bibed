@@ -998,6 +998,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         # We need to save before closing for
         # treeview update to use the new entry.
+
         with self.save_lock:
 
             if gpod('bib_auto_save'):
@@ -1067,7 +1068,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             add_classes(self.fields[field_name], ['error'])
             self.message_error(error)
 
-            LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
+            # LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
 
             return False
 
@@ -1157,7 +1158,10 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             'update_entry_and_save_file(): will save {0}@{1}({2})'.format(
                 entry.key, entry.type, ', '.join(self.changed_fields)))
 
+        # User renamed the key via popover.
         key_updated = False
+
+        # First save or auto-save.
         new_entry   = False
 
         if 'ids' in self.changed_fields:
@@ -1168,7 +1172,16 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             # Do not remove() the field, we
             # could be in 'new entry' case.
             if not key_updated:
-                new_entry = True
+
+                # This -1 value comes from BibedEntry.new_from_type().
+                if entry.index == -1:
+                    # Special case at first auto-save.
+                    # While user continues to type the key, more auto-saves
+                    # will be triggered and we need to avoid creating multiple
+                    # entries with same key (or partial same keys) in database.
+                    # We thus rely on database index, which will have been
+                    # replaced with real index value by database at first write.
+                    new_entry = True
 
         for field_name in self.changed_fields:
             entry[field_name] = self.get_field_value(field_name)
