@@ -71,6 +71,7 @@ class BibedDatabase:
     def add_entry(self, entry):
 
         new_index = len(self.bibdb.entries)
+        entry.index = new_index
 
         # Insert in BibedDatabase.
         self.entries[entry.key] = (entry.entry, new_index)
@@ -94,6 +95,8 @@ class BibedDatabase:
         # idem in bibtexparser database.
         del self.bibdb.entries[old_index]
         self.bibdb.entries.insert(old_index, entry.entry)
+
+        assert(entry.index)
 
     def backup(self):
 
