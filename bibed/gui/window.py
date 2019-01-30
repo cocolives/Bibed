@@ -648,6 +648,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 # TODO: update list_store directly.
                 # Entry was saved to disk, insert it in the treeview.
                 self.treeview.main_model.insert_entry(entry)
+                self.do_filter_data_store()
 
             entry_edit_dialog.destroy()
 
