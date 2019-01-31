@@ -123,6 +123,8 @@ class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
 
     def add_open_file(self, filename):
 
+        # assert lprint_function_name()
+
         if self.open_files is None:
             self.open_files = set((filename, ))
 
@@ -130,6 +132,8 @@ class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
             self.open_files |= set((filename,))
 
     def remove_open_file(self, filename):
+
+        # assert lprint_function_name()
 
         if self.open_files is not None:
             try:
@@ -143,6 +147,8 @@ class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
                 self.save()
 
     def add_recent_file(self, filename):
+
+        # assert lprint_function_name()
 
         defs  = self.defaults
         prefs = self.preferences
