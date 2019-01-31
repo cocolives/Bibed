@@ -251,8 +251,7 @@ class BibEdApplication(Gtk.Application):
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = BibEdWindow(
-                title="Main Window", application=self)
+            self.window = BibEdWindow(title='Main Window', application=self)
             self.window.show_all()
 
             if preferences.remember_open_files:
@@ -277,12 +276,17 @@ class BibEdApplication(Gtk.Application):
                     # because in some corner cases the live “re-ordering”
                     # makes a file loaded two times.
 
-                    for filename in memories.open_files.copy():
-                        try:
-                            self.open_file(filename)
+                    with self.window.block_signals():
+                        # We need to block signals and let win.do_activate()
+                        # Update everything, else some on_*_changed() signals
+                        # are not fired. Don't know if it's a Gtk or pgi bug.
 
-                        except (IOError, OSError):
-                            memories.remove_open_file(filename)
+                        for filename in memories.open_files.copy():
+                            try:
+                                self.open_file(filename)
+
+                            except (IOError, OSError):
+                                memories.remove_open_file(filename)
 
         # make interface consistent with data.
         self.window.do_activate()
@@ -290,6 +294,7 @@ class BibEdApplication(Gtk.Application):
         if combo_set_active:
             for row in self.window.filtered_files:
                 if row[0] == combo_set_active:
+                    # assert lprint('ACTIVATE', combo_set_active, len(self.window.filtered_files))
                     self.window.cmb_files.set_active_iter(row.iter)
                     break
 
@@ -328,6 +333,9 @@ class BibEdApplication(Gtk.Application):
         # assert lprint_function_name()
         # assert lprint(filename, recompute)
 
+        # Be sure we keep a consistent path across all application.
+        filename = os.path.realpath(os.path.abspath(filename))
+
         try:
             # Note: via events, this will update the window title.
             self.files.load(filename, recompute=recompute)
@@ -347,11 +355,9 @@ class BibEdApplication(Gtk.Application):
         if len(self.files) > 1:
             # Now that we have more than one file,
             # make active and select 'All' by default.
-            self.window.cmb_files.set_active(0)
             self.window.cmb_files.set_sensitive(True)
 
-        else:
-            self.window.cmb_files.set_active(0)
+        self.window.cmb_files.set_active(0)
 
         memories.add_open_file(filename)
         memories.add_recent_file(filename)
@@ -436,14 +442,11 @@ class BibEdApplication(Gtk.Application):
 
     def on_quit(self, action, param):
 
-        # assert lprint_function_name()
+        # Block signals, else memories.combo_filename will
+        # finish empty When last file has been closed.
+        self.window.block_signals()
 
-        if preferences.remember_open_files:
-            # We need to keep track of this, because unloading
-            # the files will empty the combo and we will loose
-            # the selected value.
-            combo_value = memories.combo_filename
-
+        # This will close system files too.
         self.files.close_all(
             save_before=True,
             recompute=False,
@@ -451,10 +454,6 @@ class BibEdApplication(Gtk.Application):
             # This will allow automatic reopen on next launch.
             remember_close=False,
         )
-
-        if preferences.remember_open_files:
-            # Keep that memory back now that all files are unloaded.
-            memories.combo_filename = combo_value
 
         LOGGER.info('Terminating application.')
         self.quit()

@@ -59,7 +59,7 @@ class NoDatabaseForFilename(BibedDataStoreException):
     pass
 
 
-class NoWatchContextManager:
+class BibedFileStoreNoWatchContextManager:
     ''' A simple context manager to temporarily disable inotify watches. '''
 
     def __init__(self, store, filename):
@@ -162,25 +162,25 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint_function_name()
         # assert lprint(filename)
 
-        file_to_watch = os.path.realpath(os.path.abspath(filename))
+        self.wdd.update(self.wm.add_watch(filename, pyinotify.IN_MODIFY))
 
-        self.wdd.update(self.wm.add_watch(file_to_watch, pyinotify.IN_MODIFY))
+    def inotify_remove_watch(self, filename, delete=False):
 
-        # LOGGER.info('inotify_add_watch(): watching {}.'.format(file_to_watch))
-        pass
-
-    def inotify_remove_watch(self, filename):
-
+        # assert lprint_caller_name(levels=2)
         # assert lprint_function_name()
         # assert lprint(filename)
 
-        file_to_watch = os.path.realpath(os.path.abspath(filename))
+        try:
+            self.wm.rm_watch(self.wdd[filename])
 
-        self.wm.rm_watch(self.wdd[file_to_watch])
+        except KeyError:
+            # Happens at close() when save() is called after the
+            # inotify remove. I don't want to invert there, this
+            # would produce resource-consuming off/on/off cycle.
+            pass
 
-        # LOGGER.info('inotify_remove_watch(): removing {}.'.format(
-        #             file_to_watch))
-        pass
+        if delete:
+            del self.wdd[filename]
 
     def on_file_modify(self, event):
         ''' Acquire lock and launch delayed updater. '''
@@ -221,7 +221,7 @@ class BibedFileStore(Gtk.ListStore):
 
         # assert lprint_function_name()
 
-        return NoWatchContextManager(self, filename)
+        return BibedFileStoreNoWatchContextManager(self, filename)
 
     # ————————————————————————————————————————————————————————————————— Queries
 
@@ -321,8 +321,6 @@ class BibedFileStore(Gtk.ListStore):
 
         self.inotify_add_watch(filename)
 
-        self.append((filename, filetype, ))
-
         if filetype == FileTypes.USER:
             self.num_user += 1
 
@@ -331,6 +329,11 @@ class BibedFileStore(Gtk.ListStore):
 
         else:
             self.num_system += 1
+
+        # Append to the store as last operation, for
+        # everything to be ready for the interface signals.
+        # Without this, window title fails to update properly.
+        self.append((filename, filetype, ))
 
     def save(self, thing):
 
@@ -355,7 +358,7 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint_function_name()
         # assert lprint(filename, save_before, recompute, remember_close)
 
-        self.inotify_remove_watch(filename)
+        self.inotify_remove_watch(filename, delete=True)
 
         if save_before:
             # self.clear_save_callback()
@@ -382,8 +385,6 @@ class BibedFileStore(Gtk.ListStore):
             memories.remove_open_file(filename)
 
     def close_all(self, save_before=True, recompute=True, remember_close=True):
-
-        # assert lprint_function_name()
 
         for row in self:
             if row[FSCols.FILETYPE] == FileTypes.SPECIAL:
