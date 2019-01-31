@@ -2,5 +2,3 @@ bibtexparser
 pygobject
 pyinotify
 pynotify
-git-up
-ipython
