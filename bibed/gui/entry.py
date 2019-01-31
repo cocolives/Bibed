@@ -1101,7 +1101,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         entry = self.entry
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
         if not self.changed_fields:
             assert ldebug('Entry {} did not change, avoiding superfluous save.',
