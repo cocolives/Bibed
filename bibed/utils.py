@@ -1,7 +1,6 @@
 
 import os
 import logging
-import pyinotify
 
 from bibed.constants import (
     PREFERENCES_FILENAME,
@@ -11,6 +10,8 @@ from bibed.constants import (
 )
 
 from bibed.foundations import (
+    lprint_caller_name,
+    lprint_function_name,
     AttributeDict,
     AttributeDictFromYaml,
     Singleton,
@@ -78,23 +79,6 @@ def to_lower_if_not_none(data):
 # ———————————————————————————————————————————————————————————————— Classes
 
 
-class PyinotifyEventHandler(pyinotify.ProcessEvent):
-
-    app = None
-
-    def process_IN_MODIFY(self, event):
-
-        if __debug__:
-            LOGGER.debug('Modify event start ({}).'.format(event.pathname))
-
-        PyinotifyEventHandler.app.on_file_modify(event)
-
-        if __debug__:
-            LOGGER.debug('Modify event end ({}).'.format(event.pathname))
-
-        return True
-
-
 class ApplicationDefaults(AttributeDictFromYaml, metaclass=Singleton):
     filename = os.path.join(os.path.dirname(
                             os.path.abspath(__file__)),
@@ -139,6 +123,8 @@ class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
 
     def add_open_file(self, filename):
 
+        # assert lprint_function_name()
+
         if self.open_files is None:
             self.open_files = set((filename, ))
 
@@ -146,6 +132,8 @@ class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
             self.open_files |= set((filename,))
 
     def remove_open_file(self, filename):
+
+        # assert lprint_function_name()
 
         if self.open_files is not None:
             try:
@@ -159,6 +147,8 @@ class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
                 self.save()
 
     def add_recent_file(self, filename):
+
+        # assert lprint_function_name()
 
         defs  = self.defaults
         prefs = self.preferences

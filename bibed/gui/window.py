@@ -1,10 +1,17 @@
 
 import logging
 
-# from bibed.foundations import ltrace_caller_name
+from bibed.foundations import (
+    lprint, ldebug,
+    lprint_function_name,
+    lprint_caller_name,
+)
 
 from bibed.constants import (
     APP_NAME,
+    BibAttrs,
+    FSCols,
+    FileTypes,
     # BIBED_ICONS_DIR,
     SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
@@ -202,27 +209,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.btn_file_close_switch_icon(False)
         hb.pack_start(self.btn_file_close)
 
-        files_combo = Gtk.ComboBox.new_with_model(
-            self.application.files_store)
-        files_combo.connect("changed", self.on_files_combo_changed)
-
-        renderer_text = Gtk.CellRendererText(
-            ellipsize=Pango.EllipsizeMode.START)
-        renderer_text.props.max_width_chars = (
-            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
-        )
-
-        # TODO: replace this combo with a Gtk.StackSidebar()
-        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
-
-        files_combo.pack_start(renderer_text, True)
-        files_combo.add_attribute(renderer_text, "text", 0)
-        files_combo.set_sensitive(False)
+        files_combo = self.setup_files_combobox()
         hb.pack_start(files_combo)
-
-        self.cmb_files_renderer = renderer_text
-        self.cmb_files = files_combo
-        self.cmb_files.set_size_request(150, -1)
 
         self.btn_add = Gtk.Button()
         icon = Gio.ThemedIcon(name="list-add-symbolic")
@@ -258,6 +246,37 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.headerbar = hb
 
+    def setup_files_combobox(self):
+
+        def filter_func(model, iter, data):
+            # Keep only non-system entries in main window ComboBox.
+            return model[iter][FSCols.FILETYPE] != FileTypes.SYSTEM
+
+        self.filtered_files = self.application.files.filter_new()
+        self.filtered_files.set_visible_func(filter_func)
+
+        files_combo = Gtk.ComboBox.new_with_model(self.filtered_files)
+        files_combo.connect("changed", self.on_files_combo_changed)
+
+        renderer_text = Gtk.CellRendererText(
+            ellipsize=Pango.EllipsizeMode.START)
+        renderer_text.props.max_width_chars = (
+            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
+        )
+
+        # TODO: replace this combo with a Gtk.StackSidebar()
+        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
+
+        files_combo.pack_start(renderer_text, True)
+        files_combo.add_attribute(renderer_text, "text", 0)
+        files_combo.set_sensitive(False)
+
+        self.cmb_files_renderer = renderer_text
+        self.cmb_files = files_combo
+        self.cmb_files.set_size_request(150, -1)
+
+        return self.cmb_files
+
     def setup_network(self):
 
         self.lbl_network = widget_properties(
@@ -287,7 +306,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         )
 
         self.treeview = BibedMainTreeView(
-            model=self.application.data_store,
+            model=self.application.data,
             application=self.application,
             clipboard=self.application.clipboard,
             window=self,
@@ -297,14 +316,44 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def update_title(self):
 
+        # assert lprint_caller_name(levels=2)
+        # assert lprint_function_name()
+
         row_count = len(self.treeview.get_model())
-        file_count = len(self.cmb_files.get_model())
 
-        # TODO: update the file count if search filtered
+        try:
+            active_file = self.get_selected_filename()
 
-        if file_count > 1:
-            # do not count the 'All' item
-            file_count -= 1
+        except TypeError:
+            # Application is closing, we have no file left open.
+            active_file = None
+
+        # TODO: translate “All”
+        if active_file == 'All':
+
+            search_text = self.get_search_text()
+
+            if search_text:
+                # We have to gather files count from current results.
+
+                files_matched = set()
+
+                for row in self.treeview.get_model():
+                    files_matched.add(row[BibAttrs.FILENAME])
+
+                # assert lprint(files_matched)
+
+                file_count = len(files_matched)
+
+            else:
+                # Remove 1 for “All” entry
+                file_count = len(self.cmb_files.get_model()) - 1
+
+        elif active_file is None:
+            file_count = 0
+
+        else:
+            file_count = 1
 
         title_value = '{0}'.format(APP_NAME)
 
@@ -312,19 +361,19 @@ class BibEdWindow(Gtk.ApplicationWindow):
             row_count,
             's' if row_count > 1 else '',
             file_count,
-            's' if file_count > 1 else '',)
+            's' if file_count > 1 else '',
+        )
 
         self.headerbar.props.title = title_value
         self.headerbar.props.subtitle = subtitle_value
 
-        if __debug__:
-            LOGGER.debug('update_title() to {0} and {1}.'.format(
-                title_value, subtitle_value))
+        assert ldebug('update_title() to {0} and {1}.'.format(
+                      title_value, subtitle_value))
 
     def sync_shown_hidden(self):
         ''' Hide or disable relevant widgets, determined by context. '''
 
-        how_many_files = len(self.application.files_store)
+        how_many_files = len(self.filtered_files)
 
         if how_many_files:
             self.btn_add.show()
@@ -524,7 +573,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                     pass
 
             else:
-                if len(self.application.files_store):
+                if len(self.application.files):
                     if self.cmb_files.get_active() != 0:
                         self.cmb_files.set_active(0)
 
@@ -604,11 +653,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def on_file_close_clicked(self, button):
         ''' Close current selected file. '''
 
-        how_many_files = len(self.application.files_store)
+        how_many_files = len(self.application.files)
 
         if how_many_files > 1 and self.cmb_files.get_active() == 0:
 
-            store = self.application.files_store
+            store = self.application.files
 
             # Copy them to let the store update itself
             # smoothly without missing items during loop.
@@ -645,6 +694,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # TODO: convert this test to Gtk.Response.OK and CANCEL
             #       to know if we need to insert/update or not.
             if entry.database is not None and entry_edit_dialog.can_save:
+                # TODO: insert in self.application.data_store directly ?
+                #       abstraction-level question only.
                 self.treeview.main_model.insert_entry(entry)
                 self.do_filter_data_store()
 
@@ -677,7 +728,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def get_selected_filename(self):
 
-        filename = self.application.files_store[
+        filename = self.filtered_files[
             self.cmb_files.get_active_iter()
         ][0]
 
@@ -735,7 +786,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # TODO: translate 'All'
             if filename is None or filename == 'All':
                 # No search, no filename; get ALL data, unfiltered.
-                self.treeview.set_model(self.application.data_store)
+                self.treeview.set_model(self.application.data)
 
             else:
                 refilter()

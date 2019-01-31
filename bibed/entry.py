@@ -449,7 +449,7 @@ class EntryFieldCheckMixin:
                 'Key must start with a letter, contain only letters and numbers; special characters allowed: “-”, “:” and “_”.'
             )
 
-        has_key = self.parent.application.check_has_key(field_value)
+        has_key = self.files.has_bib_key(field_value)
 
         if has_key:
             return (

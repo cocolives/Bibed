@@ -46,6 +46,7 @@ class BibedMainTreeView(Gtk.TreeView):
         self.application = kwargs.pop('application')
         self.clipboard   = kwargs.pop('clipboard')
         self.window      = kwargs.pop('window')
+        self.files       = self.application.files
 
         super().__init__(*args, **kwargs)
 
@@ -248,7 +249,7 @@ class BibedMainTreeView(Gtk.TreeView):
         bib_key   = model[treeiter][BibAttrs.KEY]
         filename  = model[treeiter][BibAttrs.FILENAME]
 
-        entry = self.application.files[filename].get_entry_by_key(bib_key)
+        entry = self.files.get_entry_by_key(bib_key, filename=filename)
 
         if with_global_id:
             entry.gid = model[treeiter][BibAttrs.GLOBAL_ID]
@@ -296,11 +297,13 @@ class BibedMainTreeView(Gtk.TreeView):
         entry.toggle_quality()
 
         self.main_model[
+            # TODO: Shouldn't we use get_real_path_from_path()
+            #       or something like that? a Gtk method.
             self.get_main_iter_by_gid(entry.gid)
         ][BibAttrs.QUALITY] = entry.quality
 
         # if gpod('bib_auto_save'):
-        self.application.trigger_save(entry.database.filename)
+        self.files.trigger_save(entry.database.filename)
 
     def on_read_clicked(self, renderer, path):
 
@@ -313,7 +316,7 @@ class BibedMainTreeView(Gtk.TreeView):
         ][BibAttrs.READ] = entry.read_status
 
         # if gpod('bib_auto_save'):
-        self.application.trigger_save(entry.database.filename)
+        self.files.trigger_save(entry.database.filename)
 
     def on_url_clicked(self, renderer, path):
 
