@@ -155,12 +155,18 @@ def lprint_function_name(level=None, prefix=None):
     # source_index in inspect.stack():
     stack = inspect.stack()
 
-    sys.stderr.write('{0}{1} ({2}:{3})\n'.format(
-        prefix,
-        stylize(ST_ATTR, stack[level][3] + '()'),
-        stylize(ST_PATH, stack[level][1]),
-        stylize(ST_COMMENT, stack[level][2])
-    ))
+    try:
+        sys.stderr.write('{0}{1} ({2}:{3})\n'.format(
+            prefix,
+            stylize(ST_ATTR, stack[level][3] + '()'),
+            stylize(ST_PATH, stack[level][1]),
+            stylize(ST_COMMENT, stack[level][2])
+        ))
+    except IndexError:
+        sys.stderr.write('{0}{1}\n'.format(
+            prefix,
+            'no more frame upwards.')
+        )
 
     # Stay compatible with assert calls.
     return True
