@@ -1,7 +1,6 @@
 
 import os
 import logging
-import pyinotify
 
 from bibed.constants import (
     PREFERENCES_FILENAME,
@@ -11,6 +10,8 @@ from bibed.constants import (
 )
 
 from bibed.foundations import (
+    lprint_caller_name,
+    lprint_function_name,
     AttributeDict,
     AttributeDictFromYaml,
     Singleton,
@@ -76,23 +77,6 @@ def to_lower_if_not_none(data):
 
 
 # ———————————————————————————————————————————————————————————————— Classes
-
-
-class PyinotifyEventHandler(pyinotify.ProcessEvent):
-
-    app = None
-
-    def process_IN_MODIFY(self, event):
-
-        if __debug__:
-            LOGGER.debug('Modify event start ({}).'.format(event.pathname))
-
-        PyinotifyEventHandler.app.on_file_modify(event)
-
-        if __debug__:
-            LOGGER.debug('Modify event end ({}).'.format(event.pathname))
-
-        return True
 
 
 class ApplicationDefaults(AttributeDictFromYaml, metaclass=Singleton):
