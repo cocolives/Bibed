@@ -41,8 +41,18 @@ BibAttrs.QUALITY   = 15
 BibAttrs.READ      = 16
 BibAttrs.COMMENT   = 17
 
+# Sync this with FILE_STORE_LIST_ARGS and store:BibedFileStore()
+FSCols = Anything()
+FSCols.FILENAME = 0
+FSCols.FILETYPE = 1
 
-DATA_STORE_LIST_ARGS = [
+FileTypes = Anything()
+FileTypes.SPECIAL = 1
+FileTypes.SYSTEM  = 2
+FileTypes.USER    = 3
+
+
+DATA_STORE_LIST_ARGS = (
     int,  # global ID / counter across all files
     str,  # store origin (filename / ID)
     int,  # id / counter in current file
@@ -61,7 +71,12 @@ DATA_STORE_LIST_ARGS = [
     str,  # quality
     str,  # read status
     str,  # has comments
-]
+)
+
+FILE_STORE_LIST_ARGS = (
+    str,  # filename
+    int,  # filetype (see FileTypes)
+)
 
 # See GUI constants later for icons.
 JABREF_QUALITY_KEYWORDS = [
