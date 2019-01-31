@@ -141,7 +141,16 @@ class BibedEntry():
         #       we have more and more proxy specifics.
         #       Keeping this could lead to inconsistencies and bugs.
 
-        self.entry[self._internal_translate(item_name)] = value
+        value = value.strip()
+        item_name = self._internal_translate(item_name)
+
+        if value is None or value == '':
+            del self.entry[item_name]
+            LOGGER.info('{0}: removing field {1} now empty.'.format(
+                self, item_name))
+
+        else:
+            self.entry[item_name] = value
 
     def __getitem__(self, item_name):
 
@@ -150,6 +159,10 @@ class BibedEntry():
         #       Keeping this could lead to inconsistencies and bugs.
 
         return self.entry[self._internal_translate(item_name)]
+
+    def __str__(self):
+
+        return 'Entry {}@{}'.format(self.key, self.type)
 
     def get_field(self, name, default=None):
 
