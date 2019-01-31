@@ -12,7 +12,11 @@ accelerators:
   - \footcite{@@key@@}
   copy_to_clipboard_single_value: \cite{@@key@@}
 backup_before_save: true
+bib_add_owner: false
+bib_add_timestamp: true
 bib_auto_save: true
+bib_update_owner: false
+bib_update_timestamp: false
 docs:
   missing_and_omissible_data:
     content: "The fields marked as \u2018required\u2019 are not strictly required\
@@ -615,29 +619,28 @@ fields:
       @@@import{2.3.8}
   labels:
     addendum: Addendum
+    annotator: Annotator(s)
     author: Author(s)
     chapter: Chapter
     comment: Comment(s)
+    commentator: Commentator(s)
     date: Date
     doi: DOI
-    isbn: ISBN
-    issn: ISSN
-    translator: Translator(s)
-    annotator: Annotator(s)
-    commentator: Commentator(s)
     editor: Editor(s)
     editora: Editor(s) (type A)
     editorb: Editor(s) (type B)
     editorc: Editor(s) (type C)
-    issue: Issue
-    issuetitle: Issue title
-    issuesubtitle: Issue sub-title
     eid: EID
-    origlanguage: Origin language
     eprint: E-Print
     eprintclass: E-Print class
     eprinttype: E-Print type
+    file: File
     howpublished: How published?
+    isbn: ISBN
+    issn: ISSN
+    issue: Issue
+    issuesubtitle: Issue sub-title
+    issuetitle: Issue title
     journaltitle: Journal title
     key: Entry key
     language: Language
@@ -645,18 +648,19 @@ fields:
     month: Month
     note: Note(s)
     organization: Organization
+    origlanguage: Origin language
     pages: Page(s)
     pagetotal: Total page count
     pubstate: Publish state
     subtitle: Subtitle
     title: Title
     titleaddon: Title add-on
+    translator: Translator(s)
     type: Entry subtype
     url: URL
     urldate: URL date
     version: Version
     year: Year
-    file: File
 keep_recent_files: 10
 remember_last_destination: true
 remember_open_files: true
