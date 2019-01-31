@@ -1,5 +1,8 @@
 
+import re
 import logging
+
+from bibed.foundations import lprint_function_name
 
 from bibed.constants import (
     APP_NAME,
@@ -14,15 +17,19 @@ from bibed.gui.helpers import (
     label_with_markup,
     widget_properties,
     frame_defaults,
+    add_classes, remove_classes,
     grid_with_common_params,
     vbox_with_icon_and_label,
     build_label_and_switch,
+    build_entry_field_labelled_entry,
     # debug_widget,
 )
 from bibed.gui.dndflowbox import DnDFlowBox
 from bibed.gui.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
+
+OWNER_NAME_RE = re.compile('^[a-z]([- :,@_a-z0-9]){2,}$', re.IGNORECASE)
 
 
 def dnd_scrolled_flowbox(name=None, title=None, dialog=None):
@@ -75,7 +82,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.set_default_size(500, 300)
 
         self.set_border_width(BOXES_BORDER_WIDTH)
-        self.connect('hide', self.on_preferences_hide)
+
+        # self.connect('hide', self.on_preferences_hide)
 
         box = self.get_content_area()
 
@@ -95,8 +103,11 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         self.setup_page_general()
         self.setup_page_accels()
-        self.setup_page_creator()
-        # self.setup_page_editor()
+        self.setup_page_creator_editor()
+        self.setup_page_interface_customization()
+        # self.setup_page_editor_fields()
+
+        self.setup_finish()
 
         self.show_all()
 
@@ -430,7 +441,166 @@ class BibedPreferencesDialog(Gtk.Dialog):
             )
         )
 
-    def setup_page_creator(self):
+    def setup_page_creator_editor(self):
+
+        pce = grid_with_common_params()
+
+        # —————————————————————————————————————————————————— BIB auto save
+
+        (self.lbl_bib_add_timestamp,
+         self.swi_bib_add_timestamp) = build_label_and_switch(
+            '<b>Add creation timestamp</b>\n'
+            '<span foreground="grey" size="small">'
+            'When adding a new bibliographic entry to database,\n'
+            'stamp it with the date of today in the '
+            '<span face="monospace">timestamp</span> field.'
+            '</span>',
+            self.on_switch_activated,
+            gpod('bib_add_timestamp'),
+            func_args=('bib_add_timestamp', ),
+        )
+
+        pce.attach(
+            self.lbl_bib_add_timestamp,
+            # left, top, width, height
+            0, 0, 1, 1)
+
+        pce.attach_next_to(
+            self.swi_bib_add_timestamp,
+            self.lbl_bib_add_timestamp,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        (self.lbl_bib_update_timestamp,
+         self.swi_bib_update_timestamp) = build_label_and_switch(
+            '<b>Update timestamp on change</b>\n'
+            '<span foreground="grey" size="small">'
+            'When modifiying a bibliographic entry, update '
+            '<span face="monospace">timestamp</span>.'
+            '</span>\n',
+            self.on_switch_activated,
+            gpod('bib_update_timestamp'),
+            func_args=('bib_update_timestamp', )
+        )
+
+        pce.attach_next_to(
+            self.lbl_bib_update_timestamp,
+            self.lbl_bib_add_timestamp,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pce.attach_next_to(
+            self.swi_bib_update_timestamp,
+            self.lbl_bib_update_timestamp,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # ——————————————————————————————————————————————————————— bib add owner
+
+        (self.lbl_bib_add_owner,
+         self.swi_bib_add_owner) = build_label_and_switch(
+            '<b>Add owner at creation</b>\n'
+            '<span foreground="grey" size="small">'
+            'When creating a bibliographic entry, automatically add '
+            'an <span face="monospace">owner</span> field.\n'
+            'You have to specify it in the field below, else nothing '
+            'will be added.</span>',
+            self.on_switch_activated,
+            gpod('bib_add_owner'),
+            func_args=('bib_add_owner', )
+        )
+
+        pce.attach_next_to(
+            self.lbl_bib_add_owner,
+            self.lbl_bib_update_timestamp,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pce.attach_next_to(
+            self.swi_bib_add_owner,
+            self.lbl_bib_add_owner,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # ———————————————————————————————————————————————————— bib update owner
+
+        (self.lbl_bib_update_owner,
+         self.swi_bib_update_owner) = build_label_and_switch(
+            '<b>Update owner on change</b>\n'
+            '<span foreground="grey" size="small">'
+            'When changing a bibliographic entry that was not created by you,\n'
+            'overwrite the previous <span face="monospace">owner</span> with '
+            'you own value.</span>',
+            self.on_switch_activated,
+            gpod('bib_update_owner'),
+            func_args=('bib_update_owner', )
+
+        )
+
+        pce.attach_next_to(
+            self.lbl_bib_update_owner,
+            self.lbl_bib_add_owner,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pce.attach_next_to(
+            self.swi_bib_update_owner,
+            self.lbl_bib_update_owner,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+        # —————————————————————————————————————————————————————— bib owner name
+
+        # TODO: build a ComboBox for that ? With unix username by default.
+
+        (self.lbl_bib_owner_name,
+         self.etr_bib_owner_name) = build_entry_field_labelled_entry(
+            # doc. HACK: using an empty text, nothing will be shown.
+            '',
+
+            # label
+            '<b>Owner name</b>\n'
+            '<span foreground="grey" size="small">'
+            'Can be one or more words, including an email address.\n'
+            'Valid characters include [a-z], [0-9] and “-”, “__”, “@” '
+            'and “:”.</span>',
+
+            # Field name.
+            'bib_owner_name',
+
+            # entry. We use None becaure we are not in entry editor.
+            None,
+        )
+
+        self.etr_bib_owner_name.set_text(preferences.bib_owner_name)
+
+        self.etr_bib_owner_name.connect(
+            'changed', self.on_etr_bib_owner_name_changed)
+
+        pce.attach_next_to(
+            self.lbl_bib_owner_name,
+            self.lbl_bib_update_owner,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pce.attach_next_to(
+            self.etr_bib_owner_name,
+            self.lbl_bib_owner_name,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # ———————————————————————————————————————————————————— End widgets
+
+        self.page_creator = pce
+
+        self.notebook.append_page(
+            self.page_creator,
+            vbox_with_icon_and_label(
+                'bookmark-new-symbolic',
+                'Creator / Editor'
+            )
+        )
+
+    def setup_page_interface_customization(self):
 
         def build_dnd(qualify, title):
 
@@ -453,7 +623,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
             return (frame, scrolled, dnd_area)
 
-        pc = grid_with_common_params()
+        pic = grid_with_common_params()
 
         (self.fr_creator_dnd_main,
          self.sw_creator_dnd_main,
@@ -492,43 +662,43 @@ class BibedPreferencesDialog(Gtk.Dialog):
             self.btn_creator_reset.set_sensitive(True)
 
         # debug_widget(self.lbl_creator)
-        pc.attach(
+        pic.attach(
             self.lbl_creator,
             0, 0, 1, 1
         )
 
-        pc.attach_next_to(
+        pic.attach_next_to(
             self.btn_creator_reset,
             self.lbl_creator,
             Gtk.PositionType.BOTTOM,
             1, 1
         )
 
-        pc.attach_next_to(
+        pic.attach_next_to(
             self.fr_creator_dnd_main,
             self.lbl_creator,
             Gtk.PositionType.RIGHT,
             1, 2
         )
 
-        pc.attach_next_to(
+        pic.attach_next_to(
             self.fr_creator_dnd_other,
             self.fr_creator_dnd_main,
             Gtk.PositionType.RIGHT,
             1, 2
         )
 
-        self.page_creator = pc
+        self.page_interface_customization = pic
 
         self.notebook.append_page(
-            self.page_creator,
+            self.page_interface_customization,
             vbox_with_icon_and_label(
-                'document-new-symbolic',
-                'Creator'
+                'preferences-desktop-screensaver-symbolic',
+                'Interface customization'
             )
         )
 
-    def setup_page_editor(self):
+    def setup_page_editor_fields(self):
 
         def build_dnd(qualify, title):
 
@@ -551,7 +721,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
             return (frame, scrolled, dnd_area)
 
-        pc = grid_with_common_params()
+        pef = grid_with_common_params()
 
         (self.fr_creator_dnd_main,
          self.sw_creator_dnd_main,
@@ -590,42 +760,61 @@ class BibedPreferencesDialog(Gtk.Dialog):
             self.btn_creator_reset.set_sensitive(True)
 
         # debug_widget(self.lbl_creator)
-        pc.attach(
+        pef.attach(
             self.lbl_creator,
             0, 0, 1, 1
         )
 
-        pc.attach_next_to(
+        pef.attach_next_to(
             self.btn_creator_reset,
             self.lbl_creator,
             Gtk.PositionType.BOTTOM,
             1, 1
         )
 
-        pc.attach_next_to(
+        pef.attach_next_to(
             self.fr_creator_dnd_main,
             self.lbl_creator,
             Gtk.PositionType.RIGHT,
             1, 2
         )
 
-        pc.attach_next_to(
+        pef.attach_next_to(
             self.fr_creator_dnd_other,
             self.fr_creator_dnd_main,
             Gtk.PositionType.RIGHT,
             1, 2
         )
 
-        self.page_creator = pc
+        self.page_editor_fields = pef
 
         self.notebook.append_page(
-            self.page_creator,
+            self.page_editor_fields,
             vbox_with_icon_and_label(
                 'document-new-symbolic',
                 'Creator'
             )
         )
 
+    def setup_finish(self):
+
+        self.on_bib_add_timestamp_activated(
+            self.swi_bib_add_timestamp.get_active()
+        )
+        self.on_bib_add_owner_activated(
+            self.swi_bib_add_owner.get_active()
+        )
+
+    def run(self):
+
+        result = super().run()
+
+        # This operation cannot be done while user is typing new accels,
+        # else every char-typing is saved as a new entry, which makes a
+        # lot of false positives.
+        self.save_accelerators()
+
+        return result
 
     def on_working_folder_set(self, widget):
 
@@ -647,6 +836,42 @@ class BibedPreferencesDialog(Gtk.Dialog):
         if getattr(preferences, preference_name) != is_active:
             setattr(preferences, preference_name, is_active)
 
+        post_change_method = getattr(
+            self, 'on_{}_activated'.format(preference_name), None)
+
+        if post_change_method:
+            try:
+                post_change_method(is_active)
+
+            except AttributeError:
+                # When building the preferences window,
+                # Not all fields are present (order of
+                # construction matters).
+                pass
+
+    def on_bib_add_timestamp_activated(self, is_active):
+
+        if is_active:
+            self.swi_bib_update_timestamp.set_sensitive(True)
+
+        else:
+            self.swi_bib_update_timestamp.set_sensitive(False)
+
+    def on_bib_add_owner_activated(self, is_active):
+
+        if is_active:
+            self.swi_bib_update_owner.set_sensitive(True)
+            self.etr_bib_owner_name.set_sensitive(True)
+
+            if not self.etr_bib_owner_name.get_text().strip():
+                add_classes(self.etr_bib_owner_name, ['error'])
+
+        else:
+            remove_classes(self.etr_bib_owner_name, ['error'])
+
+            self.swi_bib_update_owner.set_sensitive(False)
+            self.etr_bib_owner_name.set_sensitive(False)
+
     def on_spin_keep_recent_files_changed(self, adj):
 
         value = int(adj.get_value())
@@ -661,19 +886,26 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
     def on_combo_single_copy_changed(self, combo):
 
-        # Note: see self.on_preferences_hide()
+        # Note: see self.run()
 
         option = combo.get_active_text()
 
         preferences.accelerators.copy_to_clipboard_single_value = option
         preferences.save()
 
-    def on_preferences_hide(self, window):
+    def on_etr_bib_owner_name_changed(self, entry):
 
-        # This operation cannot be done while user is typing new accels,
-        # else every char-typing is saved as a new entry, which makes a
-        # lot of false positives.
-        self.save_accelerators()
+        # Note: see self.run()
+
+        value = entry.get_text()
+
+        if OWNER_NAME_RE.match(value) is None:
+            add_classes(entry, ['error'])
+        else:
+            remove_classes(entry, ['error'])
+
+            # Auto-save on setter…
+            preferences.bib_owner_name = value
 
     def on_creator_reset(self, button):
 
