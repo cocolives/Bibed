@@ -466,7 +466,7 @@ def flat_unclickable_button_in_hbox(label_text, icon_name=None):
         classes=['dnd-object'],
         # debug=True
     ), False, False, 0)
-    
+
     label_with_icon.set_size_request(100, 30)
 
     label_with_icon.show_all()
@@ -608,7 +608,7 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
     if isinstance(fields_docs, str):
         field_doc = fields_docs
     else:
-        field_doc = getattr(field_doc, field_name)
+        field_doc = getattr(fields_docs, field_name)
 
     # TODO: remove these ldebug() calls
     # when every field is documented / labelled.
