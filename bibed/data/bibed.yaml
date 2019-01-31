@@ -621,7 +621,19 @@ fields:
     date: Date
     doi: DOI
     isbn: ISBN
+    issn: ISSN
+    translator: Translator(s)
+    annotator: Annotator(s)
+    commentator: Commentator(s)
     editor: Editor(s)
+    editora: Editor(s) (type A)
+    editorb: Editor(s) (type B)
+    editorc: Editor(s) (type C)
+    issue: Issue
+    issuetitle: Issue title
+    issuesubtitle: Issue sub-title
+    eid: EID
+    origlanguage: Origin language
     eprint: E-Print
     eprintclass: E-Print class
     eprinttype: E-Print type
