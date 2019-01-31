@@ -7,25 +7,20 @@ import tempfile
 import logging
 import bibtexparser
 
-from bibed.foundations import ldebug
-from bibed.constants import (
-    DATA_STORE_LIST_ARGS,
-    BibAttrs,
-)
+from bibed.foundations import lprint, lprint_caller_name  # NOQA
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
 
-from bibed.gui.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
 
 
 class BibedDatabase:
 
-    def __init__(self, filename, application):
+    def __init__(self, filename, store):
 
         self.filename = filename
-        self.application = application
+        self.store = store
 
         self.parser = bibtexparser.bparser.BibTexParser(
             ignore_nonstandard_types=False,
@@ -50,25 +45,33 @@ class BibedDatabase:
 
     def get_entry_by_key(self, key):
 
+        # assert lprint_caller_name()
+
         return BibedEntry(self, *self.entries[key])
 
     def keys(self):
 
+        # assert lprint_caller_name()
+
         return self.entries.keys()
 
     def itervalues(self):
+
+        # assert lprint_caller_name()
 
         for index, entry in enumerate(self.bibdb.entries):
             yield BibedEntry(self, entry, index)
 
     def values(self):
 
-        return [
-            BibedEntry(self, entry, index)
-            for index, entry in enumerate(self.bibdb.entries)
-        ]
+        # assert lprint_caller_name()
+
+        return [x for x in self.itervalues()]
 
     def add_entry(self, entry):
+
+        # assert lprint_caller_name()
+        # assert lprint(entry)
 
         new_index = len(self.bibdb.entries)
         entry.index = new_index
@@ -80,6 +83,9 @@ class BibedDatabase:
         self.bibdb.entries.append(entry.entry)
 
     def move_entry(self, entry):
+
+        # assert lprint_caller_name()
+        # assert lprint(entry)
 
         old_keys = [x.strip() for x in entry['ids'].split(',')]
 
@@ -100,7 +106,8 @@ class BibedDatabase:
 
     def backup(self):
 
-        assert ldebug('BACKUP {} before save.', self.filename)
+        # assert lprint_caller_name()
+        # assert lprint(self.filename)
 
         dirname = os.path.dirname(self.filename)
         basename = os.path.basename(self.filename)
@@ -119,68 +126,13 @@ class BibedDatabase:
         except Exception:
             LOGGER.exception('Problem while backing up file before save.')
 
-    def save(self):
-        ''' … '''
+    def write(self):
 
-        assert ldebug('SAVE {} before locking.', self.filename)
+        # assert lprint_caller_name()
+        # assert lprint(self.filename)
 
-        with self.application.no_watch(self.filename):
+        if gpod('backup_before_save'):
+            self.backup()
 
-            assert ldebug('SAVE {} in lock.', self.filename)
-
-            if gpod('backup_before_save'):
-                self.backup()
-
-            with open(self.filename, 'w') as bibfile:
-                    bibfile.write(self.writer.write(self.bibdb))
-
-
-class BibedListStore(Gtk.ListStore):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(
-            *DATA_STORE_LIST_ARGS
-        )
-
-        # TODO: detect aliased fields and set self.use_aliased fields.
-
-        pass
-
-    def do_recompute_global_ids(self):
-
-        assert ldebug('do_recompute_global_ids()')
-
-        counter = 1
-        global_id = BibAttrs.GLOBAL_ID
-
-        for row in self:
-            row[global_id] = counter
-            counter += 1
-
-    def insert_entry(self, entry):
-
-        self.append(
-            entry.to_list_store_row()
-        )
-
-        self.do_recompute_global_ids()
-
-        assert ldebug('Row created with entry {}.', entry.key)
-
-    def update_entry(self, entry):
-
-        for row in self:
-            if row[BibAttrs.GLOBAL_ID] == entry.gid:
-                # This is far from perfect, we could just update the row.
-                # But I'm tired and I want a simple way to view results.
-                # TODO: do better on next code review.
-
-                self.insert_after(row.iter, entry.to_list_store_row())
-                self.remove(row.iter)
-
-                assert ldebug(
-                    'Row {} (entry {}) updated.',
-                    row[BibAttrs.GLOBAL_ID], entry.key
-                )
-
-                break
+        with open(self.filename, 'w') as bibfile:
+                bibfile.write(self.writer.write(self.bibdb))

@@ -2,10 +2,9 @@
 import os
 import logging
 
-from bibed.foundations import ldebug  # , ltrace_caller_name
+from bibed.foundations import ldebug, lprint, lprint_caller_name
 
 from collections import OrderedDict
-from threading import Lock
 
 from bibed.constants import (
     BOXES_BORDER_WIDTH,
@@ -17,6 +16,7 @@ from bibed.constants import (
 
 from bibed.preferences import defaults, preferences, memories, gpod
 from bibed.entry import EntryFieldCheckMixin
+from bibed.store import NoDatabaseForFilename
 
 from bibed.gui.helpers import (
     widget_properties,
@@ -26,15 +26,12 @@ from bibed.gui.helpers import (
     stack_switch_next,
     add_classes, remove_classes,
     find_child_by_name,
-    # frame_defaults,
-    # scrolled_textview,
     build_entry_field_labelled_entry,
     build_entry_field_textview,
-    # build_help_popover,
     grid_with_common_params,
 )
 
-from bibed.gui.gtk import GLib, Gtk, Gdk, Gio
+from bibed.gui.gtk import Gtk, Gdk, Gio
 
 LOGGER = logging.getLogger(__name__)
 
@@ -49,6 +46,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
     @property
     def can_save(self):
 
+        # assert lprint_function_name()
+
         entry_has_key = (self.entry.key is not None or 'key' in self.changed_fields)
         entry_has_database = self.entry.database is not None
 
@@ -57,7 +56,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             # We need at least a field more than ID and ENTRYTYPE.
             entry_has_more_than_id_and_type = len(self.changed_fields) > 1
 
-            key_is_unique = not self.parent.application.check_has_key(
+            key_is_unique = not self.files.has_bib_key(
                 self.entry.key
                 if self.entry.key
                 else self.get_field_value('key')
@@ -82,21 +81,14 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             )
         )
 
-        assert ldebug(
-            '\nCAN SAVE: entry_has_key={entry_has_key}\n'
-            'CAN SAVE: and entry_has_database={entry_has_database}\n'
-            'CAN SAVE: and entry_has_more_than_id_and_type'
-            '={entry_has_more_than_id_and_type}\n'
-            'CAN SAVE: and (entry_is_known={entry_is_known}\n'
-            'CAN SAVE: or (entry_is_new={entry_is_new} and key_is_unique={key_is_unique})\n'
-            'CAN SAVE: FINAL={result}',
-            entry_has_key=entry_has_key,
-            entry_has_database=entry_has_database,
-            entry_has_more_than_id_and_type=entry_has_more_than_id_and_type,
-            entry_is_known=entry_is_known,
-            entry_is_new=entry_is_new,
-            key_is_unique=key_is_unique,
-            result=result,
+        assert lprint(
+            entry_has_key,
+            entry_has_database,
+            entry_has_more_than_id_and_type,
+            entry_is_known,
+            entry_is_new,
+            key_is_unique,
+            result
         )
 
         return result
@@ -116,8 +108,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         super().__init__(title, parent, use_header_bar=True)
 
-        # Will be filled by GLib.idle_add() in *save*() methods.
-        self.save_trigger_source = None
+        self.files = parent.application.files
 
         # TODO: This is probably a dupe with Gtk's get_parent(),
         #       but despite super() beiing given parent arg,
@@ -260,7 +251,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     def autoselect_destination(self):
 
-        get_database = self.parent.application.get_database_from_filename
+        get_database = self.files.get_database
 
         last_selected_filename = (
             memories.last_destination
@@ -268,7 +259,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             else None
         )
 
-        if last_selected_filename not in self.parent.application.get_open_files_names():
+        if last_selected_filename not in self.files.get_open_filenames():
             # User will select a new one,
             # don't remember an invalid destination.
             try:
@@ -282,10 +273,11 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         # The “current” file in main window. Takes precedences on memories.
         selected_filename = self.parent.get_selected_filename()
 
-        # In previous case (eg. “All”), this will be None.
-        database = get_database(selected_filename)
+        try:
+            # In previous case (eg. “All”), this will be None.
+            database = get_database(selected_filename)
 
-        if not database:
+        except NoDatabaseForFilename:
             if last_selected_filename is not None:
                 selected_filename = last_selected_filename
                 database = get_database(selected_filename)
@@ -389,7 +381,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             self.cmb_destination.set_entry_text_column(0)
             self.cmb_destination.set_popup_fixed_width(False)
 
-            for filename in self.parent.application.get_open_files_names():
+            for filename in self.files.get_open_filenames():
                 self.cmb_destination.append_text(filename)
 
             self.cmb_destination.connect(
@@ -898,7 +890,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         # TODO: why does get_parent() fails here ?
         #       See TODO/comment in __init__().
-        has_key_in = self.parent.application.check_has_key(new_key)
+        has_key_in = self.files.has_bib_key(new_key)
 
         if has_key_in is not None:
             error_label = find_child_by_name(popover, 'error_label')
@@ -1136,8 +1128,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             key_updated = True
 
         if 'key' in self.changed_fields:
-            # Do not remove() the field, we
-            # could be in 'new entry' case.
+            # Do not remove() the field, we could be in 'new entry' case.
             if not key_updated:
 
                 # This -1 value comes from BibedEntry.new_from_type().
@@ -1147,7 +1138,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                     # will be triggered and we need to avoid creating multiple
                     # entries with same key (or partial same keys) in database.
                     # We thus rely on database index, which will have been
-                    # replaced with real index value by database at first write.
+                    # replaced with definitive value by database at first write.
                     new_entry = True
 
         for field_name in self.changed_fields:
@@ -1160,7 +1151,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             entry.database.move_entry(entry)
 
         if save:
-            entry.database.save()
+            self.files.save(entry)
 
         # Reset changed fields now that everything is saved.
         self.changed_fields = set()

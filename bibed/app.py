@@ -1,10 +1,7 @@
 
 import os
-import time
-import pyinotify
 import logging
 
-from threading import Lock
 from collections import OrderedDict
 
 from bibed.constants import (
@@ -18,19 +15,22 @@ from bibed.constants import (
 )
 
 from bibed.foundations import (
-    ldebug,
-    # ltrace_caller_name,
+    lprint,
+    lprint_function_name,
     set_process_title,
     touch_file,
-    NoWatchContextManager,
 )
 
 # Import Gtk before preferences, to initialize GI.
 from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
 
-from bibed.utils import PyinotifyEventHandler, to_lower_if_not_none
+from bibed.utils import to_lower_if_not_none
 from bibed.preferences import preferences, memories
-from bibed.database import BibedDatabase, BibedListStore
+from bibed.store import (
+    BibedDataStore,
+    BibedFileStore,
+    AlreadyLoadedException,
+)
 
 from bibed.gui.window import BibEdWindow
 
@@ -70,19 +70,9 @@ class BibEdApplication(Gtk.Application):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
-        self.save_trigger_source = None
         self.files = OrderedDict()
 
-    def do_startup(self):
-        Gtk.Application.do_startup(self)
-
-        self.setup_resources_and_css()
-        self.setup_actions()
-        self.setup_app_menu()
-        self.setup_data_stores()
-        self.setup_inotify()
-
-        self.file_modify_lock = Lock()
+    # ——————————————————————————————————————————————————————————— setup methods
 
     def setup_resources_and_css(self):
 
@@ -135,54 +125,21 @@ class BibEdApplication(Gtk.Application):
         builder = Gtk.Builder.new_from_string(APP_MENU_XML, -1)
         self.set_app_menu(builder.get_object("app-menu"))
 
-    def setup_data_stores(self):
+    def setup_data_store(self):
 
-        # Stores filenames. Linked to self.files.keys()
-        self.files_store = Gtk.ListStore(
-            str,
-        )
+        # Stores All BIB entries.
+        self.data = BibedDataStore()
 
-        # Stores BIB entries. Linked to self.files.values()
-        self.data_store = BibedListStore()
+        # Stores open files (user / system / other)
+        self.files = BibedFileStore(self.data)
 
         # Keep the filter data sortable along the way.
-
-        self.filter = self.data_store.filter_new()
+        self.filter = self.data.filter_new()
+        # self.filter = Gtk.TreeModelFilter(self.data)
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.filter_method)
 
-    def setup_inotify(self):
-
-        PyinotifyEventHandler.app = self
-
-        self.wm = pyinotify.WatchManager()
-        self.notifier = pyinotify.ThreadedNotifier(
-            self.wm, PyinotifyEventHandler())
-        self.notifier.start()
-
-        self.wdd = {}
-
-    def no_watch(self, filename):
-
-        return NoWatchContextManager(self, filename)
-
-    def inotify_add_watch(self, filename):
-
-        file_to_watch = os.path.realpath(os.path.abspath(filename))
-
-        self.wdd.update(self.wm.add_watch(file_to_watch, pyinotify.IN_MODIFY))
-
-        LOGGER.info('inotify_add_watch(): watching {}.'.format(file_to_watch))
-
-    def inotify_remove_watch(self, filename):
-
-        file_to_watch = os.path.realpath(os.path.abspath(filename))
-
-        self.wm.rm_watch(self.wdd[file_to_watch])
-
-        LOGGER.info(
-            'inotify_remove_watch(): removing {}.'.format(
-                file_to_watch))
+    # ——————————————————————————————————————————————————————— data store filter
 
     def filter_method(self, model, iter, data):
 
@@ -264,6 +221,16 @@ class BibEdApplication(Gtk.Application):
 
         return True
 
+    # ———————————————————————————————————————————————————————————— do “actions”
+
+    def do_startup(self):
+        Gtk.Application.do_startup(self)
+
+        self.setup_resources_and_css()
+        self.setup_actions()
+        self.setup_app_menu()
+        self.setup_data_store()
+
     def do_notification(self, message):
 
         notification = Notify.Notification.new('Bibed', message)
@@ -309,6 +276,7 @@ class BibEdApplication(Gtk.Application):
                     # Get a copy to avoid the set being changed while we load,
                     # because in some corner cases the live “re-ordering”
                     # makes a file loaded two times.
+
                     for filename in memories.open_files.copy():
                         try:
                             self.open_file(filename)
@@ -320,7 +288,7 @@ class BibEdApplication(Gtk.Application):
         self.window.do_activate()
 
         if combo_set_active:
-            for row in self.files_store:
+            for row in self.window.filtered_files:
                 if row[0] == combo_set_active:
                     self.window.cmb_files.set_active_iter(row.iter)
                     break
@@ -328,212 +296,7 @@ class BibEdApplication(Gtk.Application):
         if search_grab_focus:
             self.window.search.grab_focus()
 
-        # TODO: remove
-        # Show preferences immediately to speed up tests / debug.
-        # self.window.btn_preferences.emit('clicked')
-
         self.window.present()
-
-    def create_file(self, filename):
-        ''' Create a new BIB file, then open it in the application. '''
-
-        assert ldebug('create_file({})', filename)
-
-        touch_file(filename)
-
-        self.open_file(filename)
-
-    def open_file(self, filename, recompute=True):
-        ''' Add a file to the application. '''
-
-        assert ldebug('open_file({}, recompute={})', filename, recompute)
-
-        # print(ltrace_caller_name())
-
-        for row in self.files_store:
-            if row[0] == filename:
-                self.do_notification('“{}” already loaded.'.format(filename))
-                return
-
-        self.files[filename] = None
-
-        try:
-            self.load_file_contents(filename, recompute=recompute)
-
-        except Exception as e:
-            del self.files[filename]
-
-            message = 'Cannot load file “{0}”: {1}'.format(filename, e)
-            LOGGER.exception(message)
-
-            self.window.do_status_change(message)
-            return
-
-        self.inotify_add_watch(filename)
-
-        self.files_store.append((filename, ))
-
-        if len(self.files_store) == 2:
-            # Add the magic “All” entry.
-            self.files_store.prepend(('All', ))
-
-            # Now that we have more than one file,
-            # make active and select 'All' by default.
-            self.window.cmb_files.set_active(0)
-            self.window.cmb_files.set_sensitive(True)
-
-        else:
-            self.window.cmb_files.set_active(0)
-
-        memories.add_open_file(filename)
-        memories.add_recent_file(filename)
-
-    def get_open_files_names(self):
-        ''' Return a list of our open files. '''
-
-        return [
-            row[0]
-            for row in self.files_store
-            # Do not return the “All” special entry.
-            if row[0].lower().endswith('bib')
-        ]
-
-    def get_database_from_filename(self, searched_filename):
-
-        return self.files.get(searched_filename, None)
-
-    def check_has_key(self, key):
-
-        for filename, database in self.files.items():
-
-            for entry in database.itervalues():
-                if key == entry.key:
-                    return filename
-
-                # look in aliases (valid old key values) too.
-                if key in entry.get_field('ids', '').split(','):
-                    return filename
-
-        return None
-
-    def reload_files(self, message=None):
-
-        for filename in self.files:
-            self.reload_file_contents(filename)
-
-        if message:
-            self.window.do_status_change(message)
-
-    def reload_file_contents(self, filename, message=None):
-        '''Empty everything and reload. '''
-
-        # We try to re-lock to avoid conflict if reloading
-        # manually while an inotify reload occurs.
-        self.file_modify_lock.acquire(blocking=False)
-
-        if self.load_file_contents(filename, clear_first=True) and message:
-            self.window.do_status_change(message)
-
-        try:
-            self.file_modify_lock.release()
-
-        except Exception as e:
-            LOGGER.exception(e)
-
-    def load_file_contents(self, filename, clear_first=False, recompute=True):
-        ''' Fill the GtkTreeStore with BIB data. '''
-
-        assert ldebug(
-            'load_file_contents({}, clear_first={}, recompute={})',
-            filename, clear_first, recompute
-        )
-
-        new_bibdb = BibedDatabase(filename, self)
-
-        if clear_first:
-            assert ldebug('load_file_contents({0}): store cleared.', filename)
-
-            # self.window.treeview.set_editable(False)
-            self.clear_file_from_store(filename, recompute=False)
-            self.files[filename] = None
-
-        self.files[filename] = new_bibdb
-
-        for entry in new_bibdb.values():
-            self.data_store.append(entry.to_list_store_row())
-
-        assert ldebug('load_file_contents({}): end.', filename)
-
-        if recompute:
-            self.data_store.do_recompute_global_ids()
-
-        self.window.update_title()
-
-    def clear_file_from_store(self, filename=None, recompute=True):
-        ''' Clear the data store from one or more file contents. '''
-
-        assert ldebug(
-            'clear_file_from_store({}, recompute={})', filename, recompute)
-
-        if filename is None:
-            # clear ALL data.
-            self.data_store.clear()
-            return
-
-        # keep references handy for speed in loops.
-        filename_index = BibAttrs.FILENAME
-        store = self.data_store
-
-        for row in store:
-            if row[filename_index] == filename:
-                    store.remove(row.iter)
-
-        if recompute:
-            self.data_store.do_recompute_global_ids()
-
-    def save_file(self, filename):
-
-        # the database save() method locks and disables inotify.
-        self.files[filename].save()
-
-    def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
-        ''' Close a file and impact changes. '''
-
-        assert ldebug(
-            'close_file({}, save_before={}, recompute={})',
-            filename, save_before, recompute)
-
-        self.inotify_remove_watch(filename)
-
-        if save_before:
-            self.clear_save_callback()
-            self.save_file(filename)
-
-        self.clear_file_from_store(filename, recompute=recompute)
-
-        # Isn't the first one redundant?
-        self.files[filename] = None
-        del self.files[filename]
-
-        for row in self.files_store:
-            if row[0] == filename:
-                self.files_store.remove(row.iter)
-                break
-
-        if len(self.files_store) == 2:
-            # len == 2 is (All, last_file); thus, remove 'All'.
-            self.files_store.remove(self.files_store[0].iter)
-
-            # Now that we have more than one file,
-            # make active and select 'All' by default.
-            self.window.cmb_files.set_active(0)
-            self.window.cmb_files.set_sensitive(False)
-
-        else:
-            self.window.cmb_files.set_active(0)
-
-        if remember_close:
-            memories.remove_open_file(filename)
 
     def do_command_line(self, command_line):
         options = command_line.get_options_dict()
@@ -547,7 +310,96 @@ class BibEdApplication(Gtk.Application):
         self.activate()
         return 0
 
+    # ———————————————————————————————————————————— higher level file operations
+    # TODO: move them to main window?
+
+    def create_file(self, filename):
+        ''' Create a new BIB file, then open it in the application. '''
+
+        # assert lprint_function_name()
+
+        touch_file(filename)
+
+        self.open_file(filename)
+
+    def open_file(self, filename, recompute=True):
+        ''' Add a file to the application. '''
+
+        # assert lprint_function_name()
+        # assert lprint(filename, recompute)
+
+        try:
+            # Note: via events, this will update the window title.
+            self.files.load(filename, recompute=recompute)
+
+        except AlreadyLoadedException:
+            self.do_notification('“{}” already loaded.'.format(filename))
+            # TODO: Select / Focus the file.
+            return
+
+        except Exception as e:
+            message = 'Cannot load file “{0}”: {1}'.format(filename, e)
+            LOGGER.exception(message)
+
+            self.window.do_status_change(message)
+            return
+
+        if len(self.files) > 1:
+            # Now that we have more than one file,
+            # make active and select 'All' by default.
+            self.window.cmb_files.set_active(0)
+            self.window.cmb_files.set_sensitive(True)
+
+        else:
+            self.window.cmb_files.set_active(0)
+
+        memories.add_open_file(filename)
+        memories.add_recent_file(filename)
+
+    def reload_files(self, message=None):
+
+        # assert lprint_function_name()
+        # assert lprint(message)
+
+        for filename in self.files.get_filenames():
+            self.reload_file(filename)
+
+        if message:
+            self.window.do_status_change(message)
+
+    def reload_file(self, filename, message=None):
+
+        # assert lprint_function_name()
+        # assert lprint(filename, message)
+
+        if self.files.reload(filename):
+            self.window.do_status_change(message)
+
+    def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
+        ''' Close a file and impact changes. '''
+
+        # assert lprint_function_name()
+
+        self.files.close(filename,
+                         save_before=save_before,
+                         recompute=recompute,
+                         remember_close=remember_close)
+
+        if len(self.files) < 2:
+            # Now that we have more than one file,
+            # make active and select 'All' by default.
+            self.window.cmb_files.set_active(0)
+            self.window.cmb_files.set_sensitive(False)
+
+        else:
+            self.window.cmb_files.set_active(0)
+
+    # ———————————————————————————————————————————————————————————— on “actions”
+
     def on_about(self, action, param):
+
+        # assert lprint_function_name()
+
         about_dialog = Gtk.AboutDialog(
             transient_for=self.window, modal=True)
 
@@ -558,7 +410,7 @@ class BibEdApplication(Gtk.Application):
 
         about_dialog.set_copyright('(c) Collectif Cocoliv.es')
         about_dialog.set_comments(
-            "Logiciel libre d'assistance bibliographique")
+            'Bibliographic assistance libre software')
         about_dialog.set_website('https://cocoliv.es/library/bibed')
         about_dialog.set_website_label('Site web de Bibed')
         about_dialog.set_license_type(Gtk.License.GPL_3_0)
@@ -584,31 +436,21 @@ class BibEdApplication(Gtk.Application):
 
     def on_quit(self, action, param):
 
+        # assert lprint_function_name()
+
         if preferences.remember_open_files:
             # We need to keep track of this, because unloading
             # the files will empty the combo and we will loose
             # the selected value.
             combo_value = memories.combo_filename
 
-        for row in self.files_store:
-            if row[0] == 'All':
-                # TODO: translate 'All'
-                continue
+        self.files.close_all(
+            save_before=True,
+            recompute=False,
 
-            self.close_file(
-                row[0],  # filename
-                save_before=True,
-                recompute=False,
-
-                # This will allow automatic reopen on next launch.
-                remember_close=False,
-            )
-
-        try:
-            self.notifier.stop()
-
-        except Exception:
-            pass
+            # This will allow automatic reopen on next launch.
+            remember_close=False,
+        )
 
         if preferences.remember_open_files:
             # Keep that memory back now that all files are unloaded.
@@ -616,67 +458,3 @@ class BibEdApplication(Gtk.Application):
 
         LOGGER.info('Terminating application.')
         self.quit()
-
-    def on_file_modify(self, event):
-        ''' Acquire lock and launch delayed updater. '''
-
-        if self.file_modify_lock.acquire(blocking=False) is False:
-            return
-
-        assert ldebug('Programming reload of {0} when idle.', event.pathname)
-
-        GLib.idle_add(self.on_file_modify_callback, event)
-
-    def on_file_modify_callback(self, event):
-        ''' Reload file with a dedicated message. '''
-
-        filename = event.pathname
-
-        assert ldebug('on_file_modify_callback({})', filename)
-
-        time.sleep(1)
-
-        self.reload_file_contents(
-            filename,
-            '“{}” reloaded because of external change.'.format(
-                filename))
-
-        # Remove the callback from IDLE list.
-        return False
-
-    def trigger_save(self, filename):
-        ''' function called by anywhere in the code to trigger a save().
-
-            This method acts as a proxy, can be called 10 times a second,
-            and will just trigger *one* save operation one second after the
-            first call.
-
-        '''
-
-        if self.file_modify_lock.acquire(blocking=False) is False:
-            return
-
-        assert ldebug('Programming save of {0} in 1 second.', filename)
-
-        self.save_trigger_source = GLib.timeout_add_seconds(
-            1, self.save_file_callback, filename)
-
-    def save_file_callback(self, filename):
-
-        # The trigger acquired the lock to avoid concurrent / parallel save().
-        # We need to release to allow the database save() method to re-lock.
-        self.file_modify_lock.release()
-
-        self.save_file(filename)
-
-    def clear_save_callback(self):
-
-        if self.save_trigger_source:
-            # Remove the in-progress save()
-            try:
-                GLib.source_remove(self.save_trigger_source)
-
-            except Exception:
-                # The callback finished while we were blocked on the lock,
-                # or GLib didn't automatically wipe self.save_trigger_source.
-                pass
