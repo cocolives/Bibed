@@ -13,7 +13,7 @@ from bibed.constants import (
     ABSTRACT_MAX_LENGHT_IN_TOOLTIPS,
 )
 
-from bibed.preferences import defaults, preferences
+from bibed.preferences import defaults, preferences, gpod
 
 
 LOGGER = logging.getLogger(__name__)
@@ -141,7 +141,16 @@ class BibedEntry():
         #       we have more and more proxy specifics.
         #       Keeping this could lead to inconsistencies and bugs.
 
-        self.entry[self._internal_translate(item_name)] = value
+        value = value.strip()
+        item_name = self._internal_translate(item_name)
+
+        if value is None or value == '':
+            del self.entry[item_name]
+            LOGGER.info('{0}: removing field {1} now empty.'.format(
+                self, item_name))
+
+        else:
+            self.entry[item_name] = value
 
     def __getitem__(self, item_name):
 
@@ -150,6 +159,29 @@ class BibedEntry():
         #       Keeping this could lead to inconsistencies and bugs.
 
         return self.entry[self._internal_translate(item_name)]
+
+    def __str__(self):
+
+        return 'Entry {}@{}'.format(self.key, self.type)
+
+    def set_timestamp_and_owner(self):
+
+        if gpod('bib_add_timestamp'):
+            current_ts = self.entry.get('timestamp', None)
+
+            if current_ts is None or gpod('bib_update_timestamp'):
+                self.entry['timestamp'] = datetime.date.today().isoformat()
+
+        owner_name = preferences.bib_owner_name
+
+        if owner_name:
+            owner_name = owner_name.strip()
+
+            if gpod('bib_add_owner'):
+                current_owner = self.entry.get('owner', None)
+
+                if current_owner is None or gpod('bib_update_owner'):
+                    self.entry['owner'] = owner_name
 
     def get_field(self, name, default=None):
 
@@ -368,6 +400,13 @@ class BibedEntry():
         # See constants.py
         return ''
 
+    def update_fields(self, **kwargs):
+
+        for field_name, field_value in kwargs.items():
+            self[field_name] = field_value
+
+        self.set_timestamp_and_owner()
+
     def toggle_quality(self):
 
         if self.quality == '':
@@ -375,6 +414,8 @@ class BibedEntry():
 
         else:
             self._internal_remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
+
+        self.set_timestamp_and_owner()
 
     def cycle_read_status(self):
 
@@ -389,6 +430,8 @@ class BibedEntry():
 
         else:
             self._internal_remove_keywords([JABREF_READ_KEYWORDS[1]])
+
+        self.set_timestamp_and_owner()
 
     def to_list_store_row(self):
         ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''

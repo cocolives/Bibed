@@ -2,7 +2,11 @@
 import os
 import logging
 
-from bibed.foundations import ldebug, lprint, lprint_caller_name
+from bibed.foundations import (
+    ldebug, lprint,
+    lprint_caller_name,
+    lprint_function_name,
+)
 
 from collections import OrderedDict
 
@@ -1097,7 +1101,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         entry = self.entry
 
-        assert ldebug('Entering update_entry_and_save_file()…')
+        assert lprint_function_name()
 
         if not self.changed_fields:
             assert ldebug('Entry {} did not change, avoiding superfluous save.',
@@ -1141,8 +1145,12 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                     # replaced with definitive value by database at first write.
                     new_entry = True
 
-        for field_name in self.changed_fields:
-            entry[field_name] = self.get_field_value(field_name)
+        entry.update_fields(
+            **{
+                field_name: self.get_field_value(field_name)
+                for field_name in self.changed_fields
+            }
+        )
 
         if new_entry:
             entry.database.add_entry(entry)
