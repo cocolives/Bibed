@@ -175,7 +175,12 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         if ctrl and keyval == Gdk.KEY_s:
 
-            self.btn_save.emit('clicked')
+            if gpod('bib_auto_save'):
+                # This is a placebo, anyway.
+                self.update_entry_and_save_file()
+
+            else:
+                self.btn_save.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_d:
 
