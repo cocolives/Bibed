@@ -11,9 +11,12 @@ from bibed.constants import (
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
     ABSTRACT_MAX_LENGHT_IN_TOOLTIPS,
+    COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
 from bibed.preferences import defaults, preferences, gpod
+
+from bibed.gui.gtk import GLib
 
 
 LOGGER = logging.getLogger(__name__)
@@ -150,7 +153,7 @@ class BibedEntry():
             except KeyError:
                 # Situation: the field was initially empty. Then, in the
                 # editor dialog, the field was filled, then emptied before
-                # dialog close. Solution: don't crash. Don't bother.
+                # dialog close. Solution: don't crash.
                 pass
 
             else:
@@ -284,8 +287,11 @@ class BibedEntry():
         tooltips.append(base_tooltip)
 
         if self.comment:
-            tooltips.append('<b>Comment:</b> {}'.format(
-                esc(self.comment)))
+            tooltips.append('<b>Comment:</b>{cr}{comment}'.format(
+                cr='\n'
+                if len(self.comment) > COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS
+                else '',
+                comment=esc(self.comment)))
 
         abstract = self.get_field('abstract', default='')
 
@@ -345,7 +351,9 @@ class BibedEntry():
     def escape_for_tooltip(self, text):
         ''' Escape esperluette and other entities for GTK tooltip display. '''
 
-        text = text.replace('& ', '&amp; ')
+        # .replace('& ', '&amp; ')
+
+        text = GLib.markup_escape_text(text)
 
         # TODO: re.sub() sur texttt, emph, url, etc.
         #       probably some sort of TeX → Gtk Markup.

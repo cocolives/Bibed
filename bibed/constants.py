@@ -166,6 +166,8 @@ MAX_KEYWORDS_IN_TOOLTIPS = 20
 
 # expressed in number of characters
 ABSTRACT_MAX_LENGHT_IN_TOOLTIPS = 512
+COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS = 96
+
 
 GENERIC_HELP_SYMBOL = (
     '<span color="grey"><sup><small>(?)</small></sup></span>'
