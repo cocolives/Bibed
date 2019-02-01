@@ -12,6 +12,7 @@ from bibed.constants import (
     BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
     BibAttrs,
+    BIBTEXPARSER_VERSION,
 )
 
 from bibed.foundations import (
@@ -416,7 +417,16 @@ class BibEdApplication(Gtk.Application):
 
         about_dialog.set_copyright('(c) Collectif Cocoliv.es')
         about_dialog.set_comments(
-            'Bibliographic assistance libre software')
+            'Bibliographic assistance libre software\n\n'
+            'GTK v{}.{}.{}\n'
+            'bibtexparser v{}'.format(
+                Gtk.get_major_version(),
+                Gtk.get_minor_version(),
+                Gtk.get_micro_version(),
+                BIBTEXPARSER_VERSION,
+            )
+        )
+
         about_dialog.set_website('https://cocoliv.es/library/bibed')
         about_dialog.set_website_label('Site web de Bibed')
         about_dialog.set_license_type(Gtk.License.GPL_3_0)

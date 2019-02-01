@@ -1,4 +1,5 @@
 import os
+import bibtexparser
 
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
@@ -9,6 +10,8 @@ BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
+
+BIBTEXPARSER_VERSION = bibtexparser.__version__
 
 
 def icon(name):
