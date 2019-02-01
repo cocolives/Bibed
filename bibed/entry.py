@@ -145,9 +145,17 @@ class BibedEntry():
         item_name = self._internal_translate(item_name)
 
         if value is None or value == '':
-            del self.entry[item_name]
-            LOGGER.info('{0}: removing field {1} now empty.'.format(
-                self, item_name))
+            try:
+                del self.entry[item_name]
+            except KeyError:
+                # Situation: the field was initially empty. Then, in the
+                # editor dialog, the field was filled, then emptied before
+                # dialog close. Solution: don't crash. Don't bother.
+                pass
+
+            else:
+                LOGGER.info('{0}: removing field {1} now empty.'.format(
+                    self, item_name))
 
         else:
             self.entry[item_name] = value
