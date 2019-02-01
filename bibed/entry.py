@@ -260,6 +260,8 @@ class BibedEntry():
     @property
     def tooltip(self):
 
+        esc = self.escape_for_tooltip
+
         tooltips = []
 
         subtitle = self.get_field('subtitle', default='')
@@ -268,21 +270,22 @@ class BibedEntry():
         base_tooltip = (
             '<big><i>{title}</i></big>\n{subtitle}'
             'by <b>{author}</b>{year}'.format(
-                title=self.title,
-                subtitle='<i>{}</i>\n'.format(subtitle) if subtitle else '',
-                author=self.author,
+                title=esc(self.title),
+                subtitle='<i>{}</i>\n'.format(esc(subtitle)) if subtitle else '',
+                author=esc(self.author),
                 year=' ({year})'.format(year=year) if year else '',
             )
         )
 
         if self.journal:
             base_tooltip += ', published in <b><i>{journal}</i></b>'.format(
-                journal=self.journal)
+                journal=esc(self.journal))
 
         tooltips.append(base_tooltip)
 
         if self.comment:
-            tooltips.append('<b>Comment:</b> {}'.format(self.comment))
+            tooltips.append('<b>Comment:</b> {}'.format(
+                esc(self.comment)))
 
         abstract = self.get_field('abstract', default='')
 
@@ -291,7 +294,7 @@ class BibedEntry():
                 + (abstract[ABSTRACT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
 
             tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
-                abstract=abstract))
+                abstract=esc(abstract)))
 
         keywords = self._internal_split_keywords(self.keywords)
 
@@ -338,6 +341,18 @@ class BibedEntry():
         # TODO: handle {and}, "and", and other author particularities.
 
         return self.__clean_for_display('author')
+
+    def escape_for_tooltip(self, text):
+        ''' Escape esperluette and other entities for GTK tooltip display. '''
+
+        text = text.replace('& ', '&amp; ')
+
+        # TODO: re.sub() sur texttt, emph, url, etc.
+        #       probably some sort of TeX → Gtk Markup.
+        #       and code the opposite for rich text
+        #       editor on abstract / comment.
+
+        return text
 
     def __clean_for_display(self, name):
 
