@@ -6,6 +6,7 @@ import tempfile
 
 import logging
 import bibtexparser
+from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
 from bibed.foundations import lprint, lprint_caller_name  # NOQA
 from bibed.preferences import gpod
@@ -31,8 +32,13 @@ class BibedDatabase:
         self.writer = bibtexparser.bwriter.BibTexWriter()
         self.writer.indent = '    '
 
-        with open(self.filename, 'r') as bibfile:
-            self.bibdb = self.parser.parse_file(bibfile)
+        try:
+            with open(self.filename, 'r') as bibfile:
+                self.bibdb = self.parser.parse_file(bibfile)
+
+        except IndexError:
+            # empty file (probably just created)
+            self.bibdb = BibtexParserDatabase()
 
         # self.bibdb.comments
         # self.bibdb.preambles
