@@ -368,7 +368,7 @@ class BibEdApplication(Gtk.Application):
         # assert lprint_function_name()
         # assert lprint(message)
 
-        for filename in self.files.get_filenames():
+        for filename in self.files.get_open_filenames():
             self.reload_file(filename)
 
         if message:
