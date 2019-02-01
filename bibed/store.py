@@ -335,6 +335,9 @@ class BibedFileStore(Gtk.ListStore):
         # Without this, window title fails to update properly.
         self.append((filename, filetype, ))
 
+        memories.add_open_file(filename)
+        memories.add_recent_file(filename)
+
     def save(self, thing):
 
         # assert lprint_function_name()

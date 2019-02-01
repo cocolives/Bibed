@@ -360,9 +360,6 @@ class BibEdApplication(Gtk.Application):
 
         self.window.cmb_files.set_active(0)
 
-        memories.add_open_file(filename)
-        memories.add_recent_file(filename)
-
     def reload_files(self, message=None):
 
         # assert lprint_function_name()
