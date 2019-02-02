@@ -484,6 +484,12 @@ class BibedEntry:
 
         self.set_timestamp_and_owner()
 
+    def delete(self):
+
+        self.database.delete_entry(self)
+        
+        self.database.write()
+
     def to_list_store_row(self):
         ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''
 

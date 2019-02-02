@@ -372,10 +372,7 @@ class BibedFileStore(Gtk.ListStore):
         elif isinstance(thing, str):
             database = self.databases[thing]
 
-        filename = database.filename
-
-        with self.no_watch(filename):
-            database.write()
+        database.write()
 
     def close(self, filename, save_before=True, recompute=True, remember_close=True):
 
@@ -559,6 +556,8 @@ class BibedDataStore(Gtk.ListStore):
     def update_entry(self, entry):
 
         assert lprint_function_name()
+
+        assert entry.gid >= 0
 
         for row in self:
             if row[BibAttrs.GLOBAL_ID] == entry.gid:

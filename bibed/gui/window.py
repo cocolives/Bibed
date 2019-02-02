@@ -29,6 +29,7 @@ from bibed.gui.helpers import (
     # scrolled_textview,
     add_classes,
     remove_classes,
+    message_dialog,
     widget_properties,
     label_with_markup,
 )
@@ -230,6 +231,14 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.btn_add.connect('clicked', self.on_entry_add_clicked)
 
         hb.pack_start(self.btn_add)
+
+        self.btn_delete = Gtk.Button()
+        icon = Gio.ThemedIcon(name="list-remove-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_delete.add(image)
+        self.btn_delete.connect('clicked', self.on_entry_delete_clicked)
+
+        hb.pack_start(self.btn_delete)
 
         # ————————————————————————————— Right side, from end to start
 
@@ -546,6 +555,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
         elif ctrl and keyval == Gdk.KEY_n:
             self.btn_add.emit('clicked')
 
+        elif not ctrl and keyval == Gdk.KEY_Delete:
+            self.btn_delete.emit('clicked')
+
         elif ctrl and keyval == Gdk.KEY_o:
             self.btn_file_open.emit('clicked')
 
@@ -613,9 +625,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
                     pass
 
             else:
-                entry = self.treeview.get_selected_store_entry()
+                row = self.treeview.get_selected_row()
 
-                if entry is not None:
+                if row is not None:
                     self.treeview.unselect_all()
 
                 else:
@@ -746,17 +758,35 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             entry_edit_dialog.run()
 
-            # TODO: convert this test to Gtk.Response.OK and CANCEL
-            #       to know if we need to insert/update or not.
-            if entry.database is not None and entry_edit_dialog.can_save:
-                # TODO: insert in self.application.data_store directly ?
-                #       abstraction-level question only.
-                self.treeview.main_model.insert_entry(entry)
-                self.do_filter_data_store()
+            # self.do_filter_data_store()
 
             entry_edit_dialog.destroy()
 
         entry_add_dialog.destroy()
+
+    def on_entry_delete_clicked(self, button):
+
+        selected_entry = self.treeview.get_selected_entry()
+
+        if selected_entry is None:
+            return
+
+        if gpod('use_trash'):
+            self.app.files.trash_entry(selected_entry)
+
+        else:
+            def delete_callback(selected_entry):
+                selected_entry.delete()
+                self.do_filter_data_store()
+
+            message_dialog(
+                self,
+                Gtk.MessageType.WARNING,
+                'Delete entry {entry}'.format(entry=selected_entry),
+                'This action cannot be undone. Are you sure?',
+                delete_callback,
+                selected_entry
+            )
 
     def on_preferences_clicked(self, button):
 

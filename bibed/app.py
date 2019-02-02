@@ -151,7 +151,7 @@ class BibEdApplication(Gtk.Application):
             # The window is not yet constructed
             return True
 
-        store_entry = model[iter]
+        row = model[iter]
 
         try:
             filter_file = self.window.get_selected_filename()
@@ -163,7 +163,7 @@ class BibEdApplication(Gtk.Application):
         else:
             # TODO: translate 'All'
             if filter_file != 'All':
-                if store_entry[BibAttrs.FILENAME] != filter_file:
+                if row[BibAttrs.FILENAME] != filter_file:
                     # The current row is not part of displayed
                     # filename. No need to go further.
                     return False
@@ -189,29 +189,29 @@ class BibEdApplication(Gtk.Application):
 
         for key, val in specials:
             if key == 't':  # TYPE
-                if val not in store_entry[BibAttrs.TYPE].lower():
+                if val not in row[BibAttrs.TYPE].lower():
                     return False
 
             if key == 'k':  # (bib) KEY
-                if val not in store_entry[BibAttrs.KEY].lower():
+                if val not in row[BibAttrs.KEY].lower():
                     return False
 
             if key == 'j':
-                if val not in store_entry[BibAttrs.JOURNAL].lower():
+                if val not in row[BibAttrs.JOURNAL].lower():
                     return False
 
             if key == 'y':
-                if int(val) != int(store_entry[BibAttrs.YEAR]):
+                if int(val) != int(row[BibAttrs.YEAR]):
                     return False
 
         # TODO: unaccented / delocalized search.
 
         model_full_text_data = [
-            to_lower_if_not_none(store_entry[BibAttrs.AUTHOR]),
-            to_lower_if_not_none(store_entry[BibAttrs.TITLE]),
-            to_lower_if_not_none(store_entry[BibAttrs.JOURNAL]),
-            to_lower_if_not_none(store_entry[BibAttrs.SUBTITLE]),
-            to_lower_if_not_none(store_entry[BibAttrs.COMMENT]),
+            to_lower_if_not_none(row[BibAttrs.AUTHOR]),
+            to_lower_if_not_none(row[BibAttrs.TITLE]),
+            to_lower_if_not_none(row[BibAttrs.JOURNAL]),
+            to_lower_if_not_none(row[BibAttrs.SUBTITLE]),
+            to_lower_if_not_none(row[BibAttrs.COMMENT]),
             # NO abstract yet in data_store.
             # to_lower_if_not_none(model[iter][BibAttrs.ABSTRACT])
         ]

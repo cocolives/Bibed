@@ -344,6 +344,10 @@ class BibedException(Exception):
     pass
 
 
+class BibedError(BibedException):
+    pass
+    
+
 class AttributeDict(object):
     """
     A class to convert a nested Dictionary into an object with key-values
