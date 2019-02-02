@@ -458,25 +458,20 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint_function_name()
         # assert lprint(filename, recompute)
 
+        column_filetype = FSCols.FILETYPE
+        column_filename = FSCols.FILENAME
+
         if filename is None:
-            # clear ALL user data (no system).
+            # clear ALL USER data (no system).
             for row in self:
-                if row[FSCols.FILETYPE] == FileTypes.USER:
-                    self.clear_data(row[FSCols.FILENAME])
+                if row[column_filetype] == FileTypes.USER:
+                    self.clear_data(row[column_filename], recompute=recompute)
             return
 
         # keep references handy for speed in loops.
-        filename_index = BibAttrs.FILENAME
-        store = self.data_store
-
-        for row in store:
-            if row[filename_index] == filename:
-                    store.remove(row.iter)
+        self.data_store.clear_data(filename, recompute=recompute)
 
         del self.databases[filename]
-
-        if recompute:
-            self.data_store.do_recompute_global_ids()
 
     def trigger_save(self, filename):
         ''' function called by anywhere in the code to trigger a save().
@@ -528,6 +523,7 @@ class BibedFileStore(Gtk.ListStore):
 class BibedDataStore(Gtk.ListStore):
 
     def __init__(self, *args, **kwargs):
+
         super().__init__(
             *DATA_STORE_LIST_ARGS
         )
@@ -578,3 +574,32 @@ class BibedDataStore(Gtk.ListStore):
                 )
 
                 break
+
+    def delete_entry(self, entry):
+
+        assert lprint_function_name()
+
+        assert entry.gid >= 0
+
+        gid_index = BibAttrs.GLOBAL_ID
+
+        for row in self:
+            if row[gid_index] == entry.gid:
+                self.remove(row.iter)
+
+        self.do_recompute_global_ids()
+
+        assert ldebug('Row {} deleted (was entry {}).', row.iter, entry.key)
+
+    def clear_data(self, filename, recompute=True):
+
+        # assert lprint_function_name()
+
+        column_filename = FSCols.FILENAME
+
+        for row in self:
+            if row[column_filename] == filename:
+                    self.remove(row.iter)
+
+        if recompute:
+            self.do_recompute_global_ids()
