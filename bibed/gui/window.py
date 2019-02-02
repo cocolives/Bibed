@@ -339,6 +339,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
             window=self,
         )
 
+        self.treeview.selection.connect(
+            'changed', self.on_treeview_selection_changed)
+
         self.treeview_sw.add(self.treeview)
 
     def update_title(self):
@@ -405,20 +408,39 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         how_many_files = len(self.filtered_files)
 
+        widgets_to_change = (
+            # file-related buttons
+            self.btn_file_close, self.cmb_files,
+
+            # Entry-related buttons.
+            self.btn_add, self.btn_delete,
+        )
+
         if how_many_files:
-            self.btn_add.show()
-            self.btn_file_close.show()
-            self.cmb_files.show()
+            for widget in widgets_to_change:
+                widget.show()
 
             self.btn_file_close_switch_icon(
                 how_many_files > 1 and self.cmb_files.get_active() == 0)
 
         else:
-            self.btn_add.hide()
-            self.btn_file_close.hide()
-            self.cmb_files.hide()
+            for widget in widgets_to_change:
+                widget.hide()
+
+        self.on_treeview_selection_changed()
+
+    def entry_selection_buttons_set_sensitive(self, is_sensitive):
+
+        for button in (self.btn_delete, ):
+            button.set_sensitive(is_sensitive)
 
     # ———————————————————————————————————————————————————————————— “ON” actions
+
+    def on_treeview_selection_changed(self, *args, **kwargs):
+
+        self.entry_selection_buttons_set_sensitive(
+            bool(self.treeview.get_selected_rows())
+        )
 
     def on_maximize_toggle(self, action, value):
 
