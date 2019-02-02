@@ -186,7 +186,8 @@ class BibedDatabase:
         # Using time will also help for cleaning old backups.
         new_filename = os.path.join(
             dirname,
-            '{basename}.save.{datetime}.bib'.format(
+            # HEADS UP: backup file starts with a dot, it's hidden.
+            '.{basename}.save.{datetime}.bib'.format(
                 basename=basename.rsplit('.', 1)[0],
                 datetime=datetime.datetime.now().isoformat(sep='_')
             )
