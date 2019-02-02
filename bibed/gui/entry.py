@@ -133,6 +133,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         # and used in self.update_entry_and_save_file().
         self.changed_fields = set()
 
+        # Idem
+        self.error_fields = set()
+
         # This is needed for auto_save to interact gracefully with
         # destination_file popover, and be able to (re)set it as
         # will until the first save.
@@ -879,6 +882,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         # Compute a new key
         # Fill the entry
 
+        # IDEA: call fix_field_key() and fill new_key with result ?
+
         pass
 
     def on_rename_clicked(self, button):
@@ -1010,14 +1015,30 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         # treeview update to use the new entry.
 
         if gpod('bib_auto_save'):
-            self.update_entry_and_save_file(save=True)
+            # Dialog is closing. using fix_errors=True is the ONLY way
+            # to save the maximum of what the user created / modified.
+            self.update_entry_and_save_file(save=True, fix_errors=True)
 
         else:
             # If user did not save, be sure we don't
             # insert an invalid entry in the treeview.
-            self.changed_fields = set()
+            self.reset_fields()
 
         return result
+
+    def reset_fields(self, with_brand_new=False, only_no_error=False):
+
+        if only_no_error:
+            for field_name in self.changed_fields.copy():
+                if field_name not in self.error_fields:
+                    self.changed_fields.remove(field_name)
+
+        else:
+            self.changed_fields = set()
+            self.error_fields = set()
+
+        if with_brand_new:
+            self.brand_new = False
 
     def on_switch_type_clicked(self, button):
 
@@ -1061,7 +1082,24 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             LOGGER.warning('Unhandled changed field {}'.format(field_name))
             return None
 
-    def __check_field_wrapper(self, field_name, field):
+    def set_field_value(self, field_name, value, widget=None):
+
+        if widget is None:
+            widget = self.fields[field_name]
+
+        if isinstance(widget, Gtk.Entry):
+            return widget.set_text(value)
+
+        elif isinstance(widget, Gtk.TextView):
+            buffer = widget.get_buffer()
+
+            return buffer.set_text(value)
+
+        else:
+            LOGGER.warning('Unhandled field {}'.format(field_name))
+            return None
+
+    def __check_field_wrapper(self, field_name, field, fix_errors=False):
 
         try:
             check_method = getattr(self, 'check_field_{}'.format(field_name))
@@ -1075,8 +1113,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         error = check_method(field_name, field, field_value)
 
         if error:
-            # TODO: implement error label in dialog, under
-            add_classes(self.fields[field_name], ['error'])
+            add_classes(field, ['error'])
+            self.error_fields.add(field_name)
             self.message_error(error)
 
             # LOGGER.error('Field {} do NOT pass checks.'.format(field_name))
@@ -1084,7 +1122,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             return False
 
         else:
-            remove_classes(self.fields[field_name], ['error'])
+            remove_classes(field, ['error'])
+            self.error_fields.remove(field_name)
             self.close_infobar()
 
         return True
@@ -1112,7 +1151,55 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         return True
 
-    def update_entry_and_save_file(self, save=True):
+    def get_changed_fields_with_values(self, only_no_error=False):
+
+        return {
+            field_name: self.get_field_value(field_name)
+            for field_name in self.changed_fields
+            if (
+                only_no_error and field_name not in self.error_fields
+                or not only_no_error
+            )
+        }
+
+    def fix_all_error_fields(self):
+
+        for field_name in self.error_fields.copy():
+
+            field = self.fields[field_name]
+
+            field_value = self.get_field_value(field_name, field)
+
+            try:
+                fix_method = getattr(self, 'fix_field_{}'.format(field_name))
+
+            except AttributeError:
+                # No fix method, we have to wipe the field.
+                fixed_value = None
+
+            else:
+                fixed_value = fix_method(field_name, field,
+                                         field_value, entry=self.entry,
+                                         files=self.files)
+
+            self.set_field_value(field_name, fixed_value, field)
+
+            # Make update_entry_and_save_file() notice the change.
+            self.changed_fields.add(field_name)
+
+            try:
+                self.error_fields.remove(field_name)
+
+            except KeyError:
+                # In the case of auto-generating “key” field, this
+                # will fail because field was not in error.
+                pass
+
+            LOGGER.info('{entry}: error field “{field}” fixed with new value '
+                        '{fix}'.format(entry=self.entry, field=field_name,
+                                       fix=fixed_value))
+
+    def update_entry_and_save_file(self, save=True, fix_errors=False):
 
         entry = self.entry
 
@@ -1126,7 +1213,18 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         if not self.can_save:
             assert ldebug('Entry {} cannot save yet, aborting save().',
                           entry.key)
-            return
+
+            if fix_errors:
+                # Push everything pushable to the
+                # entry, then fix fields in place.
+                entry.update_fields(
+                    **self.get_changed_fields_with_values(only_no_error=True)
+                )
+                self.reset_fields(only_no_error=True)
+                self.fix_all_error_fields()
+
+            else:
+                return
 
         if gpod('ensure_biblatex_checks'):
             if not self.check_biblatex_entry():
@@ -1160,12 +1258,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                     # replaced with definitive value by database at first write.
                     new_entry = True
 
-        entry.update_fields(
-            **{
-                field_name: self.get_field_value(field_name)
-                for field_name in self.changed_fields
-            }
-        )
+        # This will either push all
+        entry.update_fields(**self.get_changed_fields_with_values())
 
         if new_entry:
             entry.database.add_entry(entry)
@@ -1177,5 +1271,4 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             self.files.save(entry)
 
         # Reset changed fields now that everything is saved.
-        self.changed_fields = set()
-        self.brand_new = False
+        self.reset_fields(with_brand_new=True)
