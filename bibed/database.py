@@ -7,7 +7,11 @@ import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
-from bibed.foundations import lprint, lprint_caller_name  # NOQA
+from bibed.foundations import (  # NOQA
+    lprint, ldebug,
+    lprint_caller_name,
+    lprint_function_name,
+)
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
 
@@ -50,32 +54,32 @@ class BibedDatabase:
 
     def get_entry_by_key(self, key):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         return BibedEntry(self, *self.entries[key])
 
     def keys(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         return self.entries.keys()
 
     def itervalues(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         for index, entry in enumerate(self.bibdb.entries):
             yield BibedEntry(self, entry, index)
 
     def values(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         return [x for x in self.itervalues()]
 
     def add_entry(self, entry):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(entry)
 
         new_index = len(self.bibdb.entries)
@@ -89,7 +93,7 @@ class BibedDatabase:
 
     def update_entry_key(self, entry):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(entry)
 
         old_keys = [x.strip() for x in entry['ids'].split(',')]
@@ -111,7 +115,7 @@ class BibedDatabase:
 
     def backup(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(self.filename)
 
         dirname = os.path.dirname(self.filename)
@@ -140,7 +144,7 @@ class BibedDatabase:
 
     def write(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(self.filename)
 
         if gpod('backup_before_save'):
