@@ -7,6 +7,12 @@ import datetime
 
 import bibtexparser
 
+from bibed.foundations import (
+    lprint, ldebug,
+    lprint_caller_name,
+    lprint_function_name,
+)
+
 from bibed.constants import (
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
@@ -138,6 +144,11 @@ class BibedEntry:
         #     return 'ENTRYTYPE'
 
         return name
+
+    def copy(self):
+        ''' Return a copy of self, with no database and no index. '''
+
+        return BibedEntry(None, self.entry.copy(), -1)
 
     def fields(self):
         return self.entry.keys()
@@ -438,6 +449,9 @@ class BibedEntry:
         return ''
 
     def update_fields(self, **kwargs):
+
+        # assert lprint_function_name()
+        # assert lprint(kwargs)
 
         for field_name, field_value in kwargs.items():
             self[field_name] = field_value

@@ -18,7 +18,7 @@ class SentryHelper(metaclass=Singleton):
         self.enabled = False
 
         try:
-            import sentry_sdk
+            import sentry_sdk  # NOQA
 
         except Exception:
             LOGGER.exception('Unable to import sentry SDK. '
@@ -76,5 +76,6 @@ class SentryHelper(metaclass=Singleton):
         LOGGER.info('Disabled sentry error reporting.')
 
         self.enabled = False
+
 
 sentry = SentryHelper()

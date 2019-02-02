@@ -2,13 +2,16 @@
 import os
 import shutil
 import datetime
-import tempfile
 
 import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
-from bibed.foundations import lprint, lprint_caller_name  # NOQA
+from bibed.foundations import (  # NOQA
+    lprint, ldebug,
+    lprint_caller_name,
+    lprint_function_name,
+)
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
 
@@ -51,32 +54,32 @@ class BibedDatabase:
 
     def get_entry_by_key(self, key):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         return BibedEntry(self, *self.entries[key])
 
     def keys(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         return self.entries.keys()
 
     def itervalues(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         for index, entry in enumerate(self.bibdb.entries):
             yield BibedEntry(self, entry, index)
 
     def values(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
 
         return [x for x in self.itervalues()]
 
     def add_entry(self, entry):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(entry)
 
         new_index = len(self.bibdb.entries)
@@ -88,9 +91,9 @@ class BibedDatabase:
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
 
-    def move_entry(self, entry):
+    def update_entry_key(self, entry):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(entry)
 
         old_keys = [x.strip() for x in entry['ids'].split(',')]
@@ -112,18 +115,21 @@ class BibedDatabase:
 
     def backup(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(self.filename)
 
         dirname = os.path.dirname(self.filename)
         basename = os.path.basename(self.filename)
 
-        prefix = '{}.save.{}.'.format(
-            basename.rsplit('.', 1)[0],
-            datetime.date.today().isoformat())
-
-        (handle, new_filename) = tempfile.mkstemp(
-            suffix='.bib', prefix=prefix, dir=dirname)
+        # Using microseconds in backup filename should avoid collisions.
+        # Using time will also help for cleaning old backups.
+        new_filename = os.path.join(
+            dirname,
+            '{basename}.save.{datetime}.bib'.format(
+                basename=basename.rsplit('.', 1)[0],
+                datetime=datetime.datetime.now().isoformat(sep='_')
+            )
+        )
 
         try:
             shutil.copyfile(self.filename, new_filename)
@@ -132,9 +138,13 @@ class BibedDatabase:
         except Exception:
             LOGGER.exception('Problem while backing up file before save.')
 
+        # TODO: make backups in .bibed_save/ ? (PREFERENCE ON/OFF)
+        # TODO: clean old backup files. (PREFERENCE [number])
+        pass
+
     def write(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name()
         # assert lprint(self.filename)
 
         if gpod('backup_before_save'):
