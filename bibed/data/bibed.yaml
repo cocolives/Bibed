@@ -12,6 +12,7 @@ accelerators:
   - \footcite{@@key@@}
   copy_to_clipboard_single_value: \cite{@@key@@}
 backup_before_save: true
+backup_count: 32
 bib_add_owner: false
 bib_add_timestamp: true
 bib_auto_save: true
