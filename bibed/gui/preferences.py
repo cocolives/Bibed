@@ -11,6 +11,7 @@ from bibed.constants import (
 )
 
 from bibed.utils import get_user_home_directory
+from bibed.sentry import sentry
 from bibed.preferences import defaults, preferences, gpod
 
 from bibed.gui.helpers import (
@@ -309,6 +310,35 @@ class BibedPreferencesDialog(Gtk.Dialog):
         pg.attach_next_to(
             self.swi_remember_windows_states,
             self.lbl_remember_windows_states,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # —————————————————————————————————————————————————————————————— Sentry
+
+        (self.lbl_use_sentry,
+         self.swi_use_sentry) = build_label_and_switch(
+            '<b>Report issues to developers</b>\n'
+            '<span foreground="grey" size="small">'
+            'Enabling this will automatically send errors, crashes and '
+            'debugging data to developpers, anonymously.\n'
+            'We use <span face="monospace">sentry</span> at address '
+            '<a href="{website}">{website}</a>, on which you can create an '
+            'account to help.\nGet in touch if you want to send errors to your own <span face="monospace">sentry</span>.</span>'.format(website=gpod('sentry_url')),
+            self.on_switch_activated,
+            gpod('use_sentry'),
+            func_args=('use_sentry', )
+
+        )
+
+        pg.attach_next_to(
+            self.lbl_use_sentry,
+            self.lbl_remember_windows_states,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.swi_use_sentry,
+            self.lbl_use_sentry,
             Gtk.PositionType.RIGHT,
             1, 1)
 
@@ -848,6 +878,14 @@ class BibedPreferencesDialog(Gtk.Dialog):
                 # Not all fields are present (order of
                 # construction matters).
                 pass
+
+    def on_use_sentry_activated(self, is_active):
+
+        if is_active:
+            sentry.enable()
+
+        else:
+            sentry.disable()
 
     def on_bib_add_timestamp_activated(self, is_active):
 
