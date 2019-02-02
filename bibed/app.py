@@ -26,7 +26,7 @@ from bibed.foundations import (
 from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
 
 from bibed.utils import to_lower_if_not_none
-from bibed.preferences import preferences, memories
+from bibed.preferences import preferences, memories, gpod
 from bibed.store import (
     BibedDataStore,
     BibedFileStore,
@@ -414,7 +414,8 @@ class BibEdApplication(Gtk.Application):
         # os.path.join(BIBED_ICONS_DIR, 'gnome-contacts.png'))
 
         about_dialog.set_copyright('(c) Collectif Cocoliv.es')
-        about_dialog.set_comments(
+
+        comments = (
             'Bibliographic assistance libre software\n\n'
             'GTK v{}.{}.{}\n'
             'bibtexparser v{}'.format(
@@ -424,6 +425,30 @@ class BibEdApplication(Gtk.Application):
                 BIBTEXPARSER_VERSION,
             )
         )
+
+        if gpod('use_sentry'):
+            try:
+                import sentry_sdk
+
+            except Exception:
+                LOGGER.error('Unable to import sentry SDK.')
+
+            else:
+                last_event = sentry_sdk.last_event_id()
+
+                comments += (
+                    '\nSentry SDK v{sdk_vers}, reporting to\n{dsn}\n'
+                    '(see {website} for details)'
+                    '{last}'.format(
+                        sdk_vers=sentry_sdk.VERSION,
+                        dsn=gpod('sentry_dsn'),
+                        website=gpod('sentry_url'),
+                        last='<big>Last event ID: {}</big>'.format(last_event)
+                        if last_event else ''
+                    )
+                )
+
+        about_dialog.set_comments(comments)
 
         about_dialog.set_website('https://cocoliv.es/library/bibed')
         about_dialog.set_website_label('Site web de Bibed')
