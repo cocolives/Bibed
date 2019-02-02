@@ -560,6 +560,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # we limit on search_text, else we grab the genuine
             # up/down keys already handled by the treeview.
 
+            # TODO: refactor this block and create
+            #       treeview.select_next() and treeview.select_previous()
             select = self.treeview.get_selection()
             model, treeiter = select.get_selected()
 
@@ -597,7 +599,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             select.select_iter(treeiter_next)
 
-        elif keyval == Gdk.KEY_Escape:
+        elif not ctrl and keyval == Gdk.KEY_Escape:
 
             # if self.search.has_focus():
 
@@ -611,9 +613,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
                     pass
 
             else:
-                if len(self.application.files):
-                    if self.cmb_files.get_active() != 0:
-                        self.cmb_files.set_active(0)
+                entry = self.treeview.get_selected_store_entry()
+
+                if entry is not None:
+                    self.treeview.unselect_all()
+
+                else:
+                    if len(self.application.files):
+                        if self.cmb_files.get_active() != 0:
+                            self.cmb_files.set_active(0)
 
             self.treeview.grab_focus()
 
