@@ -139,6 +139,11 @@ class BibedEntry:
 
         return name
 
+    def copy(self):
+        ''' Return a copy of self, with no database and no index. '''
+
+        return BibedEntry(None, self.entry.copy(), -1)
+
     def fields(self):
         return self.entry.keys()
 
