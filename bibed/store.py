@@ -418,11 +418,13 @@ class BibedFileStore(Gtk.ListStore):
         self.lock(blocking=False)
 
         # self.window.treeview.set_editable(False)
-        self.close(filename, save=False)
+        self.close(filename,
+                   save_before=False,
+                   remember_close=False)
 
         result = self.load(filename)
 
-        self.unlock(lazy=True)
+        self.unlock()
 
         return result
 
