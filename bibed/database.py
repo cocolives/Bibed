@@ -70,7 +70,8 @@ class BibedDatabase:
         self.entries = {}
 
         for index, entry in enumerate(self.bibdb.entries):
-            self.entries[entry['ID']] = (entry, index)
+            # Needs to be a tuple for re-indexation operations.
+            self.entries[entry['ID']] = [entry, index]
 
     def get_entry_by_key(self, key):
 
@@ -103,10 +104,10 @@ class BibedDatabase:
         # assert lprint(entry)
 
         new_index = len(self.bibdb.entries)
-        entry.index = new_index
 
         # Insert in BibedDatabase.
-        self.entries[entry.key] = (entry.entry, new_index)
+        # We need a tuple for later index assignments.
+        self.entries[entry.key] = [entry.entry, new_index]
 
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
@@ -133,8 +134,6 @@ class BibedDatabase:
         # idem in bibtexparser database.
         del self.bibdb.entries[old_index]
         self.bibdb.entries.insert(old_index, entry.entry)
-
-        assert(entry.index)
 
     def backup(self):
 
