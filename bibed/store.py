@@ -557,6 +557,8 @@ class BibedDataStore(Gtk.ListStore):
 
         assert lprint_function_name()
 
+        assert entry.gid >= 0
+
         for row in self:
             if row[BibAttrs.GLOBAL_ID] == entry.gid:
                 # This is far from perfect, we could just update the row.
