@@ -370,15 +370,28 @@ class BibedMainTreeView(Gtk.TreeView):
 
         entry_edit_dialog.destroy()
 
-    def get_selected_store_entry(self):
+    def unselect_all(self):
+        ''' Simple wrapper for one-line call. '''
 
         selection = self.get_selection()
+        selection.unselect_all()
+
+    def get_selected(self):
+        ''' Simple wrapper for one-line call. '''
+
+        selection = self.get_selection()
+
+        model, treeiter = selection.get_selected()
+
+        return model, treeiter
+
+    def get_selected_store_entry(self):
 
         # Code to add to connect a method to new selection.
         # selection.connect('changed', self.on_treeview_selection_changed)
         # selection.unselect_all()
 
-        model, treeiter = selection.get_selected()
+        model, treeiter = self.get_selected()
 
         if treeiter is None:
             return None
