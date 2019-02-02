@@ -88,7 +88,7 @@ class BibedDatabase:
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
 
-    def move_entry(self, entry):
+    def update_entry_key(self, entry):
 
         # assert lprint_caller_name()
         # assert lprint(entry)

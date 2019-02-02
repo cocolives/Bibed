@@ -1265,7 +1265,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             entry.database.add_entry(entry)
 
         elif key_updated:
-            entry.database.move_entry(entry)
+            entry.database.update_entry_key(entry)
 
         if save:
             self.files.save(entry)
