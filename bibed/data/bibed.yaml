@@ -641,8 +641,8 @@ fields:
     issue: Issue
     issuesubtitle: Issue sub-title
     issuetitle: Issue title
-    journaltitle: Journal title
     journalsubtitle: Journal sub-title
+    journaltitle: Journal title
     key: Entry key
     language: Language
     location: Location
@@ -669,6 +669,8 @@ keep_recent_files: 10
 remember_last_destination: true
 remember_open_files: true
 remember_windows_states: true
+sentry_dsn: https://2d0bc8689dc740a2a6758877e5c98d48@dev.cocoliv.es/2
+sentry_url: https://dev.cocoliv.es/
 types:
   docs:
     article: An article in a journal, magazine, newspaper, or other periodical
@@ -829,3 +831,4 @@ types:
   - set
   - xdata
 url_action_opens_browser: true
+use_sentry: true
