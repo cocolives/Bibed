@@ -595,7 +595,7 @@ class BibedDataStore(Gtk.ListStore):
 
         # assert lprint_function_name()
 
-        column_filename = FSCols.FILENAME
+        column_filename = BibAttrs.FILENAME
 
         for row in self:
             if row[column_filename] == filename:
