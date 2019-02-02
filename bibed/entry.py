@@ -1,6 +1,7 @@
 
 import os
 import re
+import uuid
 import logging
 import datetime
 
@@ -10,10 +11,14 @@ from bibed.constants import (
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
+    MINIMUM_BIB_KEY_LENGTH,
     ABSTRACT_MAX_LENGHT_IN_TOOLTIPS,
+    COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
 from bibed.preferences import defaults, preferences, gpod
+from bibed.utils import asciize
+from bibed.gui.gtk import GLib
 
 
 LOGGER = logging.getLogger(__name__)
@@ -21,6 +26,9 @@ LOGGER = logging.getLogger(__name__)
 # —————————————————————————————————————————————————————— regular expressions
 
 KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
+
+# There is a non-breaking space and an space.
+SPLIT_RE = re.compile(' | |:|,|;|\'|"|«|»|“|”|‘|’', re.IGNORECASE)
 
 # ———————————————————————————————————————————————————————————————— Functions
 
@@ -31,7 +39,7 @@ bibtexparser_as_text = bibtexparser.bibdatabase.as_text
 # —————————————————————————————————————————————————————————————————— Classes
 
 
-class BibedEntry():
+class BibedEntry:
 
     @classmethod
     def new_from_type(cls, entry_type):
@@ -145,9 +153,17 @@ class BibedEntry():
         item_name = self._internal_translate(item_name)
 
         if value is None or value == '':
-            del self.entry[item_name]
-            LOGGER.info('{0}: removing field {1} now empty.'.format(
-                self, item_name))
+            try:
+                del self.entry[item_name]
+            except KeyError:
+                # Situation: the field was initially empty. Then, in the
+                # editor dialog, the field was filled, then emptied before
+                # dialog close. Solution: don't crash.
+                pass
+
+            else:
+                LOGGER.info('{0}: removing field {1} now empty.'.format(
+                    self, item_name))
 
         else:
             self.entry[item_name] = value
@@ -252,6 +268,8 @@ class BibedEntry():
     @property
     def tooltip(self):
 
+        esc = self.escape_for_tooltip
+
         tooltips = []
 
         subtitle = self.get_field('subtitle', default='')
@@ -260,21 +278,25 @@ class BibedEntry():
         base_tooltip = (
             '<big><i>{title}</i></big>\n{subtitle}'
             'by <b>{author}</b>{year}'.format(
-                title=self.title,
-                subtitle='<i>{}</i>\n'.format(subtitle) if subtitle else '',
-                author=self.author,
+                title=esc(self.title),
+                subtitle='<i>{}</i>\n'.format(esc(subtitle)) if subtitle else '',
+                author=esc(self.author),
                 year=' ({year})'.format(year=year) if year else '',
             )
         )
 
         if self.journal:
             base_tooltip += ', published in <b><i>{journal}</i></b>'.format(
-                journal=self.journal)
+                journal=esc(self.journal))
 
         tooltips.append(base_tooltip)
 
         if self.comment:
-            tooltips.append('<b>Comment:</b> {}'.format(self.comment))
+            tooltips.append('<b>Comment:</b>{cr}{comment}'.format(
+                cr='\n'
+                if len(self.comment) > COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS
+                else '',
+                comment=esc(self.comment)))
 
         abstract = self.get_field('abstract', default='')
 
@@ -283,7 +305,7 @@ class BibedEntry():
                 + (abstract[ABSTRACT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
 
             tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
-                abstract=abstract))
+                abstract=esc(abstract)))
 
         keywords = self._internal_split_keywords(self.keywords)
 
@@ -331,6 +353,20 @@ class BibedEntry():
 
         return self.__clean_for_display('author')
 
+    def escape_for_tooltip(self, text):
+        ''' Escape esperluette and other entities for GTK tooltip display. '''
+
+        # .replace('& ', '&amp; ')
+
+        text = GLib.markup_escape_text(text)
+
+        # TODO: re.sub() sur texttt, emph, url, etc.
+        #       probably some sort of TeX → Gtk Markup.
+        #       and code the opposite for rich text
+        #       editor on abstract / comment.
+
+        return text
+
     def __clean_for_display(self, name):
 
         # TODO: do better than this.
@@ -352,6 +388,7 @@ class BibedEntry():
 
     @property
     def year(self):
+        ''' Will try to return year field or year part of date field. '''
 
         # TODO: handle non-ISO date gracefully.
         return int(
@@ -460,6 +497,113 @@ class BibedEntry():
         ]
 
 
+class EntryKeyGenerator:
+
+    @staticmethod
+    def format_title(title):
+        ''' Return first letter of each word. '''
+
+        words = (word.strip() for word in SPLIT_RE.split(title))
+
+        return asciize(''.join(
+            word[0] for word in words if word
+        ), aggressive=True).lower()
+
+    @staticmethod
+    def format_author(author):
+
+        def get_last_name(name):
+
+            try:
+                return name.rsplit(' ', 1)[1]
+
+            except IndexError:
+                # No space, no split, only one name part.
+                return name
+
+        names = [name.strip() for name in author.split('and')]
+
+        names_count = len(names)
+
+        if names_count > 2:
+            last_names = (get_last_name(name) for name in names)
+
+            # Take the 2 first letters of each author last name.
+            last_name = ''.join(
+                asciize(name[:2], aggressive=True) for name in last_names)
+
+        elif names_count == 2:
+
+            last_names = (get_last_name(name) for name in names)
+
+            # Take the 3 first letters of each author last name.
+            last_name = ''.join(
+                asciize(name[:3], aggressive=True) for name in last_names)
+
+        else:
+            last_name = asciize(get_last_name(names[0]), aggressive=True)
+
+        return last_name.lower()
+
+    @staticmethod
+    def generate_new_key(entry, suffix=None):
+
+        assert isinstance(entry, BibedEntry)
+
+        assert suffix is None or int(suffix)
+
+        if suffix is None:
+            suffix = ''
+
+        else:
+            # return someting like '-03'
+            suffix = '-{:02d}'.format(suffix)
+
+        author = entry.author
+        title = entry.title
+        year = entry.year
+
+        if entry.type not in (
+                'book', 'article', 'misc', 'booklet', 'thesis', 'online'):
+            prefix = '{}:'.format(entry.type[0].lower())
+
+        else:
+            prefix = ''
+
+        if not author and not title:
+            # Nothing to make a key from…
+            return uuid.uuid4().hex
+
+        if not title:
+            result = '{prefix}{author}{year}{suffix}'.format(
+                prefix=prefix, author=EntryKeyGenerator.format_author(author),
+                year=year, suffix=suffix)
+
+        elif not author:
+            result = '{prefix}{title}{year}{suffix}'.format(
+                prefix=prefix, title=EntryKeyGenerator.format_title(title),
+                year=year, suffix=suffix)
+
+        else:
+            # We've got an author and a title
+            result = '{prefix}{author}-{title}{suffix}'.format(
+                prefix=prefix, author=EntryKeyGenerator.format_author(author),
+                title=EntryKeyGenerator.format_title(title), suffix=suffix)
+
+        result_len = len(result)
+
+        if result_len < MINIMUM_BIB_KEY_LENGTH:
+            result = '{result}{padding}'.format(
+                result=result,
+                padding=uuid.uuid4().hex[:MINIMUM_BIB_KEY_LENGTH - result_len]
+            )
+
+        return result
+
+
+generate_new_key = EntryKeyGenerator.generate_new_key
+
+
 class EntryFieldCheckMixin:
     ''' This class is meant to be subclassed by any Window/Dialog that checks entries.
 
@@ -501,6 +645,22 @@ class EntryFieldCheckMixin:
                 'Please choose another one.').format(
                     filename=os.path.basename(has_key)
             )
+
+    def fix_field_key(self, field_name, field, field_value, entry, files):
+        ''' Create a valid key. '''
+
+        assert entry
+        assert files
+
+        new_key = generate_new_key(entry)
+        counter = 1
+
+        while files.has_bib_key(new_key):
+
+            new_key = generate_new_key(entry, counter)
+            counter += 1
+
+        return new_key
 
     def check_field_date(self, field_name, field, field_value):
 

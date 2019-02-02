@@ -42,6 +42,17 @@ from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
 LOGGER = logging.getLogger(__name__)
 
 
+class BibebWindowBlockSignalsContextManager:
+    def __init__(self, window):
+        self.win = window
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.win.unblock_signals()
+
+
 class BibEdWindow(Gtk.ApplicationWindow):
 
     def __init__(self, *args, **kwargs):
@@ -246,17 +257,24 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.headerbar = hb
 
+    def files_filter_func(self, model, iter, data):
+
+        # assert lprint_caller_name(levels=5)
+        # assert lprint_function_name()
+        # assert lprint(model[iter][FSCols.FILENAME],
+        #               model[iter][FSCols.FILETYPE],
+        #               FileTypes.SYSTEM)
+
+        # Keep only non-system entries in main window ComboBox.
+        return model[iter][FSCols.FILETYPE] != FileTypes.SYSTEM
+
     def setup_files_combobox(self):
 
-        def filter_func(model, iter, data):
-            # Keep only non-system entries in main window ComboBox.
-            return model[iter][FSCols.FILETYPE] != FileTypes.SYSTEM
-
         self.filtered_files = self.application.files.filter_new()
-        self.filtered_files.set_visible_func(filter_func)
+        self.filtered_files.set_visible_func(self.files_filter_func)
 
         files_combo = Gtk.ComboBox.new_with_model(self.filtered_files)
-        files_combo.connect("changed", self.on_files_combo_changed)
+        files_combo.connect('changed', self.on_files_combo_changed)
 
         renderer_text = Gtk.CellRendererText(
             ellipsize=Pango.EllipsizeMode.START)
@@ -268,7 +286,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
 
         files_combo.pack_start(renderer_text, True)
-        files_combo.add_attribute(renderer_text, "text", 0)
+        files_combo.add_attribute(renderer_text, 'text', 0)
         files_combo.set_sensitive(False)
 
         self.cmb_files_renderer = renderer_text
@@ -316,7 +334,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def update_title(self):
 
-        # assert lprint_caller_name(levels=2)
+        # assert lprint_caller_name(levels=5)
         # assert lprint_function_name()
 
         row_count = len(self.treeview.get_model())
@@ -346,8 +364,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 file_count = len(files_matched)
 
             else:
-                # Remove 1 for “All” entry
-                file_count = len(self.cmb_files.get_model()) - 1
+                file_count = len(self.cmb_files.get_model())
+
+                if file_count > 2:
+                    # Remove the “All” entry
+                    file_count -= 1
 
         elif active_file is None:
             file_count = 0
@@ -387,6 +408,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
             self.btn_add.hide()
             self.btn_file_close.hide()
             self.cmb_files.hide()
+
+    # ———————————————————————————————————————————————————————————— “ON” actions
 
     def on_maximize_toggle(self, action, value):
 
@@ -429,6 +452,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def on_files_combo_changed(self, combo):
         ''' Signal: chain the global filter method. '''
+
+        # assert lprint_caller_name(levels=5)
+        # assert lprint_function_name()
 
         self.do_filter_data_store()
 
@@ -493,8 +519,20 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # given cmb_files, save one or ALL files.
 
         elif ctrl and keyval == Gdk.KEY_r:
-            self.application.reload_files(
-                'Reloaded all open files at user request.')
+
+            # keep memory, in case file order change during reload.
+            combo_selected = self.get_selected_filename()
+
+            with self.block_signals():
+                # Don't let combo change and update “memories” while we
+                # just reload files to attain same conditions as now.
+                self.application.reload_files(
+                    'Reloaded all open files at user request.')
+
+            # restore memory / session
+            self.set_selected_filename(combo_selected)
+
+            self.do_activate()
 
         elif ctrl and keyval == Gdk.KEY_f:
             self.search.grab_focus()
@@ -640,10 +678,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # self.application.open_file(dialog.get_filename())
             filenames = dialog.get_filenames()
 
-            for filename in filenames:
-                self.application.open_file(filename, recompute=False)
+            # Same problem as in app.do_activate(): when loading more than two
+            # files, only the two first fire a on_*changed() signal. Thus we
+            # block everything, and compute things manually after load.
+            with self.block_signals():
+                for filename in filenames:
+                    self.application.open_file(filename, recompute=False)
 
             self.treeview.main_model.do_recompute_global_ids()
+            self.do_activate()
 
         elif response == Gtk.ResponseType.CANCEL:
             pass
@@ -655,13 +698,17 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         how_many_files = len(self.application.files)
 
+        # assert lprint(how_many_files)
+
         if how_many_files > 1 and self.cmb_files.get_active() == 0:
 
             store = self.application.files
 
             # Copy them to let the store update itself
             # smoothly without missing items during loop.
-            filenames = [store[i][0] for i in range(1, len(store))]
+            filenames = store.get_open_filenames()
+
+            # assert lprint(filenames)
 
             for filename in filenames:
                 self.application.close_file(filename, recompute=False)
@@ -718,6 +765,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.preferences_dialog.hide()
 
+    # ——————————————————————————————————————————————————————————————————— Other
+
     def get_bib_filter(self):
 
         filter_bib = Gtk.FileFilter()
@@ -730,16 +779,36 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         filename = self.filtered_files[
             self.cmb_files.get_active_iter()
-        ][0]
+        ][FSCols.FILENAME]
 
         return filename
+
+    def set_selected_filename(self, filename):
+
+        for row in self.filtered_files:
+            if row[FSCols.FILENAME] == filename:
+                self.cmb_files.set_active_iter(row.iter)
+                break
 
     def get_search_text(self):
 
         return self.search.get_text().strip()
 
+    def block_signals(self):
+        ''' This function can be used as context manager or not. '''
+
+        self.cmb_files.handler_block_by_func(self.on_files_combo_changed)
+
+        return BibebWindowBlockSignalsContextManager(self)
+
+    def unblock_signals(self):
+        self.cmb_files.handler_unblock_by_func(self.on_files_combo_changed)
+
+    # —————————————————————————————————————————————————————————————— DO actions
+
     def do_activate(self):
 
+        self.update_title()
         self.sync_shown_hidden()
         self.treeview.do_column_sort()
 
@@ -750,7 +819,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def do_filter_data_store(self):
         ''' Filter the data store on filename, search_text, or both. '''
 
-        # print(ltrace_caller_name())
+        # assert lprint_caller_name(levels=2)
+        # assert lprint_function_name()
 
         try:
             filename = self.get_selected_filename()

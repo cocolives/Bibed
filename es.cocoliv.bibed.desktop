@@ -1,0 +1,21 @@
+[Desktop Entry]
+Name=Bibliography Editor
+Name[fr]=Éditeur de bibliographie
+Name[it]=Editor di bibliografia
+Comment=Edit BibTeX/BibLaTeX files
+Comment[fr]=Éditer des fichiers BibTeX/BibLaTeX
+Comment[it]=Modifica file di BibTeX/BibLaTeX
+Exec=Bibed %U
+Terminal=false
+Type=Application
+StartupNotify=true
+MimeType=text/plain;
+Icon=gnome-contacts
+Categories=GNOME;GTK;Utility;
+X-GNOME-FullName=Bibed Bibliography Editor
+X-GNOME-FullName[fr]=Éditeur de bibliographie Bibed
+X-GNOME-FullName[it]=Editor di bibliografia BibedActions=new-window;new-document;
+Keywords=BIB;Editor;Write;Manage;
+Keywords[fr]=BIB;éditeur;écrire;assister;
+Keywords[it]=Editor;BIB;Text;
+DBusActivatable=false

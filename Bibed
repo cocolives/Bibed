@@ -52,11 +52,17 @@ if __name__ == "__main__":
     else:
         setup_logging(logging.INFO)
 
-    logging.getLogger('bibtexparser').setLevel(logging.ERROR)
+    logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
+    logging.getLogger('bibtexparser').setLevel(logging.CRITICAL)
 
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
     from bibed.app import BibEdApplication
+    from bibed.preferences import gpod
+    from bibed.sentry import sentry
+
+    if gpod('use_sentry'):
+        sentry.enable()
 
     app = BibEdApplication()
     exit_status = app.run(sys.argv)

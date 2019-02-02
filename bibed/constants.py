@@ -1,4 +1,5 @@
 import os
+import bibtexparser
 
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
@@ -9,6 +10,10 @@ BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
+
+BIBTEXPARSER_VERSION = bibtexparser.__version__
+
+MINIMUM_BIB_KEY_LENGTH = 8
 
 
 def icon(name):
@@ -47,9 +52,12 @@ FSCols.FILENAME = 0
 FSCols.FILETYPE = 1
 
 FileTypes = Anything()
-FileTypes.SPECIAL = 1
-FileTypes.SYSTEM  = 2
-FileTypes.USER    = 3
+FileTypes.SPECIAL = 0xff0000
+FileTypes.ALL     = 0x010000
+FileTypes.SYSTEM  = 0x00ff00
+FileTypes.TRASH   = 0x000100
+FileTypes.QUEUE   = 0x000200
+FileTypes.USER    = 0x0000ff
 
 
 DATA_STORE_LIST_ARGS = (
@@ -163,6 +171,8 @@ MAX_KEYWORDS_IN_TOOLTIPS = 20
 
 # expressed in number of characters
 ABSTRACT_MAX_LENGHT_IN_TOOLTIPS = 512
+COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS = 96
+
 
 GENERIC_HELP_SYMBOL = (
     '<span color="grey"><sup><small>(?)</small></sup></span>'

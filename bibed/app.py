@@ -12,6 +12,7 @@ from bibed.constants import (
     BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
     BibAttrs,
+    BIBTEXPARSER_VERSION,
 )
 
 from bibed.foundations import (
@@ -25,7 +26,7 @@ from bibed.foundations import (
 from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
 
 from bibed.utils import to_lower_if_not_none
-from bibed.preferences import preferences, memories
+from bibed.preferences import preferences, memories, gpod
 from bibed.store import (
     BibedDataStore,
     BibedFileStore,
@@ -137,11 +138,11 @@ class BibEdApplication(Gtk.Application):
         self.filter = self.data.filter_new()
         # self.filter = Gtk.TreeModelFilter(self.data)
         self.sorter = Gtk.TreeModelSort(self.filter)
-        self.filter.set_visible_func(self.filter_method)
+        self.filter.set_visible_func(self.data_filter_method)
 
     # ——————————————————————————————————————————————————————— data store filter
 
-    def filter_method(self, model, iter, data):
+    def data_filter_method(self, model, iter, data):
 
         try:
             filter_text = self.window.search.get_text()
@@ -251,8 +252,7 @@ class BibEdApplication(Gtk.Application):
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = BibEdWindow(
-                title="Main Window", application=self)
+            self.window = BibEdWindow(title='Main Window', application=self)
             self.window.show_all()
 
             if preferences.remember_open_files:
@@ -277,12 +277,18 @@ class BibEdApplication(Gtk.Application):
                     # because in some corner cases the live “re-ordering”
                     # makes a file loaded two times.
 
-                    for filename in memories.open_files.copy():
-                        try:
-                            self.open_file(filename)
+                    with self.window.block_signals():
+                        # We need to block signals and let win.do_activate()
+                        # Update everything, else some on_*_changed() signals
+                        # are not fired. Don't know if it's a Gtk or pgi bug.
 
-                        except (IOError, OSError):
-                            memories.remove_open_file(filename)
+                        for filename in memories.open_files.copy():
+                            try:
+                                self.open_file(filename)
+
+                            except (IOError, OSError):
+                                # TODO: move this into store ?
+                                memories.remove_open_file(filename)
 
         # make interface consistent with data.
         self.window.do_activate()
@@ -290,6 +296,7 @@ class BibEdApplication(Gtk.Application):
         if combo_set_active:
             for row in self.window.filtered_files:
                 if row[0] == combo_set_active:
+                    # assert lprint('ACTIVATE', combo_set_active, len(self.window.filtered_files))
                     self.window.cmb_files.set_active_iter(row.iter)
                     break
 
@@ -328,6 +335,9 @@ class BibEdApplication(Gtk.Application):
         # assert lprint_function_name()
         # assert lprint(filename, recompute)
 
+        # Be sure we keep a consistent path across all application.
+        filename = os.path.realpath(os.path.abspath(filename))
+
         try:
             # Note: via events, this will update the window title.
             self.files.load(filename, recompute=recompute)
@@ -347,21 +357,16 @@ class BibEdApplication(Gtk.Application):
         if len(self.files) > 1:
             # Now that we have more than one file,
             # make active and select 'All' by default.
-            self.window.cmb_files.set_active(0)
             self.window.cmb_files.set_sensitive(True)
 
-        else:
-            self.window.cmb_files.set_active(0)
-
-        memories.add_open_file(filename)
-        memories.add_recent_file(filename)
+        self.window.cmb_files.set_active(0)
 
     def reload_files(self, message=None):
 
         # assert lprint_function_name()
         # assert lprint(message)
 
-        for filename in self.files.get_filenames():
+        for filename in self.files.get_open_filenames():
             self.reload_file(filename)
 
         if message:
@@ -409,8 +414,42 @@ class BibEdApplication(Gtk.Application):
         # os.path.join(BIBED_ICONS_DIR, 'gnome-contacts.png'))
 
         about_dialog.set_copyright('(c) Collectif Cocoliv.es')
-        about_dialog.set_comments(
-            'Bibliographic assistance libre software')
+
+        comments = (
+            'Bibliographic assistance libre software\n\n'
+            'GTK v{}.{}.{}\n'
+            'bibtexparser v{}'.format(
+                Gtk.get_major_version(),
+                Gtk.get_minor_version(),
+                Gtk.get_micro_version(),
+                BIBTEXPARSER_VERSION,
+            )
+        )
+
+        if gpod('use_sentry'):
+            try:
+                import sentry_sdk
+
+            except Exception:
+                LOGGER.error('Unable to import sentry SDK.')
+
+            else:
+                last_event = sentry_sdk.last_event_id()
+
+                comments += (
+                    '\nSentry SDK v{sdk_vers}, reporting to\n{dsn}\n'
+                    '(see {website} for details)'
+                    '{last}'.format(
+                        sdk_vers=sentry_sdk.VERSION,
+                        dsn=gpod('sentry_dsn'),
+                        website=gpod('sentry_url'),
+                        last='<big>Last event ID: {}</big>'.format(last_event)
+                        if last_event else ''
+                    )
+                )
+
+        about_dialog.set_comments(comments)
+
         about_dialog.set_website('https://cocoliv.es/library/bibed')
         about_dialog.set_website_label('Site web de Bibed')
         about_dialog.set_license_type(Gtk.License.GPL_3_0)
@@ -436,14 +475,11 @@ class BibEdApplication(Gtk.Application):
 
     def on_quit(self, action, param):
 
-        # assert lprint_function_name()
+        # Block signals, else memories.combo_filename will
+        # finish empty When last file has been closed.
+        self.window.block_signals()
 
-        if preferences.remember_open_files:
-            # We need to keep track of this, because unloading
-            # the files will empty the combo and we will loose
-            # the selected value.
-            combo_value = memories.combo_filename
-
+        # This will close system files too.
         self.files.close_all(
             save_before=True,
             recompute=False,
@@ -451,10 +487,6 @@ class BibEdApplication(Gtk.Application):
             # This will allow automatic reopen on next launch.
             remember_close=False,
         )
-
-        if preferences.remember_open_files:
-            # Keep that memory back now that all files are unloaded.
-            memories.combo_filename = combo_value
 
         LOGGER.info('Terminating application.')
         self.quit()
