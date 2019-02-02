@@ -8,6 +8,8 @@ import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
 from bibed.foundations import (  # NOQA
+    BibedError,
+    BibedException,
     lprint, ldebug,
     lprint_caller_name,
     lprint_function_name,
@@ -17,6 +19,24 @@ from bibed.entry import BibedEntry
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+# —————————————————————————————————————————————————————————————————— Exceptions
+
+
+class BibedDatabaseException(BibedException):
+    pass
+
+
+class BibedDatabaseError(BibedError):
+    pass
+
+
+class IndexingFailedError(BibedDatabaseError):
+    pass
+
+
+# —————————————————————————————————————————————————————————— Controller Classes
 
 
 class BibedDatabase:
@@ -91,6 +111,9 @@ class BibedDatabase:
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
 
+        # TODO: update store.
+        pass
+
     def update_entry_key(self, entry):
 
         # assert lprint_function_name()
@@ -147,8 +170,12 @@ class BibedDatabase:
         # assert lprint_function_name()
         # assert lprint(self.filename)
 
-        if gpod('backup_before_save'):
-            self.backup()
+        filename = self.filename
 
-        with open(self.filename, 'w') as bibfile:
-                bibfile.write(self.writer.write(self.bibdb))
+        with self.store.no_watch(filename):
+
+            if gpod('backup_before_save'):
+                self.backup()
+
+            with open(filename, 'w') as bibfile:
+                    bibfile.write(self.writer.write(self.bibdb))

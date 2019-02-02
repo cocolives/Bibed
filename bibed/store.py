@@ -372,10 +372,7 @@ class BibedFileStore(Gtk.ListStore):
         elif isinstance(thing, str):
             database = self.databases[thing]
 
-        filename = database.filename
-
-        with self.no_watch(filename):
-            database.write()
+        database.write()
 
     def close(self, filename, save_before=True, recompute=True, remember_close=True):
 
