@@ -237,13 +237,13 @@ class BibedMainTreeView(Gtk.TreeView):
         self.col_title.set_fixed_width(col_title_width)
         self.col_year.set_fixed_width(col_year_width)
 
-    def get_entry_by_path(self, path, with_global_id=False, return_iter=False, only_store_entry=False):
+    def get_entry_by_path(self, path, with_global_id=False, return_iter=False, only_row=False):
 
         # Are we on the list store, or a filter ?
         model     = self.get_model()
         treeiter  = model.get_iter(path)
 
-        if only_store_entry:
+        if only_row:
             return model[treeiter]
 
         bib_key   = model[treeiter][BibAttrs.KEY]
@@ -321,12 +321,12 @@ class BibedMainTreeView(Gtk.TreeView):
     def on_url_clicked(self, renderer, path):
 
         self.open_url_in_webbrowser(
-            entry=self.get_entry_by_path(path, only_store_entry=True))
+            entry=self.get_entry_by_path(path, only_row=True))
 
     def on_file_clicked(self, renderer, path):
 
         self.open_file_in_prefered_application(
-            entry=self.get_entry_by_path(path, only_store_entry=True))
+            entry=self.get_entry_by_path(path, only_row=True))
 
     def on_treeview_column_clicked(self, column):
 
@@ -385,7 +385,13 @@ class BibedMainTreeView(Gtk.TreeView):
 
         return model, treeiter
 
-    def get_selected_store_entry(self):
+    def get_selected_entry(self):
+
+        model, treeiter = self.get_selected()
+
+        return self.get_entry_by_path(treeiter.path, with_global_id=True)
+
+    def get_selected_row(self):
 
         # Code to add to connect a method to new selection.
         # selection.connect('changed', self.on_treeview_selection_changed)
@@ -398,20 +404,20 @@ class BibedMainTreeView(Gtk.TreeView):
         else:
             return model[treeiter]
 
-    def copy_to_clipboard_or_action(self, field_index, transform_func=None, action_func=None, action_message=None, entry=None):
+    def copy_to_clipboard_or_action(self, field_index, transform_func=None, action_func=None, action_message=None, row=None):
 
-        if entry is None:
-            store_entry = self.get_selected_store_entry()
+        if row is None:
+            row = self.get_selected_row()
         else:
-            store_entry = entry
+            row = row
 
-        if store_entry is None:
+        if row is None:
             self.do_status_change(
                 'Nothing selected; nothing copied to clipboard.')
             return
 
-        entry_gid  = store_entry[BibAttrs.GLOBAL_ID]
-        entry_data = store_entry[field_index]
+        entry_gid  = row[BibAttrs.GLOBAL_ID]
+        entry_data = row[field_index]
 
         if entry_data:
             transformed_data = (
@@ -444,28 +450,28 @@ class BibedMainTreeView(Gtk.TreeView):
         else:
             self.do_status_change('Selected entry {key}.'.format(key=entry_gid))
 
-    def copy_raw_key_to_clipboard(self, entry=None):
-        return self.copy_to_clipboard_or_action(BibAttrs.KEY, entry=entry)
+    def copy_raw_key_to_clipboard(self, row=None):
+        return self.copy_to_clipboard_or_action(BibAttrs.KEY, row=row)
 
-    def copy_url_to_clipboard(self, entry=None):
-        return self.copy_to_clipboard_or_action(BibAttrs.URL, entry=entry)
+    def copy_url_to_clipboard(self, row=None):
+        return self.copy_to_clipboard_or_action(BibAttrs.URL, row=row)
 
-    def copy_single_key_to_clipboard(self, entry=None):
+    def copy_single_key_to_clipboard(self, row=None):
         return self.copy_to_clipboard_or_action(
             BibAttrs.KEY,
             transform_func=BibedEntry.single_bibkey_format,
-            entry=entry,
+            row=row,
         )
 
-    def open_url_in_webbrowser(self, entry=None):
+    def open_url_in_webbrowser(self, row=None):
         return self.copy_to_clipboard_or_action(
             BibAttrs.URL,
             action_func=webbrowser.open_new_tab,
             action_message='opened in web browser',
-            entry=entry,
+            row=row,
         )
 
-    def open_file_in_prefered_application(self, entry=None):
+    def open_file_in_prefered_application(self, row=None):
 
         # TODO: and an action to open in file browser.
 

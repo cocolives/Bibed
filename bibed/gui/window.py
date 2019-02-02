@@ -613,9 +613,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
                     pass
 
             else:
-                entry = self.treeview.get_selected_store_entry()
+                row = self.treeview.get_selected_row()
 
-                if entry is not None:
+                if row is not None:
                     self.treeview.unselect_all()
 
                 else:
