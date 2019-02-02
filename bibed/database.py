@@ -2,7 +2,6 @@
 import os
 import shutil
 import datetime
-import tempfile
 
 import logging
 import bibtexparser
@@ -118,12 +117,15 @@ class BibedDatabase:
         dirname = os.path.dirname(self.filename)
         basename = os.path.basename(self.filename)
 
-        prefix = '{}.save.{}.'.format(
-            basename.rsplit('.', 1)[0],
-            datetime.date.today().isoformat())
-
-        (handle, new_filename) = tempfile.mkstemp(
-            suffix='.bib', prefix=prefix, dir=dirname)
+        # Using microseconds in backup filename should avoid collisions.
+        # Using time will also help for cleaning old backups.
+        new_filename = os.path.join(
+            dirname,
+            '{basename}.save.{datetime}.bib'.format(
+                basename=basename.rsplit('.', 1)[0],
+                datetime=datetime.datetime.now().isoformat(sep='_')
+            )
+        )
 
         try:
             shutil.copyfile(self.filename, new_filename)
@@ -131,6 +133,10 @@ class BibedDatabase:
 
         except Exception:
             LOGGER.exception('Problem while backing up file before save.')
+
+        # TODO: make backups in .bibed_save/ ? (PREFERENCE ON/OFF)
+        # TODO: clean old backup files. (PREFERENCE [number])
+        pass
 
     def write(self):
 
