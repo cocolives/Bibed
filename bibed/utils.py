@@ -67,7 +67,6 @@ TRANSLATION_MAP = (
 
 # ————————————————————————————————————————————————————————————— Functions
 
-
 def get_user_home_directory():
 
     # https://stackoverflow.com/a/10644400/654755

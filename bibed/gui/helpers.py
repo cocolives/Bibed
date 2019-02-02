@@ -99,7 +99,6 @@ def message_dialog(window, dialog_type, title, secondary_text, ok_callback, *arg
     dialog.destroy()
 
 
-
 def find_child_by_name(start_node, widget_name):
 
     if start_node.get_name() == widget_name:
