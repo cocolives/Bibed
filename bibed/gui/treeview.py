@@ -389,7 +389,8 @@ class BibedMainTreeView(Gtk.TreeView):
 
         model, treeiter = self.get_selected()
 
-        return self.get_entry_by_path(treeiter.path, with_global_id=True)
+        return self.get_entry_by_path(model.get_path(treeiter),
+                                      with_global_id=True)
 
     def get_selected_row(self):
 
