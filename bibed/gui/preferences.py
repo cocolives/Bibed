@@ -323,7 +323,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
             'debugging data to developpers, anonymously.\n'
             'We use <span face="monospace">sentry</span> at address '
             '<a href="{website}">{website}</a>, on which you can create an '
-            'account to help.\nGet in touch if you want to send errors to your own <span face="monospace">sentry</span>.</span>'.format(website=gpod('sentry_url')),
+            'account to help.\nGet in touch if you want to send errors to '
+            'your own <span face="monospace">sentry</span>.'
+            '</span>'.format(website=gpod('sentry_url')),
             self.on_switch_activated,
             gpod('use_sentry'),
             func_args=('use_sentry', )
@@ -341,6 +343,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
             self.lbl_use_sentry,
             Gtk.PositionType.RIGHT,
             1, 1)
+
+        if not sentry.usable:
+            self.swi_use_sentry.set_sensitive(False)
 
         # ———————————————————————————————————————————————————— End widgets
 

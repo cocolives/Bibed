@@ -17,6 +17,22 @@ class SentryHelper(metaclass=Singleton):
 
         self.enabled = False
 
+        try:
+            import sentry_sdk
+
+        except Exception:
+            LOGGER.exception('Unable to import sentry SDK. '
+                             'Errors will not be reported.')
+            self.__usable = False
+
+        else:
+            self.__usable = True
+
+    @property
+    def usable(self):
+
+        return self.__usable
+
     def enable(self):
 
         if self.enabled:
