@@ -361,6 +361,7 @@ class BibedFileStore(Gtk.ListStore):
     def save(self, thing):
 
         # assert lprint_function_name()
+        # assert lprint(thing)
 
         if isinstance(thing, BibedEntry):
             database = thing.database
