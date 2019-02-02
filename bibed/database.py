@@ -45,6 +45,7 @@ class BibedDatabase:
 
         self.filename = filename
         self.store = store
+        self.data_store = self.store.data_store
 
         self.parser = bibtexparser.bparser.BibTexParser(
             ignore_nonstandard_types=False,
@@ -112,13 +113,51 @@ class BibedDatabase:
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
 
-        # TODO: update store.
-        pass
+        assert self.bibdb.entries.index(entry.entry) == new_index
+
+        self.data_store.insert_entry(entry)
+
+    def delete_entry(self, entry):
+
+        assert lprint_function_name()
+        # assert lprint(entry, entry.gid)
+
+        assert entry.gid >= 0
+
+        entry_index = self.entries[entry.key][1]
+
+        # Here, or at the end?
+        self.data_store.delete_entry(entry)
+
+        del self.entries[entry.key]
+
+        self.bibdb.entries.pop(entry_index)
+
+        # increment indexes of posterior entries
+        for btp_entry in self.bibdb.entries[entry_index:]:
+            self.entries[btp_entry['ID']][1] -= 1
+
+        assert self.check_indexes()
+
+    def move_entry(self, entry, destination_database):
+
+        assert lprint_function_name()
+
+        assert entry.gid >= 0
+
+        destination_database.add_entry(entry)
+
+        self.delete_entry(entry)
+
+        self.data_store.update_entry(entry)
 
     def update_entry_key(self, entry):
 
         # assert lprint_function_name()
         # assert lprint(entry)
+
+        # Note: update_entry_key() is a high-level operation. We
+        #       do not touch the store. This will be done by caller.
 
         old_keys = [x.strip() for x in entry['ids'].split(',')]
 
@@ -178,3 +217,13 @@ class BibedDatabase:
 
             with open(filename, 'w') as bibfile:
                     bibfile.write(self.writer.write(self.bibdb))
+
+    def check_indexes(self):
+
+        # assert lprint_function_name()
+
+        for index, btp_entry in enumerate(self.bibdb.entries):
+            if self.entries[btp_entry['ID']][1] != index:
+                raise IndexingFailedError
+
+        return True
