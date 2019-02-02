@@ -642,16 +642,19 @@ fields:
     issuesubtitle: Issue sub-title
     issuetitle: Issue title
     journaltitle: Journal title
+    journalsubtitle: Journal sub-title
     key: Entry key
     language: Language
     location: Location
     month: Month
     note: Note(s)
+    number: Number
     organization: Organization
     origlanguage: Origin language
     pages: Page(s)
     pagetotal: Total page count
     pubstate: Publish state
+    series: Series
     subtitle: Subtitle
     title: Title
     titleaddon: Title add-on
@@ -660,6 +663,7 @@ fields:
     url: URL
     urldate: URL date
     version: Version
+    volume: Volume
     year: Year
 keep_recent_files: 10
 remember_last_destination: true
