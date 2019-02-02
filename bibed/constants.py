@@ -13,6 +13,8 @@ BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
 
 BIBTEXPARSER_VERSION = bibtexparser.__version__
 
+MINIMUM_BIB_KEY_LENGTH = 8
+
 
 def icon(name):
     return os.path.join(BIBED_ICONS_DIR, name)
@@ -50,9 +52,12 @@ FSCols.FILENAME = 0
 FSCols.FILETYPE = 1
 
 FileTypes = Anything()
-FileTypes.SPECIAL = 1
-FileTypes.SYSTEM  = 2
-FileTypes.USER    = 3
+FileTypes.SPECIAL = 0xff0000
+FileTypes.ALL     = 0x010000
+FileTypes.SYSTEM  = 0x00ff00
+FileTypes.TRASH   = 0x000100
+FileTypes.QUEUE   = 0x000200
+FileTypes.USER    = 0x0000ff
 
 
 DATA_STORE_LIST_ARGS = (

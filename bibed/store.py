@@ -51,11 +51,19 @@ class BibedDataStoreException(BibedException):
     pass
 
 
-class AlreadyLoadedException(BibedDataStoreException):
+class BibedFileStoreException(BibedException):
     pass
 
 
-class NoDatabaseForFilename(BibedDataStoreException):
+class AlreadyLoadedException(BibedFileStoreException):
+    pass
+
+
+class NoDatabaseForFilename(BibedFileStoreException):
+    pass
+
+
+class BibKeyNotFound(BibedException):
     pass
 
 
@@ -273,10 +281,22 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint(key, filename)
 
         if filename is None:
-            assert False, "implement me"
+            for filename, database in self.databases.items():
+                try:
+                    database.get_entry_by_key(key)
+
+                except KeyError:
+                    # We must test all databases prior to raising “not found”.
+                    pass
+
+            raise BibKeyNotFound
 
         else:
-            return self.databases[filename].get_entry_by_key(key)
+            try:
+                return self.databases[filename].get_entry_by_key(key)
+
+            except KeyError:
+                raise BibKeyNotFound
 
     def get_database(self, filename):
 
@@ -325,7 +345,7 @@ class BibedFileStore(Gtk.ListStore):
             self.num_user += 1
 
             if self.num_user == 2:
-                self.prepend(('All', FileTypes.SPECIAL, ))
+                self.prepend(('All', FileTypes.ALL, ))
 
         else:
             self.num_system += 1
@@ -369,20 +389,24 @@ class BibedFileStore(Gtk.ListStore):
 
         self.clear_data(filename, recompute=recompute)
 
+        filetype_index = FSCols.FILETYPE
+
         for row in self:
             if row[FSCols.FILENAME] == filename:
-                if row[FSCols.FILETYPE] == FileTypes.USER:
+                if row[filetype_index] == FileTypes.USER:
                     self.num_user -= 1
 
-                elif row[FSCols.FILETYPE] == FileTypes.SYSTEM:
+                elif row[filetype_index] == FileTypes.SYSTEM:
                     self.num_system -= 1
 
                 self.remove(row.iter)
                 break
 
+        # Remove the “All” special entry
         if self.num_user == 1:
-            # Remove the “All” special entry
-            self.remove(self[0].iter)
+            for row in self:
+                if row[filetype_index] == FileTypes.ALL:
+                    self.remove(row.iter)
 
         if remember_close:
             memories.remove_open_file(filename)
@@ -390,7 +414,7 @@ class BibedFileStore(Gtk.ListStore):
     def close_all(self, save_before=True, recompute=True, remember_close=True):
 
         for row in self:
-            if row[FSCols.FILETYPE] == FileTypes.SPECIAL:
+            if row[FSCols.FILETYPE] not in (FileTypes.SYSTEM, FileTypes.USER):
                 continue
 
             self.close(
