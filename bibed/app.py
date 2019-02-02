@@ -138,11 +138,11 @@ class BibEdApplication(Gtk.Application):
         self.filter = self.data.filter_new()
         # self.filter = Gtk.TreeModelFilter(self.data)
         self.sorter = Gtk.TreeModelSort(self.filter)
-        self.filter.set_visible_func(self.filter_method)
+        self.filter.set_visible_func(self.data_filter_method)
 
     # ——————————————————————————————————————————————————————— data store filter
 
-    def filter_method(self, model, iter, data):
+    def data_filter_method(self, model, iter, data):
 
         try:
             filter_text = self.window.search.get_text()
@@ -287,6 +287,7 @@ class BibEdApplication(Gtk.Application):
                                 self.open_file(filename)
 
                             except (IOError, OSError):
+                                # TODO: move this into store ?
                                 memories.remove_open_file(filename)
 
         # make interface consistent with data.
