@@ -40,9 +40,19 @@ class IndexingFailedError(BibedDatabaseError):
 
 
 class BibedDatabase:
+    ''' Wraps a :mod:`bibtexparser` database, for faster access and
+        higher-level operations between multiple databases, and synchronization
+        with an underlying :class:`Gtk.ListStore`. '''
 
     def __init__(self, filename, store):
+        ''' Create a :class:`~bibed.database.BibedDatabase` instance.
 
+            :param filename: a full pathname, as a string, for a `BibTeX` /
+                `BibLaTeX`
+            :param store: a :class:`~bibed.store.BibedFileStore` instance. its
+                `.data_store` attribute will be kept handy in the current
+                database attributes.
+        '''
         self.filename = filename
         self.store = store
         self.data_store = self.store.data_store
@@ -100,6 +110,13 @@ class BibedDatabase:
         return [x for x in self.itervalues()]
 
     def add_entry(self, entry):
+        ''' Add an entry into the current database.
+
+            This operation will update underlying the Gtk datastore.
+
+            .. note:: it's up to the caller to call :method:`write` on the
+                database.
+        '''
 
         # assert lprint_function_name()
         # assert lprint(entry)
@@ -118,7 +135,13 @@ class BibedDatabase:
         self.data_store.insert_entry(entry)
 
     def delete_entry(self, entry):
+        ''' Delete an entry from the current database.
 
+            This operation will update underlying the Gtk datastore.
+
+            .. note:: it's up to the caller to call :method:`write` on the
+                database.
+        '''
         assert lprint_function_name()
         # assert lprint(entry, entry.gid)
 
@@ -140,6 +163,22 @@ class BibedDatabase:
         assert self.check_indexes()
 
     def move_entry(self, entry, destination_database):
+        ''' Move an entry from a database to another.
+
+            internally, this inserts the entry into the destination database,
+            and then removes it from the source one. There could be some
+            situations (application crash…) where the entry would be
+            duplicated, or lost. Typically these situations have external
+            causes.
+
+            This operation will update underlying the Gtk datastore.
+
+            .. note:: it's up to the caller to call :method:`write` on the
+                two databases.
+
+            :param entry: a :class:`~bibed.entry.BibedEntry` instance.
+            :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
+        '''
 
         assert lprint_function_name()
 

@@ -862,6 +862,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         return BibebWindowBlockSignalsContextManager(self)
 
     def unblock_signals(self):
+
         self.cmb_files.handler_unblock_by_func(self.on_files_combo_changed)
 
     # —————————————————————————————————————————————————————————————— DO actions

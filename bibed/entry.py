@@ -46,6 +46,16 @@ bibtexparser_as_text = bibtexparser.bibdatabase.as_text
 
 
 class BibedEntry:
+    '''
+
+        Free fields from BibLaTeX documentation:
+
+        - list[a–f]
+        - user[a–f]
+        - verb[a–c]
+
+        Bibed uses `verbb` (for “verbatim-bibed”).
+    '''
 
     @classmethod
     def new_from_type(cls, entry_type):
