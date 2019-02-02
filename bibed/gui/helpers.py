@@ -81,6 +81,25 @@ def get_children_recursive(start_node, reverse=True):
     return children
 
 
+def message_dialog(window, dialog_type, title, secondary_text, ok_callback, *args, **kwargs):
+
+    # Gtk.MessageType.QUESTION
+
+    dialog = Gtk.MessageDialog(
+        window, 0, dialog_type,
+        Gtk.ButtonsType.OK_CANCEL,
+        title
+    )
+    dialog.format_secondary_text(secondary_text)
+    response = dialog.run()
+
+    if response == Gtk.ResponseType.OK:
+        ok_callback(*args, **kwargs)
+
+    dialog.destroy()
+
+
+
 def find_child_by_name(start_node, widget_name):
 
     if start_node.get_name() == widget_name:
