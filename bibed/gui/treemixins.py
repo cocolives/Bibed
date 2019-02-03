@@ -4,6 +4,7 @@ import webbrowser
 # from bibed.foundations import ldebug
 from bibed.constants import (
     BibAttrs,
+    FileTypes,
     URL_PIXBUFS,
     FILE_PIXBUFS,
     COMMENT_PIXBUFS,
@@ -55,10 +56,14 @@ class BibedEntryTreeViewMixin:
 
         self.col_key = self.setup_text_column(
             'key', BibAttrs.KEY,
-            ellipsize=Pango.EllipsizeMode.START)
+            ellipsize=Pango.EllipsizeMode.START,
+            attributes={'foreground': BibAttrs.COLOR},
+        )
 
         self.col_type = self.setup_text_column(
-            'type', BibAttrs.TYPE)
+            'type', BibAttrs.TYPE,
+            attributes={'foreground': BibAttrs.COLOR},
+        )
 
         # DOI column
 
@@ -86,16 +91,24 @@ class BibedEntryTreeViewMixin:
 
         self.col_author = self.setup_text_column(
             'author', BibAttrs.AUTHOR,
-            ellipsize=Pango.EllipsizeMode.END)
+            ellipsize=Pango.EllipsizeMode.END,
+            attributes={'foreground': BibAttrs.COLOR},
+        )
         self.col_title = self.setup_text_column(
             'title', BibAttrs.TITLE,
-            ellipsize=Pango.EllipsizeMode.MIDDLE)
+            ellipsize=Pango.EllipsizeMode.MIDDLE,
+            attributes={'foreground': BibAttrs.COLOR},
+        )
         self.col_journal = self.setup_text_column(
             'journal', BibAttrs.JOURNAL,
-            ellipsize=Pango.EllipsizeMode.END)
+            ellipsize=Pango.EllipsizeMode.END,
+            attributes={'foreground': BibAttrs.COLOR},
+        )
 
         self.col_year = self.setup_text_column(
-            'year', BibAttrs.YEAR, xalign=1.0)
+            'year', BibAttrs.YEAR, xalign=1.0,
+            attributes={'foreground': BibAttrs.COLOR},
+        )
 
         self.set_columns_widths(self.window.current_size[0])
 

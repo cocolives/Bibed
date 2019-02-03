@@ -80,10 +80,13 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         except AttributeError:
             pass
 
-    def setup_text_column(self, name, store_num, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
+    def setup_text_column(self, name, store_num, attributes=None, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
 
         if ellipsize is None:
             ellipsize = Pango.EllipsizeMode.NONE
+
+        if attributes is None:
+            attributes = {}
 
         column = Gtk.TreeViewColumn(name)
 
@@ -94,7 +97,12 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
             cellrender = Gtk.CellRendererText(ellipsize=ellipsize)
 
         column.pack_start(cellrender, True)
-        column.add_attribute(cellrender, "text", store_num)
+
+        column.add_attribute(cellrender, 'markup', store_num)
+
+        for attr_name, column_num in attributes.items():
+            column.add_attribute(cellrender, attr_name, column_num)
+
         column.set_sort_column_id(store_num)
 
         column.set_reorderable(True)
