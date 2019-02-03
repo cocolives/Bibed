@@ -317,6 +317,15 @@ class BibEdApplication(Gtk.Application):
         self.activate()
         return 0
 
+    def run(self, *args, **kwargs):
+
+        try:
+            super().run(*args, **kwargs)
+
+        except KeyboardInterrupt:
+            LOGGER.warning('Interrupted, terminating properly…')
+            self.on_quit(None, None)
+
     # ———————————————————————————————————————————— higher level file operations
     # TODO: move them to main window?
 
