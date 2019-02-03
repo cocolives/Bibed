@@ -186,11 +186,15 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         else:
             return model[treeiter]
 
-    def get_selected_rows(self):
+    def get_selected_rows(self, paths_only=False):
 
         model, paths = self.selection.get_selected_rows()
 
         if paths:
-            return [Gtk.TreeRowReference.new(model, path) for path in paths]
+            if paths_only:
+                return paths
+            else:
+                # Gtk.TreeRowReference.new(model, path)
+                return [model.get_iter(path) for path in paths]
         else:
             return None
