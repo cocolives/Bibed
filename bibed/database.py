@@ -53,9 +53,19 @@ class BibedDatabase:
                 `.data_store` attribute will be kept handy in the current
                 database attributes.
         '''
-        self.filename = filename
-        self.store = store
-        self.data_store = self.store.data_store
+
+        # TODO: think about getting rid of the whole bibtexparser level.
+        #       it's using memory, for nothing more than what we do.
+        #       We could at least remove the entries after load,
+        #       and rebuild them just for write(), like we do for
+        #       _internal_* fields at the BibedEntry level.
+
+        self.filename    = filename
+        self.files_store = store
+        self.data_store  = self.files_store.data_store
+
+        # TODO: detect BibTeX aliased fields and set
+        #       self.use_aliased fields or convert them.
 
         self.parser = bibtexparser.bparser.BibTexParser(
             ignore_nonstandard_types=False,
@@ -258,7 +268,7 @@ class BibedDatabase:
 
         filename = self.filename
 
-        with self.store.no_watch(filename):
+        with self.files_store.no_watch(filename):
 
             if gpod('backup_before_save'):
                 self.backup()
