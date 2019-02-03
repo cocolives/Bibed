@@ -232,11 +232,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         hb.pack_start(self.btn_add)
 
-        self.btn_delete = Gtk.Button()
+        self.btn_delete = Gtk.Button()  # edit-delete-symbolic
         icon = Gio.ThemedIcon(name="list-remove-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_delete.add(image)
-        self.btn_delete.connect('clicked', self.on_entry_delete_clicked)
+        self.btn_delete.connect('clicked', self.on_entries_delete_clicked)
 
         hb.pack_start(self.btn_delete)
 
@@ -275,7 +275,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         #               FileTypes.SYSTEM)
 
         # Keep only non-system entries in main window ComboBox.
-        return model[iter][FSCols.FILETYPE] != FileTypes.SYSTEM
+        return not model[iter][FSCols.FILETYPE] & FileTypes.SYSTEM
 
     def setup_files_combobox(self):
 
@@ -349,6 +349,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # assert lprint_caller_name(levels=5)
         # assert lprint_function_name()
 
+        # This will automatically count or exclude user or system files,
+        # because this points either to the TreeModelFilter or the main model.
         row_count = len(self.treeview.get_model())
 
         try:
@@ -358,13 +360,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # Application is closing, we have no file left open.
             active_file = None
 
-        # TODO: translate “All”
+        # TODO: translate “All”, or modify method to get the type, and switch
+        #       on type instead of name, at least for the “All” entry.
         if active_file == 'All':
 
             search_text = self.get_search_text()
 
             if search_text:
-                # We have to gather files count from current results.
+                # We have to gather files count from
+                # current global filter results.
 
                 files_matched = set()
 
@@ -376,6 +380,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 file_count = len(files_matched)
 
             else:
+                # Why not simply self.filtered_files ?
                 file_count = len(self.cmb_files.get_model())
 
                 if file_count > 2:
@@ -786,28 +791,73 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         entry_add_dialog.destroy()
 
-    def on_entry_delete_clicked(self, button):
+    def on_entries_delete_clicked(self, button):
 
-        selected_entry = self.treeview.get_selected_entry()
+        selected_entries = self.treeview.get_selected_entries()
 
-        if selected_entry is None:
+        if selected_entries is None:
             return
 
+        # TODO: test if we are in trash…
+
         if gpod('use_trash'):
-            self.app.files.trash_entry(selected_entry)
+            self.application.files.trash_entries(selected_entries)
+
+            self.do_status_change('{count} entries trashed.'.format(
+                count=len(selected_entries)))
 
         else:
-            def delete_callback(selected_entry):
-                selected_entry.delete()
+            def delete_callback(selected_entries):
+                databases_to_write = set()
+
+                for entry in selected_entries:
+                    databases_to_write.add(entry.database)
+                    entry.delete(write=False)
+
+                for database in databases_to_write:
+                    database.write()
+
                 self.do_filter_data_store()
 
+            entries_count = len(selected_entries)
+
+            if entries_count > 1:
+                title = 'Delete {count} entries?'.format(count=entries_count)
+
+                if entries_count > 10:
+                    entries_list = '\n'.join(
+                        '  - {}'.format(entry.short_display)
+                        for entry in selected_entries
+                    ) + '\nand {other} other(s).'.format(
+                        other=10 - entries_count
+                    )
+                else:
+                    entries_list = '\n'.join(
+                        '  - {}'.format(entry.short_display)
+                        for entry in selected_entries
+                    )
+
+                secondary_text = (
+                    'This will permanently delete the following entries:\n'
+                    '{entries_list}\n from your database(s).'.format(
+                        entries_list=entries_list
+                    )
+                )
+            else:
+                entry = selected_entries[0]
+                title = 'Delete entry?'
+                secondary_text = (
+                    'This will permanently delete {entry} from your database.'.format(
+                        entry=entry.short_display
+                    )
+                )
+
+            secondary_text += '\n\nThis action cannot be undone. Are you sure?'
+
             message_dialog(
-                self,
-                Gtk.MessageType.WARNING,
-                'Delete entry {entry}'.format(entry=selected_entry),
-                'This action cannot be undone. Are you sure?',
-                delete_callback,
-                selected_entry
+                self, Gtk.MessageType.WARNING,
+                title, secondary_text,
+                delete_callback, selected_entries
             )
 
     def on_preferences_clicked(self, button):
