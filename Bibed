@@ -52,6 +52,7 @@ if __name__ == "__main__":
     else:
         setup_logging(logging.INFO)
 
+    logging.getLogger('urllib3').setLevel(logging.CRITICAL)
     logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
     logging.getLogger('bibtexparser').setLevel(logging.CRITICAL)
 
