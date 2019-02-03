@@ -184,12 +184,22 @@ class BibedEntryTreeViewMixin:
         return entry
 
     def get_selected_entry(self):
+        ''' Used in Gtk.SelectionMode.SINGLE. '''
 
         model, treeiter = self.get_selected()
 
         return self.get_entry_by_path(model.get_path(treeiter),
                                       with_global_id=True)
 
+    def get_selected_entries(self):
+        ''' Used in Gtk.SelectionMode.MULTIPLE. '''
+
+        paths = self.get_selected_rows(paths_only=True)
+
+        return [
+            self.get_entry_by_path(path, with_global_id=True)
+            for path in paths
+        ]
     # ————————————————————————————————————————————————————————————— Gtk signals
 
     def on_quality_clicked(self, renderer, path):
