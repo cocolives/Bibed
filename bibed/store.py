@@ -18,6 +18,7 @@ from bibed.constants import (
     BibAttrs,
     FSCols,
     FileTypes,
+    FILETYPES_COLORS,
     BIBED_SYSTEM_QUEUE_NAME,
     BIBED_SYSTEM_TRASH_NAME,
 )
@@ -66,6 +67,9 @@ class AlreadyLoadedException(BibedFileStoreException):
 class NoDatabaseForFilename(BibedFileStoreException):
     pass
 
+class FileNotFound(BibedFileStoreException):
+    pass
+
 
 class BibKeyNotFound(BibedException):
     pass
@@ -106,10 +110,8 @@ class BibedFileStoreNoWatchContextManager:
 class BibedFileStore(Gtk.ListStore):
     ''' Stores filenames and BIB databases. '''
 
-    def __init__(self, data_store):
+    def __init__(self):
         super().__init__(*FILE_STORE_LIST_ARGS)
-
-        assert(isinstance(data_store, BibedDataStore))
 
         # cached number of files.
         self.num_user   = 0
@@ -120,7 +122,8 @@ class BibedFileStore(Gtk.ListStore):
 
         # A reference to the datastore,
         # to handle system files internally.
-        self.data_store = data_store
+        # Will be fille by data_store.__init__()
+        self.data_store = None
 
         # Global lock to avoid concurrent writes,
         # which are destructive on flat files.
@@ -130,7 +133,6 @@ class BibedFileStore(Gtk.ListStore):
         self.save_trigger_source = None
 
         self.setup_inotify()
-        self.setup_system_files()
 
     def __len__(self):
 
@@ -157,7 +159,7 @@ class BibedFileStore(Gtk.ListStore):
 
     # ———————————————————————————————————————————————————————————— System files
 
-    def setup_system_files(self):
+    def load_system_files(self):
 
         # assert lprint_function_name()
 
@@ -414,9 +416,16 @@ class BibedFileStore(Gtk.ListStore):
 
         raise NoDatabaseForFilename
 
+    def get_filetype(self, filename):
+
+        for row in self:
+            if row[FSCols.FILENAME] == filename:
+                return row[FSCols.FILETYPE]
+
+        raise FileNotFound
     # ————————————————————————————————————————————————————————— File operations
 
-    def parse(self, filename, impact_data_store=True, recompute=True):
+    def parse(self, filename, filetype, impact_data_store=True, recompute=True):
         ''' Internal method. '''
 
         # assert lprint_function_name()
@@ -428,7 +437,7 @@ class BibedFileStore(Gtk.ListStore):
 
         if impact_data_store:
             for entry in database.values():
-                self.data_store.append(entry.to_list_store_row())
+                self.data_store.append(entry, filetype)
 
             # Don't bother recompute if data_store is not impacted.
             if recompute:
@@ -454,7 +463,7 @@ class BibedFileStore(Gtk.ListStore):
             recompute = False
             inotify = False
 
-        self.parse(filename,
+        self.parse(filename, filetype,
                    impact_data_store=impact_data_store,
                    recompute=recompute)
 
@@ -465,6 +474,7 @@ class BibedFileStore(Gtk.ListStore):
             self.num_user += 1
 
             if self.num_user == 2:
+                self.prepend(('—', FileTypes.SEPARATOR, ))
                 self.prepend(('All', FileTypes.ALL, ))
 
         elif filetype & FileTypes.SYSTEM:
@@ -537,7 +547,12 @@ class BibedFileStore(Gtk.ListStore):
         if self.num_user == 1:
             for row in self:
                 if row[filetype_index] == FileTypes.ALL:
+                    # remove the separator, then “All”
+                    self.remove(self.iter_next(row.iter))
                     self.remove(row.iter)
+
+                    # Then exit, else store goes mad looping on None.
+                    break
 
         if impact_data_store and remember_close:
             memories.remove_open_file(filename)
@@ -659,9 +674,43 @@ class BibedDataStore(Gtk.ListStore):
             *DATA_STORE_LIST_ARGS
         )
 
-        # TODO: detect aliased fields and set self.use_aliased fields.
+        self.files_store = kwargs.pop('files_store', None)
 
-        pass
+        assert self.files_store is not None
+
+        self.files_store.data_store = self
+
+    def __entry_to_store(self, entry, filetype=None):
+        ''' Convert a BIB entry, to fields for a Gtk.ListStore. '''
+
+        # `BibedEntry`.`bibtexparser_entry` (eg. dict)
+        entry_fields = entry.entry
+
+        if filetype is None:
+            filetype = self.files_store.get_filetype(entry.database.filename)
+
+        return (
+            entry.gid,  # global_id, computed by app.
+            entry.database.filename,
+            entry.index,  # TODO: remove this field, everywhere.
+            entry.tooltip,
+            entry.type,
+            entry.key,
+            entry_fields.get('file', ''),
+            entry_fields.get('url', ''),
+            entry_fields.get('doi', ''),
+            GLib.markup_escape_text(entry.author),
+            GLib.markup_escape_text(entry_fields.get('title', '')),
+            entry_fields.get('subtitle', ''),
+            GLib.markup_escape_text(entry.journal),
+            entry.year,
+            entry_fields.get('date', ''),
+            entry.quality,
+            entry.read_status,
+            entry.comment,
+            filetype,
+            FILETYPES_COLORS[filetype],
+        )
 
     def do_recompute_global_ids(self):
 
@@ -674,21 +723,23 @@ class BibedDataStore(Gtk.ListStore):
             row[gid_index] = counter
             counter += 1
 
+    def append(self, entry, filetype=None):
+
+        return super().append(self.__entry_to_store(entry, filetype))
+
     def insert_entry(self, entry):
 
         # assert lprint_function_name()
 
-        iter = self.append(
-            entry.to_list_store_row()
-        )
+        iter = self.append(entry)
 
         self.do_recompute_global_ids()
 
         if __debug__:
             row = self[iter]
 
-        assert ldebug('Row {} created with entry {}.',
-                      row[BibAttrs.GLOBAL_ID], entry.key)
+            ldebug('Row {} created with entry {}.',
+                   row[BibAttrs.GLOBAL_ID], entry.key)
 
     def update_entry(self, entry):
 
@@ -704,7 +755,7 @@ class BibedDataStore(Gtk.ListStore):
                 # But I'm tired and I want a simple way to view results.
                 # TODO: do better on next code review.
 
-                self.insert_after(row.iter, entry.to_list_store_row())
+                self.insert_after(row.iter, self.__entry_to_store(entry))
                 self.remove(row.iter)
 
                 assert ldebug(

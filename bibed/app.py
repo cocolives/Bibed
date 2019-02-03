@@ -71,7 +71,8 @@ class BibEdApplication(Gtk.Application):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
-        self.files = OrderedDict()
+
+        self.setup_data_store()
 
     # ——————————————————————————————————————————————————————————— setup methods
 
@@ -128,11 +129,14 @@ class BibEdApplication(Gtk.Application):
 
     def setup_data_store(self):
 
-        # Stores All BIB entries.
-        self.data = BibedDataStore()
-
         # Stores open files (user / system / other)
-        self.files = BibedFileStore(self.data)
+        self.files = BibedFileStore()
+
+        # Stores All BIB entries.
+        self.data = BibedDataStore(files_store=self.files)
+
+        # This must be done after the data store has loaded.
+        self.files.load_system_files()
 
         # Keep the filter data sortable along the way.
         self.filter = self.data.filter_new()
@@ -230,7 +234,6 @@ class BibEdApplication(Gtk.Application):
         self.setup_resources_and_css()
         self.setup_actions()
         self.setup_app_menu()
-        self.setup_data_store()
 
     def do_notification(self, message):
 

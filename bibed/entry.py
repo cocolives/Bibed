@@ -360,6 +360,13 @@ class BibedEntry:
     def tooltip(self):
 
         esc = self.escape_for_tooltip
+        is_trashed = self.is_trashed
+
+        def strike(text):
+            return (
+                '<s>{}</s>'.format(text)
+                if is_trashed else text
+            )
 
         tooltips = []
 
@@ -368,11 +375,11 @@ class BibedEntry:
 
         base_tooltip = (
             '<big><i>{title}</i></big>\n{subtitle}'
-            'by <b>{author}</b>{year}'.format(
-                title=esc(self.title),
-                subtitle='<i>{}</i>\n'.format(esc(subtitle)) if subtitle else '',
+            'by <b>{author}</b>'.format(
+                title=strike(esc(self.title)),
+                subtitle='<i>{}</i>\n'.format(strike(esc(subtitle)))
+                if subtitle else '',
                 author=esc(self.author),
-                year=' ({year})'.format(year=year) if year else '',
             )
         )
 
@@ -380,13 +387,16 @@ class BibedEntry:
             base_tooltip += ', published in <b><i>{journal}</i></b>'.format(
                 journal=esc(self.journal))
 
+        if year:
+            base_tooltip += ' ({year})'.format(year=year)
+
         tooltips.append(base_tooltip)
 
         if self.comment:
             tooltips.append('<b>Comment:</b>{cr}{comment}'.format(
                 cr='\n'
                 if len(self.comment) > COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS
-                else '',
+                else ' ',  # Note the space.
                 comment=esc(self.comment)))
 
         abstract = self.get_field('abstract', default='')
@@ -424,6 +434,14 @@ class BibedEntry:
             tooltips.append('Added to database <b>{timestamp}</b>.'.format(
                 timestamp=timestamp))
 
+        if is_trashed:
+            fkw = {
+                k: v for (k, v)
+                in zip(('tFrom', 'tDate'), self.trashed_informations)
+            }
+            tooltips.append('Trashed from <b>{tFrom}</b> on {tDate}.'.format(
+                **fkw))
+
         return '\n\n'.join(tooltips)
 
     @property
@@ -436,6 +454,8 @@ class BibedEntry:
 
             if field_value:
                 return field_value
+
+        return ''
 
     @property
     def author(self):
@@ -534,9 +554,14 @@ class BibedEntry:
 
         assert getattr(defaults.types.labels, self.type)
 
+        if self.is_trashed:
+            trashedFrom, trashedDate = self.trashed_informations
+        else:
+            trashedFrom, trashedDate = None
+
         return (
             '{type} <b><i>{title}</i></b> '
-            'by <b>{author}</b>{journal}{year}'.format(
+            'by <b>{author}</b>{journal}{year}{trashed}'.format(
                 type=getattr(defaults.types.labels,
                              self.type).replace('_', ''),
 
@@ -548,6 +573,11 @@ class BibedEntry:
 
                 year=' ({})'.format(self.year)
                 if self.year else '',
+
+                trashed=' <span color="grey">(trashed on {tDate} from <span face="monospace">{tFrom}</span>)</span>'.format(
+                    tFrom=os.path.basename(trashedFrom),
+                    tDate=trashedDate
+                ) if self.is_trashed else '',
             )
         )
 
@@ -593,32 +623,6 @@ class BibedEntry:
 
         if write:
             self.database.write()
-
-    def to_list_store_row(self):
-        ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''
-
-        fields = self.entry
-
-        return [
-            self.gid,  # global_id, computed by app.
-            self.database.filename,
-            self.index,  # TODO: remove this field, everywhere.
-            self.tooltip,
-            self.type,
-            self.key,
-            fields.get('file', ''),
-            fields.get('url', ''),
-            fields.get('doi', ''),
-            self.author,
-            fields.get('title', ''),
-            fields.get('subtitle', ''),
-            self.journal,
-            self.year,
-            fields.get('date', ''),
-            self.quality,
-            self.read_status,
-            self.comment,
-        ]
 
 
 class EntryKeyGenerator:
