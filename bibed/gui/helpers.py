@@ -90,7 +90,8 @@ def message_dialog(window, dialog_type, title, secondary_text, ok_callback, *arg
         Gtk.ButtonsType.OK_CANCEL,
         title
     )
-    dialog.format_secondary_text(secondary_text)
+    dialog.format_secondary_markup(secondary_text)
+    
     response = dialog.run()
 
     if response == Gtk.ResponseType.OK:
