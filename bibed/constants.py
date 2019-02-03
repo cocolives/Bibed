@@ -1,5 +1,6 @@
 import os
 import bibtexparser
+from collections import defaultdict
 
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
@@ -23,44 +24,41 @@ def icon(name):
 
 
 class Anything:
-    pass
+    ''' An object that can have any attribute. '''
+    def __init__(self, args_list=None):
+        '''
+            :param args_list: an iterable of strings, of which any will be
+                set as attribute of self with incremental integer value.
+                This is useful to build named enums.
+        '''
+        if args_list:
+            for index, arg in enumerate(args_list):
+                setattr(self, arg, index)
 
-
-BibAttrs = Anything()
 
 # Sync this with DATA_STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
-BibAttrs.GLOBAL_ID = 0
-BibAttrs.FILENAME  = 1
-BibAttrs.ID        = 2
-BibAttrs.TOOLTIP   = 3
-BibAttrs.TYPE      = 4
-BibAttrs.KEY       = 5
-BibAttrs.FILE      = 6
-BibAttrs.URL       = 7
-BibAttrs.DOI       = 8
-BibAttrs.AUTHOR    = 9
-BibAttrs.TITLE     = 10
-BibAttrs.SUBTITLE  = 11
-BibAttrs.JOURNAL   = 12
-BibAttrs.YEAR      = 13
-BibAttrs.DATE      = 14
-BibAttrs.QUALITY   = 15
-BibAttrs.READ      = 16
-BibAttrs.COMMENT   = 17
-
-# Sync this with FILE_STORE_LIST_ARGS and store:BibedFileStore()
-FSCols = Anything()
-FSCols.FILENAME = 0
-FSCols.FILETYPE = 1
-
-FileTypes = Anything()
-FileTypes.SPECIAL   = 0xff000000
-FileTypes.ALL       = 0x01000000
-FileTypes.SYSTEM    = 0x00ff0000
-FileTypes.TRASH     = 0x00010000
-FileTypes.QUEUE     = 0x00020000
-FileTypes.TRANSIENT = 0x00800000
-FileTypes.USER      = 0x0000ffff
+BibAttrs = Anything((
+    'GLOBAL_ID',
+    'FILENAME',
+    'ID',
+    'TOOLTIP',
+    'TYPE',
+    'KEY',
+    'FILE',
+    'URL',
+    'DOI',
+    'AUTHOR',
+    'TITLE',
+    'SUBTITLE',
+    'JOURNAL',
+    'YEAR',
+    'DATE',
+    'QUALITY',
+    'READ',
+    'COMMENT',
+    'FILETYPE',
+    'COLOR',
+))
 
 
 DATA_STORE_LIST_ARGS = (
@@ -81,13 +79,43 @@ DATA_STORE_LIST_ARGS = (
     str,  # date
     str,  # quality
     str,  # read status
-    str,  # has comments
+    str,  # comment (text field)
+    int,  # file type
+    str,  # foreground color
 )
+
+# Sync this with FILE_STORE_LIST_ARGS and store:BibedFileStore()
+FSCols = Anything((
+    'FILENAME',
+    'FILETYPE',
+))
 
 FILE_STORE_LIST_ARGS = (
     str,  # filename
     int,  # filetype (see FileTypes)
 )
+
+FileTypes = Anything()
+FileTypes.SPECIAL   = 0xff00000
+FileTypes.ALL       = 0x0100000
+FileTypes.SEPARATOR = 0x8000000
+FileTypes.SYSTEM    = 0x00ff000
+FileTypes.TRASH     = 0x0001000
+FileTypes.QUEUE     = 0x0002000
+FileTypes.TRANSIENT = 0x0080000
+FileTypes.USER      = 0x0000fff
+
+FILETYPES_COLORS = {
+    FileTypes.SPECIAL   : '#000000',
+    FileTypes.ALL       : '#000000',
+    FileTypes.SEPARATOR : '#000000',
+    FileTypes.SYSTEM    : '#000000',
+    FileTypes.TRASH     : '#999',
+    FileTypes.QUEUE     : '#6c6',
+    FileTypes.TRANSIENT : '#afa',
+    FileTypes.USER      : '#000000',
+}
+
 
 # See GUI constants later for icons.
 JABREF_QUALITY_KEYWORDS = [
