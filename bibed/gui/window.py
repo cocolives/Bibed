@@ -1,4 +1,5 @@
 
+import os
 import logging
 
 from bibed.foundations import (
@@ -21,7 +22,7 @@ from bibed.constants import (
     BIBED_ASSISTANCE_EN,
 )
 
-from bibed.preferences import memories, gpod
+from bibed.preferences import preferences, memories, gpod
 from bibed.utils import get_user_home_directory
 from bibed.entry import BibedEntry
 
@@ -266,6 +267,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.headerbar = hb
 
+    def files_separator_func(self, model, iter, *data):
+
+        # Keep only non-system entries in main window ComboBox.
+        return model[iter][FSCols.FILETYPE] & FileTypes.SEPARATOR
+
     def files_filter_func(self, model, iter, data):
 
         # assert lprint_caller_name(levels=5)
@@ -295,12 +301,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
 
         files_combo.pack_start(renderer_text, True)
-        files_combo.add_attribute(renderer_text, 'text', 0)
+        # files_combo.add_attribute(renderer_text, 'text', FSCols.FILENAME)
+        files_combo.set_cell_data_func(
+            renderer_text, self.get_filename_cell_combobox)
         files_combo.set_sensitive(False)
 
         self.cmb_files_renderer = renderer_text
         self.cmb_files = files_combo
         self.cmb_files.set_size_request(150, -1)
+        self.cmb_files.set_row_separator_func(self.files_separator_func)
 
         return self.cmb_files
 
@@ -793,72 +802,97 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def on_entries_delete_clicked(self, button):
 
+        use_trash = gpod('use_trash')
+
         selected_entries = self.treeview.get_selected_entries()
 
         if selected_entries is None:
             return
 
-        # TODO: test if we are in trash…
+        trashed_entries = []
 
-        if gpod('use_trash'):
-            self.application.files.trash_entries(selected_entries)
+        for entry in selected_entries:
+            if entry.is_trashed:
+                trashed_entries.append(entry)
+                selected_entries.remove(entry)
 
-            self.do_status_change('{count} entries trashed.'.format(
-                count=len(selected_entries)))
+        if selected_entries:
+            if use_trash:
+                self.application.files.trash_entries(selected_entries)
 
-        else:
-            def delete_callback(selected_entries):
-                databases_to_write = set()
+            else:
+                self.ask_and_delete_entries(selected_entries)
 
-                for entry in selected_entries:
-                    databases_to_write.add(entry.database)
-                    entry.delete(write=False)
+            self.do_status_change('{count} entries {what}.'.format(
+                count=len(selected_entries),
+                what='trashed' if use_trash else 'definitively deleted'))
 
-                for database in databases_to_write:
-                    database.write()
+        if trashed_entries:
+            self.ask_and_delete_entries(trashed_entries, trashed=True)
 
-                self.do_filter_data_store()
+            self.do_status_change(
+                '{count} previously trashed entries '
+                'definitively deleted.'.format(
+                    count=len(trashed_entries)))
 
-            entries_count = len(selected_entries)
+    def ask_and_delete_entries(self, selected_entries, trashed=False):
 
-            if entries_count > 1:
+        def delete_callback(selected_entries):
+            databases_to_write = set()
+
+            for entry in selected_entries:
+                databases_to_write.add(entry.database)
+                entry.delete(write=False)
+
+            for database in databases_to_write:
+                database.write()
+
+            self.do_filter_data_store()
+
+        entries_count = len(selected_entries)
+
+        if entries_count > 1:
+            if trashed:
+                title = 'Wipe {count} entries from trash?'.format(
+                    count=entries_count)
+            else:
                 title = 'Delete {count} entries?'.format(count=entries_count)
 
-                if entries_count > 10:
-                    entries_list = '\n'.join(
-                        '  - {}'.format(entry.short_display)
-                        for entry in selected_entries
-                    ) + '\nand {other} other(s).'.format(
-                        other=10 - entries_count
-                    )
-                else:
-                    entries_list = '\n'.join(
-                        '  - {}'.format(entry.short_display)
-                        for entry in selected_entries
-                    )
-
-                secondary_text = (
-                    'This will permanently delete the following entries:\n'
-                    '{entries_list}\n from your database(s).'.format(
-                        entries_list=entries_list
-                    )
+            if entries_count > 10:
+                entries_list = '\n'.join(
+                    '  - {}'.format(entry.short_display)
+                    for entry in selected_entries
+                ) + '\nand {other} other(s).'.format(
+                    other=10 - entries_count
                 )
             else:
-                entry = selected_entries[0]
-                title = 'Delete entry?'
-                secondary_text = (
-                    'This will permanently delete {entry} from your database.'.format(
-                        entry=entry.short_display
-                    )
+                entries_list = '\n'.join(
+                    '  - {}'.format(entry.short_display)
+                    for entry in selected_entries
                 )
 
-            secondary_text += '\n\nThis action cannot be undone. Are you sure?'
-
-            message_dialog(
-                self, Gtk.MessageType.WARNING,
-                title, secondary_text,
-                delete_callback, selected_entries
+            secondary_text = (
+                'This will permanently delete the following entries:\n'
+                '{entries_list}\n from your database(s).'.format(
+                    entries_list=entries_list
+                )
             )
+        else:
+            entry = selected_entries[0]
+            title = 'Delete entry?'
+            secondary_text = (
+                'This will permanently delete {entry} from your database.'.format(
+                    entry=entry.short_display
+                )
+            )
+
+        secondary_text += '\n\nThis action cannot be undone. Are you sure?'
+
+        message_dialog(
+            self, Gtk.MessageType.WARNING,
+            title, secondary_text,
+            delete_callback, selected_entries
+        )
 
     def on_preferences_clicked(self, button):
 
@@ -884,6 +918,56 @@ class BibEdWindow(Gtk.ApplicationWindow):
         filter_bib.add_pattern('*.bib')
 
         return filter_bib
+
+    def get_filename_cell_combobox(self, layout, cell, model, iter, *data):
+
+        def fancize_dirname(dirname):
+
+            if dirname == working_folder:
+                return 'Working folder'
+
+            elif dirname.startswith(working_folder):
+                remaining = dirname[len(working_folder):]
+
+                return '<i>Working folder</i> {remaining}'.format(
+                    remaining=remaining)
+
+            elif dirname.startswith(home_dir):
+                remaining = dirname[len(home_dir):]
+
+                return '<i>Home directory</i> {remaining}'.format(
+                    remaining=remaining)
+
+        home_dir = os.path.expanduser('~')
+        working_folder = preferences.working_folder
+
+        row = model[iter]
+
+        filename = row[FSCols.FILENAME]
+        filetype = row[FSCols.FILETYPE]
+
+        # Get only the filename, not the extension.
+        basename = os.path.basename(filename).rsplit('.', 1)[0]
+
+        if filetype & FileTypes.USER:
+            format_template = (
+                '<small><b>{basename}</b></small>\n'
+                '<span size="xx-small" color="grey">in {folder}</span>'
+            )
+
+            format_kwargs = {
+                'basename': basename,
+                'folder': fancize_dirname(os.path.dirname(filename))
+            }
+
+        else:
+            # System files, “All” entry…
+            format_template = '{basename}'
+            format_kwargs = {
+                'basename': basename,
+            }
+
+        cell.set_property('markup', format_template.format(**format_kwargs))
 
     def get_selected_filename(self):
 
