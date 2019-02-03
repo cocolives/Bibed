@@ -649,7 +649,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         elif not ctrl and keyval == Gdk.KEY_Escape:
 
-            # if self.search.has_focus():
+            # TODO: if self.search.has_focus():
+            #       even if no search_text, Just refocus
+            #       the treeview without resetting files.
 
             if search_text:
                 self.search.set_text('')
@@ -667,7 +669,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                     self.treeview.unselect_all()
 
                 else:
-                    if len(self.application.files):
+                    if len(self.filtered_files):
                         if self.cmb_files.get_active() != 0:
                             self.cmb_files.set_active(0)
 
