@@ -57,6 +57,11 @@ class BibedEntry:
         Bibed uses `verbb` (for “verbatim-bibed”).
     '''
 
+    VERBB_SEPARATOR    = '|'
+    KEYWORDS_SEPARATOR = ','
+    TRASHED_FROM       = 'trashedFrom'
+    TRASHED_DATE       = 'trashedDate'
+
     @classmethod
     def new_from_type(cls, entry_type):
 
@@ -108,21 +113,36 @@ class BibedEntry:
 
         # Index in the database file.
         # == index in the bibtexparser entries list.
+        # TODO: remove this field, everywhere.
         self.index = index
 
         # Global ID (across multiple files). This is
         # needed to update the treeview after modifications.
         self.gid = 0
 
+        self._internal_verbb = {
+            key: value
+            for (key, value) in (
+                line.split(':')
+                for line in self._internal_split_tokens(
+                    self.entry.get('verbb', ''),
+                    separator=self.VERBB_SEPARATOR
+                )
+            )
+        }
+
         # Proxy keywords here for faster operations.
-        self._internal_keywords = self._internal_split_keywords(
+        self._internal_keywords = self._internal_split_tokens(
             self.entry.get('keywords', ''))
 
-    def _internal_split_keywords(self, value):
+    def _internal_split_tokens(self, value, separator=None):
+
+        if separator is None:
+            separator = self.KEYWORDS_SEPARATOR
 
         return [
             expression.strip()
-            for expression in value.split(',')
+            for expression in value.split(separator)
             if expression.strip() != ''
         ]
 
@@ -247,11 +267,61 @@ class BibedEntry:
 
     def set_field_keywords(self, value):
 
-        kw = self._internal_split_keywords(value)
+        kw = self._internal_split_tokens(value)
 
         self._internal_keywords = kw + [self.read_status] + [self.quality]
 
         self.entry['keywords'] = ','.join(self._internal_keywords)
+
+    @property
+    def is_trashed(self):
+
+        # assert lprint_function_name()
+
+        return self.TRASHED_FROM in self._internal_verbb
+
+    @property
+    def trashed_informations(self):
+        ''' Return trash-related information. '''
+
+        # assert lprint_function_name()
+
+        try:
+            return (
+                self._internal_verbb[self.TRASHED_FROM],
+                self._internal_verbb[self.TRASHED_DATE],
+            )
+        except KeyError:
+            return None
+
+    def set_trashed(self, is_trashed=True):
+
+        # assert lprint_function_name()
+        # assert lprint(is_trashed)
+
+        if is_trashed:
+            assert not self.is_trashed
+
+            self._internal_verbb[self.TRASHED_FROM] = self.database.filename
+            self._internal_verbb[self.TRASHED_DATE] = datetime.date.today().isoformat()
+
+        else:
+            assert self.is_trashed
+
+            del self._internal_verbb[self.TRASHED_FROM]
+            del self._internal_verbb[self.TRASHED_DATE]
+
+        self._internal_set_verbb()
+
+    def _internal_set_verbb(self):
+        ''' update `verbb` BibLaTeX field with our internal values. '''
+
+        # assert lprint_function_name()
+
+        self.entry['verbb'] = self.VERBB_SEPARATOR.join(
+            ':'.join((key, value, ))
+            for (key, value) in self._internal_verbb.items()
+        )
 
     @property
     def type(self):
@@ -328,7 +398,7 @@ class BibedEntry:
             tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
                 abstract=esc(abstract)))
 
-        keywords = self._internal_split_keywords(self.keywords)
+        keywords = self._internal_split_tokens(self.keywords)
 
         if keywords:
             if len(keywords) > MAX_KEYWORDS_IN_TOOLTIPS:
@@ -458,6 +528,29 @@ class BibedEntry:
         # See constants.py
         return ''
 
+    @property
+    def short_display(self):
+        ''' Used in GUI dialogs (thus uses Pango markup). '''
+
+        assert getattr(defaults.types.labels, self.type)
+
+        return (
+            '{type} <b><i>{title}</i></b> '
+            'by <b>{author}</b>{journal}{year}'.format(
+                type=getattr(defaults.types.labels,
+                             self.type).replace('_', ''),
+
+                title=self.title[:24] + (self.title[24:] and ' […]'),
+                author=self.author,
+
+                journal=' in <i>{}</i>'.format(self.journal)
+                if self.journal else '',
+
+                year=' ({})'.format(self.year)
+                if self.year else '',
+            )
+        )
+
     def update_fields(self, **kwargs):
 
         # assert lprint_function_name()
@@ -494,11 +587,12 @@ class BibedEntry:
 
         self.set_timestamp_and_owner()
 
-    def delete(self):
+    def delete(self, write=True):
 
         self.database.delete_entry(self)
-        
-        self.database.write()
+
+        if write:
+            self.database.write()
 
     def to_list_store_row(self):
         ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''
@@ -508,7 +602,7 @@ class BibedEntry:
         return [
             self.gid,  # global_id, computed by app.
             self.database.filename,
-            self.index,
+            self.index,  # TODO: remove this field, everywhere.
             self.tooltip,
             self.type,
             self.key,
