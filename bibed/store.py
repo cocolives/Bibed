@@ -18,8 +18,12 @@ from bibed.constants import (
     BibAttrs,
     FSCols,
     FileTypes,
+    BIBED_SYSTEM_QUEUE_NAME,
+    BIBED_SYSTEM_TRASH_NAME,
 )
 
+from bibed.foundations import touch_file
+from bibed.utils import get_bibed_user_dir
 from bibed.preferences import memories
 from bibed.database import BibedDatabase
 from bibed.entry import BibedEntry
@@ -126,6 +130,7 @@ class BibedFileStore(Gtk.ListStore):
         self.save_trigger_source = None
 
         self.setup_inotify()
+        self.setup_system_files()
 
     def __len__(self):
 
@@ -149,6 +154,85 @@ class BibedFileStore(Gtk.ListStore):
 
         except Exception as e:
             LOGGER.exception(e)
+
+    # ———————————————————————————————————————————————————————————— System files
+
+    def setup_system_files(self):
+
+        # assert lprint_function_name()
+
+        bibed_user_dir = get_bibed_user_dir()
+
+        for filename, filetype in (
+            (BIBED_SYSTEM_QUEUE_NAME, FileTypes.QUEUE),
+            (BIBED_SYSTEM_TRASH_NAME, FileTypes.TRASH),
+        ):
+
+            full_pathname = os.path.join(bibed_user_dir, filename)
+
+            if not os.path.exists(full_pathname):
+                touch_file(full_pathname)
+
+            self.load(full_pathname, filetype)
+
+    def trash_entries(self, entries):
+        '''
+            :param entries: an iterable of :class:`~bibed.entry.BibedEntry`.
+        '''
+        # assert lprint_function_name()
+
+        trash_database = self.get_database(filetype=FileTypes.TRASH)
+        databases_to_write = set((trash_database, ))
+
+        for entry in entries:
+            entry.set_trashed()
+
+            # Note the database BEFORE the move(), because
+            # after move(), its the trash database.
+            databases_to_write.add(entry.database)
+
+            entry.database.move_entry(entry, trash_database)
+
+        for database in databases_to_write:
+            database.write()
+
+    def untrash_entries(self, entries):
+
+        assert lprint_function_name()
+
+        trash_database = self.get_database(filetype=FileTypes.TRASH)
+        databases_to_write = set((trash_database, ))
+        databases_to_unload = set()
+
+        for entry in entries:
+            trashed_from, trashed_date = entry.trashed_informations
+
+            # wipe trash-related informations.
+            entry.set_trashed(False)
+
+            try:
+                database = self.get_database(filename=trashed_from)
+
+            except NoDatabaseForFilename:
+                # Database is not loaded.
+
+                # Load without remembering, without affecting GUI.
+                self.load(filename=trashed_from,
+                          filetype=FileTypes.TRANSIENT)
+
+                database = self.get_database(filename=trashed_from)
+
+                databases_to_unload.add(database)
+
+            trash_database.move_entry(entry, database)
+
+            databases_to_write.add(database)
+
+        for database in databases_to_write:
+            database.write()
+
+        for database in databases_to_unload:
+            self.close(database.filename)
 
     # ————————————————————————————————————————————————————————————————— Inotify
 
@@ -298,19 +382,41 @@ class BibedFileStore(Gtk.ListStore):
             except KeyError:
                 raise BibKeyNotFound
 
-    def get_database(self, filename):
+    def get_database(self, filename=None, filetype=None):
+        ''' Get a database, either for a filename *or* a filetype. '''
 
         # assert lprint_function_name()
 
-        try:
-            return self.databases[filename]
+        assert (
+            filename is None and filetype is not None
+        ) or (
+            filename is not None and filetype is None
+        )
+        assert filetype is None or (
+            filetype is not None and filetype in (
+                FileTypes.TRASH, FileTypes.QUEUE,
+            )
+        )
 
-        except KeyError:
-            raise NoDatabaseForFilename
+        if filetype is None:
+            try:
+                return self.databases[filename]
+
+            except KeyError:
+                raise NoDatabaseForFilename
+
+        filename_index = FSCols.FILENAME
+        filetype_index = FSCols.FILETYPE
+
+        for row in self:
+            if row[filetype_index] == filetype:
+                return self.databases[row[filename_index]]
+
+        raise NoDatabaseForFilename
 
     # ————————————————————————————————————————————————————————— File operations
 
-    def parse(self, filename, recompute=True):
+    def parse(self, filename, impact_data_store=True, recompute=True):
         ''' Internal method. '''
 
         # assert lprint_function_name()
@@ -320,11 +426,13 @@ class BibedFileStore(Gtk.ListStore):
 
         self.databases[filename] = database
 
-        for entry in database.values():
-            self.data_store.append(entry.to_list_store_row())
+        if impact_data_store:
+            for entry in database.values():
+                self.data_store.append(entry.to_list_store_row())
 
-        if recompute:
-            self.data_store.do_recompute_global_ids()
+            # Don't bother recompute if data_store is not impacted.
+            if recompute:
+                self.data_store.do_recompute_global_ids()
 
     def load(self, filename, filetype=None, recompute=True):
 
@@ -337,9 +445,21 @@ class BibedFileStore(Gtk.ListStore):
         if filetype is None:
             filetype = FileTypes.USER
 
-        self.parse(filename, recompute=recompute)
+        inotify = True
+        impact_data_store = True
 
-        self.inotify_add_watch(filename)
+        # Transient files don't get to the datastore.
+        if filetype == FileTypes.TRANSIENT:
+            impact_data_store = False
+            recompute = False
+            inotify = False
+
+        self.parse(filename,
+                   impact_data_store=impact_data_store,
+                   recompute=recompute)
+
+        if inotify:
+            self.inotify_add_watch(filename)
 
         if filetype == FileTypes.USER:
             self.num_user += 1
@@ -347,7 +467,7 @@ class BibedFileStore(Gtk.ListStore):
             if self.num_user == 2:
                 self.prepend(('All', FileTypes.ALL, ))
 
-        else:
+        elif filetype & FileTypes.SYSTEM:
             self.num_system += 1
 
         # Append to the store as last operation, for
@@ -355,8 +475,9 @@ class BibedFileStore(Gtk.ListStore):
         # Without this, window title fails to update properly.
         self.append((filename, filetype, ))
 
-        memories.add_open_file(filename)
-        memories.add_recent_file(filename)
+        if not filetype & FileTypes.SYSTEM:
+            memories.add_open_file(filename)
+            memories.add_recent_file(filename)
 
     def save(self, thing):
 
@@ -379,15 +500,10 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint_function_name()
         # assert lprint(filename, save_before, recompute, remember_close)
 
-        self.inotify_remove_watch(filename, delete=True)
-
-        if save_before:
-            # self.clear_save_callback()
-            self.save(filename)
-
-        self.clear_data(filename, recompute=recompute)
-
         filetype_index = FSCols.FILETYPE
+        impact_data_store = True
+        row_to_remove = None
+        inotify = True
 
         for row in self:
             if row[FSCols.FILENAME] == filename:
@@ -397,8 +513,25 @@ class BibedFileStore(Gtk.ListStore):
                 elif row[filetype_index] == FileTypes.SYSTEM:
                     self.num_system -= 1
 
-                self.remove(row.iter)
+                elif row[filetype_index] == FileTypes.TRANSIENT:
+                    impact_data_store = False
+                    recompute = False
+                    inotify = False
+
+                row_to_remove = row
                 break
+
+        if inotify:
+            self.inotify_remove_watch(filename, delete=True)
+
+        if save_before:
+            # self.clear_save_callback()
+            self.save(filename)
+
+        self.remove(row_to_remove.iter)
+
+        if impact_data_store:
+            self.clear_data(filename, recompute=recompute)
 
         # Remove the “All” special entry
         if self.num_user == 1:
@@ -406,7 +539,7 @@ class BibedFileStore(Gtk.ListStore):
                 if row[filetype_index] == FileTypes.ALL:
                     self.remove(row.iter)
 
-        if remember_close:
+        if impact_data_store and remember_close:
             memories.remove_open_file(filename)
 
     def close_all(self, save_before=True, recompute=True, remember_close=True):
@@ -535,32 +668,38 @@ class BibedDataStore(Gtk.ListStore):
         # assert lprint_function_name()
 
         counter = 1
-        global_id = BibAttrs.GLOBAL_ID
+        gid_index = BibAttrs.GLOBAL_ID
 
         for row in self:
-            row[global_id] = counter
+            row[gid_index] = counter
             counter += 1
 
     def insert_entry(self, entry):
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
-        self.append(
+        iter = self.append(
             entry.to_list_store_row()
         )
 
         self.do_recompute_global_ids()
 
-        assert ldebug('Row created with entry {}.', entry.key)
+        if __debug__:
+            row = self[iter]
+
+        assert ldebug('Row {} created with entry {}.',
+                      row[BibAttrs.GLOBAL_ID], entry.key)
 
     def update_entry(self, entry):
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
         assert entry.gid >= 0
 
+        gid_index = BibAttrs.GLOBAL_ID
+
         for row in self:
-            if row[BibAttrs.GLOBAL_ID] == entry.gid:
+            if row[gid_index] == entry.gid:
                 # This is far from perfect, we could just update the row.
                 # But I'm tired and I want a simple way to view results.
                 # TODO: do better on next code review.
@@ -569,15 +708,15 @@ class BibedDataStore(Gtk.ListStore):
                 self.remove(row.iter)
 
                 assert ldebug(
-                    'Row {} (entry {}) updated.',
-                    row[BibAttrs.GLOBAL_ID], entry.key
+                    'Row {} updated (entry {}).',
+                    row[gid_index], entry.key
                 )
 
                 break
 
     def delete_entry(self, entry):
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
         assert entry.gid >= 0
 
@@ -589,7 +728,8 @@ class BibedDataStore(Gtk.ListStore):
 
         self.do_recompute_global_ids()
 
-        assert ldebug('Row {} deleted (was entry {}).', row.iter, entry.key)
+        assert ldebug('Row {} deleted (was entry {}).',
+                      row[gid_index], entry.key)
 
     def clear_data(self, filename, recompute=True):
 

@@ -7,6 +7,8 @@ APP_ID = 'es.cocoliv.bibed'
 BIBED_DATA_DIR = os.path.join(os.path.realpath(
     os.path.abspath(os.path.dirname(__file__))), 'data')
 BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
+BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
+BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
@@ -52,12 +54,13 @@ FSCols.FILENAME = 0
 FSCols.FILETYPE = 1
 
 FileTypes = Anything()
-FileTypes.SPECIAL = 0xff0000
-FileTypes.ALL     = 0x010000
-FileTypes.SYSTEM  = 0x00ff00
-FileTypes.TRASH   = 0x000100
-FileTypes.QUEUE   = 0x000200
-FileTypes.USER    = 0x0000ff
+FileTypes.SPECIAL   = 0xff000000
+FileTypes.ALL       = 0x01000000
+FileTypes.SYSTEM    = 0x00ff0000
+FileTypes.TRASH     = 0x00010000
+FileTypes.QUEUE     = 0x00020000
+FileTypes.TRANSIENT = 0x00800000
+FileTypes.USER      = 0x0000ffff
 
 
 DATA_STORE_LIST_ARGS = (

@@ -142,7 +142,7 @@ class BibedDatabase:
             .. note:: it's up to the caller to call :method:`write` on the
                 database.
         '''
-        assert lprint_function_name()
+        # assert lprint_function_name()
         # assert lprint(entry, entry.gid)
 
         assert entry.gid >= 0
@@ -155,6 +155,10 @@ class BibedDatabase:
         del self.entries[entry.key]
 
         self.bibdb.entries.pop(entry_index)
+
+        # NOTE: 20190203: the underlying dict is updated correctly,
+        # but only the first time you call it. It's a one shot.
+        # lprint(self.bibdb.entries_dict.keys())
 
         # increment indexes of posterior entries
         for btp_entry in self.bibdb.entries[entry_index:]:
@@ -180,15 +184,19 @@ class BibedDatabase:
             :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
         '''
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
         assert entry.gid >= 0
+
+        # This is important, else GUI will still write in source database.
+        entry.database = destination_database
+
+        # NOTE: this method does not update the data store, because
+        #       add*() and delete*() methods already do what's needed.
 
         destination_database.add_entry(entry)
 
         self.delete_entry(entry)
-
-        self.data_store.update_entry(entry)
 
     def update_entry_key(self, entry):
 
@@ -264,6 +272,9 @@ class BibedDatabase:
 
         for index, btp_entry in enumerate(self.bibdb.entries):
             if self.entries[btp_entry['ID']][1] != index:
-                raise IndexingFailedError
+                raise IndexingFailedError('{} is not {} (entry {})'.format(
+                    self.entries[btp_entry['ID']][1],
+                    index, btp_entry['ID']
+                ))
 
         return True
