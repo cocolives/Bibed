@@ -93,6 +93,11 @@ def message_dialog(window, dialog_type, title, secondary_text, ok_callback, *arg
         title
     )
     dialog.format_secondary_markup(secondary_text)
+    dialog.set_default_response(Gtk.ResponseType.OK)
+    add_classes(
+        dialog.get_widget_for_response(Gtk.ResponseType.OK),
+        ['suggested-action'],
+    )
 
     response = dialog.run()
 
