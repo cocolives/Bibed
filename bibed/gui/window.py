@@ -1045,11 +1045,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         if multiple:
             # self.btn_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
-            add_classes(self.btn_file_close, ['close-all'])
+            add_classes(self.btn_file_close, ['destructive-action'])
             self.btn_file_close.set_tooltip_markup(
                 'Close <b>ALL</b> open files')
         else:
             # self.btn_file_close.set_relief(Gtk.ReliefStyle.NONE)
-            remove_classes(self.btn_file_close, ['close-all'])
+            remove_classes(self.btn_file_close, ['destructive-action'])
             self.btn_file_close.set_tooltip_markup(
                 'Close <i>currently selected</i> file')
