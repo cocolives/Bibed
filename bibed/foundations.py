@@ -339,13 +339,6 @@ def touch_file(filename):
 
 
 # ———————————————————————————————————————————————————————————————— Classes
-
-class BibedException(Exception):
-    pass
-
-
-class BibedError(BibedException):
-    pass
     
 
 class AttributeDict(object):
