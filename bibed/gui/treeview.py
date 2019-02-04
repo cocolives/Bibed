@@ -5,7 +5,7 @@ from bibed.constants import (
     COL_PIXBUF_WIDTH,
     CELLRENDERER_PIXBUF_PADDING,
 )
-from bibed.foundations import BibedException
+from bibed.exceptions import BibedTreeViewException
 from bibed.preferences import memories  # , gpod
 
 from bibed.gui.renderers import CellRendererTogglePixbuf
@@ -14,10 +14,6 @@ from bibed.gui.gtk import Gtk, Pango
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-class BibedTreeViewException(BibedException):
-    pass
 
 
 class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):

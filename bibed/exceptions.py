@@ -56,3 +56,10 @@ class BibedDatabaseError(BibedError):
 
 class IndexingFailedError(BibedDatabaseError):
     pass
+
+
+# ——————————————————————————————————————————————————————————————————— GUI exceptions
+
+
+class BibedTreeViewException(BibedException):
+    pass
