@@ -3,6 +3,7 @@ import logging
 
 from bibed.foundations import ldebug
 from bibed.constants import (
+    FileTypes,
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
     GRID_BORDER_WIDTH,
@@ -11,6 +12,7 @@ from bibed.constants import (
     HELP_POPOVER_LABEL_MARGIN,
 )
 
+from bibed.preferences import preferences
 from bibed.gui.gtk import Gtk, Gdk
 
 
@@ -91,7 +93,7 @@ def message_dialog(window, dialog_type, title, secondary_text, ok_callback, *arg
         title
     )
     dialog.format_secondary_markup(secondary_text)
-    
+
     response = dialog.run()
 
     if response == Gtk.ResponseType.OK:
@@ -185,6 +187,93 @@ def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
         label.set_yalign(yalign)
 
     return label
+
+
+def markup_bib_filename(filename, filetype, with_folder=True, same_line=False, small_size=True, same_size=False, parenthesis=False):
+
+    # Get only the filename, not the extension.
+    basename = os.path.basename(filename).rsplit('.', 1)[0]
+    dirname  = os.path.dirname(filename)
+
+    home_folder = os.path.expanduser('~')
+    working_folder = preferences.working_folder
+
+    if with_folder:
+        if dirname == working_folder:
+            folder = 'Working folder'
+
+        elif dirname.startswith(working_folder):
+            remaining = dirname[len(working_folder):]
+
+            folder = '<i>Working folder</i> {remaining}'.format(
+                remaining=remaining)
+
+        elif dirname.startswith(home_folder):
+            remaining = dirname[len(home_folder):]
+
+            folder = '<i>Home directory</i> {remaining}'.format(
+                remaining=remaining)
+
+        else:
+            folder = dirname
+
+    else:
+        folder = None
+
+    if filetype & FileTypes.USER:
+        format_template = (
+            '<{file_size}><b>{basename}</b></{file_size}>{separator}'
+            + (
+                '<span size="{folder_size}" color="grey">'
+                '{par_left}in {folder}{par_right}</span>'
+                if with_folder else ''
+            )
+        )
+
+        format_kwargs = {
+            'separator': ' ' if same_line else '\n',
+            'basename': basename,
+            'folder': folder,
+        }
+
+    else:
+        # System files, or special entry (like “All”)…
+        # No folder for them, anyway.
+        # Thus, no need for separator.
+        format_template = '{basename}'
+        format_kwargs = {
+            'basename': basename.title(),
+        }
+
+    if small_size:
+        file_size = 'small'
+        folder_size = 'xx-small'
+
+    else:
+        file_size = 'medium'
+        folder_size = 'small'
+
+    if same_size:
+        folder_size = file_size
+
+    if parenthesis:
+        format_kwargs.update({
+            'par_left': '(',
+            'par_right': ')',
+        })
+        
+    else:
+        format_kwargs.update({
+            'par_left': '',
+            'par_right': '',
+        })
+
+    format_kwargs.update({
+        'file_size': file_size,
+        'folder_size': folder_size,
+    })
+
+    return format_template.format(**format_kwargs)
 
 
 def add_classes(widget, classes):
