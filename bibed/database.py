@@ -7,14 +7,12 @@ import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
-from bibed.exceptions import(
-    BibedDatabaseException,
-    BibedDatabaseError,
+from bibed.exceptions import (
+    # BibedDatabaseException,
+    # BibedDatabaseError,
     IndexingFailedError,
 )
-from bibed.foundations import (  # NOQA
-    BibedError,
-    BibedException,
+from bibed.foundations import (
     lprint, ldebug,
     lprint_caller_name,
     lprint_function_name,
