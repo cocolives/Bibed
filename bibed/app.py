@@ -1,6 +1,7 @@
 
 import os
 import logging
+import random
 
 from collections import OrderedDict
 
@@ -11,8 +12,10 @@ from bibed.constants import (
     APP_MENU_XML,
     BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
+    BIBED_BACKGROUNDS_DIR,
     BibAttrs,
     BIBTEXPARSER_VERSION,
+    MAIN_VBOX_CSS,
 )
 
 from bibed.foundations import (
@@ -76,9 +79,25 @@ class BibEdApplication(Gtk.Application):
 
     # ——————————————————————————————————————————————————————————— setup methods
 
+    @property
+    def css_data(self):
+
+        return self.__css_data_string.replace(
+            '{background_filename}', self.get_random_background())
+
+    def get_random_background(self):
+
+        for root, dirs, files in os.walk(BIBED_BACKGROUNDS_DIR):
+            return os.path.join(BIBED_BACKGROUNDS_DIR, random.choice(files))
+
     def setup_resources_and_css(self):
 
         self.set_resource_base_path(BIBED_DATA_DIR)
+
+        with open(os.path.join(BIBED_DATA_DIR, 'style.css')) as css_file:
+            self.__css_data_string = css_file.read()
+
+        self.__css_data_string += MAIN_VBOX_CSS
 
         default_screen = Gdk.Screen.get_default()
 
@@ -91,14 +110,19 @@ class BibEdApplication(Gtk.Application):
         # print icon_info.get_filename()
 
         self.css_provider = Gtk.CssProvider()
-        self.css_provider.load_from_path(
-            os.path.join(BIBED_DATA_DIR, 'style.css'))
+
+        self.reload_css_provider_data()
 
         self.style_context = Gtk.StyleContext()
         self.style_context.add_provider_for_screen(
             default_screen,
             self.css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
+    def reload_css_provider_data(self):
+
+        # This will fill the CSS string with a random background on the fly.
+        self.css_provider.load_from_data(bytes(self.css_data.encode('utf-8')))
 
     def setup_actions(self):
 

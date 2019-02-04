@@ -351,6 +351,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
             Gtk.PolicyType.AUTOMATIC
         )
 
+        # For CSS.
+        self.treeview_sw.set_name('main')
+
         self.treeview = BibedMainTreeView(
             model=self.application.data,
             application=self.application,
