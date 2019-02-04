@@ -15,7 +15,7 @@ from bibed.constants import (
     # BIBED_ICONS_DIR,
     SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
-    FILES_COMBO_DEFAULT_WIDTH,
+    COMBO_CHARS_DIVIDER,
     RESIZE_SIZE_MULTIPLIER,
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
@@ -295,6 +295,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def setup_files_combobox(self):
 
+        current_width = self.current_size[0]
+
         self.filtered_files = self.application.files.filter_new()
         self.filtered_files.set_visible_func(self.files_filter_func)
 
@@ -304,21 +306,18 @@ class BibEdWindow(Gtk.ApplicationWindow):
         renderer_text = Gtk.CellRendererText(
             ellipsize=Pango.EllipsizeMode.START)
         renderer_text.props.max_width_chars = (
-            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
+            current_width * RESIZE_SIZE_MULTIPLIER / COMBO_CHARS_DIVIDER
         )
 
-        # TODO: replace this combo with a Gtk.StackSidebar()
-        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
-
         files_combo.pack_start(renderer_text, True)
-        # files_combo.add_attribute(renderer_text, 'text', FSCols.FILENAME)
         files_combo.set_cell_data_func(
             renderer_text, self.get_filename_cell_combobox)
         files_combo.set_sensitive(False)
 
         self.cmb_files_renderer = renderer_text
         self.cmb_files = files_combo
-        self.cmb_files.set_size_request(150, -1)
+        self.cmb_files.set_size_request(
+            current_width * RESIZE_SIZE_MULTIPLIER, -1)
         self.cmb_files.set_row_separator_func(self.files_separator_func)
 
         return self.cmb_files
@@ -496,9 +495,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
             memories.main_window_dimensions = self.current_size
 
         self.cmb_files_renderer.props.max_width_chars = (
-            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
+            current_width * RESIZE_SIZE_MULTIPLIER / COMBO_CHARS_DIVIDER
         )
-        self.cmb_files.set_size_request(150, -1)
+        self.cmb_files.set_size_request(
+            current_width * RESIZE_SIZE_MULTIPLIER, -1)
         self.cmb_files.queue_resize()
 
         self.treeview.set_columns_widths(current_width)

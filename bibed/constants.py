@@ -186,7 +186,7 @@ GRID_ROWS_SPACING = 20
 SEARCH_WIDTH_NORMAL   = 10
 SEARCH_WIDTH_EXPANDED = 30
 
-FILES_COMBO_DEFAULT_WIDTH = 25
+COMBO_CHARS_DIVIDER = 10
 
 # TODO: remove this when search / combo are implemented as sidebar / searchbar
 RESIZE_SIZE_MULTIPLIER = 0.20
