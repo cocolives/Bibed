@@ -834,3 +834,4 @@ types:
 url_action_opens_browser: true
 use_sentry: true
 use_trash: false
+use_treeview_background: true
