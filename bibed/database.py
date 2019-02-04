@@ -264,7 +264,7 @@ class BibedDatabase:
                 self.backup()
 
             with open(filename, 'w') as bibfile:
-                    bibfile.write(self.writer.write(self.bibdb))
+                bibfile.write(self.writer.write(self.bibdb))
 
     def check_indexes(self):
 
