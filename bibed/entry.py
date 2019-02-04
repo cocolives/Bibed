@@ -431,22 +431,6 @@ class BibedEntry:
         if url:
             tooltips.append('<b>URL:</b> <a href="{url}">{url}</a>'.format(url=url))
 
-        timestamp = self.get_field('timestamp', default='')
-
-        if timestamp:
-            tooltips.append('Added to {filename} on <b>{timestamp}</b>.'.format(
-                filename=markup_bib_filename(
-                    self.database.filename,
-                    self.database.filetype),
-                timestamp=timestamp))
-
-        elif not self.is_trashed:
-            tooltips.append('Stored in {filename}.'.format(
-                filename=markup_bib_filename(
-                    self.database.filename,
-                    self.database.filetype,
-                    parenthesis=True)))
-
         if is_trashed:
             tFrom, tDate = self.trashed_informations
 
@@ -456,9 +440,16 @@ class BibedEntry:
                 tType = self.database.files_store.get_filetype(tFrom)
 
             except FileNotFoundError:
-                # Most probably a deleted database.
-                tType = FileTypes.USER
-                missing = True
+                # Most probably a deleted database, but could be also (99%)
+                # that the current method is called while the origin BIB file
+                # is unloaded. This happens notably at application start.
+
+                if os.path.exists(tFrom):
+                    tType = FileTypes.USER
+
+                else:
+                    tType = FileTypes.NOTFOUND
+                    missing = True
 
             # TODO: what if trashed from QUEUE? FileTypes must be dynamic!
             tFrom = markup_bib_filename(
@@ -466,6 +457,23 @@ class BibedEntry:
 
             tooltips.append('Trashed from {tFrom} on {tDate}.'.format(
                 tFrom=tFrom, tDate=tDate))
+
+        else:
+            timestamp = self.get_field('timestamp', default='')
+
+            if timestamp:
+                tooltips.append('Added to {filename} on <b>{timestamp}</b>.'.format(
+                    filename=markup_bib_filename(
+                        self.database.filename,
+                        self.database.filetype),
+                    timestamp=timestamp))
+
+            else:
+                tooltips.append('Stored in {filename}.'.format(
+                    filename=markup_bib_filename(
+                        self.database.filename,
+                        self.database.filetype,
+                        parenthesis=True)))
 
         return '\n\n'.join(tooltips)
 

@@ -107,6 +107,8 @@ FileTypes.TRASH     = 0x0001000
 FileTypes.QUEUE     = 0x0002000
 FileTypes.TRANSIENT = 0x0080000
 FileTypes.USER      = 0x0000fff
+FileTypes.NOTFOUND  = 0x0000800
+
 
 FILETYPES_COLORS = {
     FileTypes.SPECIAL   : '#000000',
