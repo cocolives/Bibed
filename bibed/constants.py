@@ -8,6 +8,9 @@ APP_ID = 'es.cocoliv.bibed'
 BIBED_DATA_DIR = os.path.join(os.path.realpath(
     os.path.abspath(os.path.dirname(__file__))), 'data')
 BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
+BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
+
+
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
 BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
 
@@ -134,7 +137,7 @@ BIBED_APP_DIR_POSIX  = '.config/bibed'
 
 # ———————————————————————————————————————————————————————————— GUI constants
 
-APP_MENU_XML = """
+APP_MENU_XML = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <menu id="app-menu">
@@ -157,7 +160,20 @@ APP_MENU_XML = """
     </section>
   </menu>
 </interface>
-"""
+'''
+
+# Impossible to set background-opacity in GTK, and we don't have web hacks
+# like div:after. Thus we need to prepare the background images with an
+# already set transparency, like transparent PNGs or flattened JPEGs.
+MAIN_VBOX_CSS = '''
+scrolledwindow#main {
+    background-color: white;
+    background-image: url("{background_filename}");
+    background-size: cover;
+    background-position: left top;
+    background-repeat: no-repeat;
+}
+'''
 
 BOXES_BORDER_WIDTH = 5
 
