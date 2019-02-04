@@ -321,9 +321,9 @@ def markup_entries(entries, count=None, max=None):
     if count > max:
         entries_list = '\n'.join(
             '  - {}'.format(entry.short_display)
-            for entry in entries
+            for entry in entries[:max]
         ) + '\nand {other} other(s).'.format(
-            other=max - count
+            other=count - max
         )
     else:
         entries_list = '\n'.join(
