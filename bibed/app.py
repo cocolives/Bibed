@@ -15,7 +15,7 @@ from bibed.constants import (
     BIBED_BACKGROUNDS_DIR,
     BibAttrs,
     BIBTEXPARSER_VERSION,
-    MAIN_VBOX_CSS,
+    MAIN_TREEVIEW_CSS,
 )
 
 from bibed.foundations import (
@@ -82,37 +82,45 @@ class BibEdApplication(Gtk.Application):
     @property
     def css_data(self):
 
-        background_filename = self.get_random_background()
-        background_position = None
-        background_size = None
+        with open(os.path.join(BIBED_DATA_DIR, 'style.css')) as css_file:
+            self.__css_data_string = css_file.read()
 
-        if '-contain' in background_filename:
-            background_size = 'contain'
+        if gpod('use_treeview_background'):
+            background_filename = self.get_random_background()
+            background_position = None
+            background_size = None
 
-        elif '-cover' in background_filename:
-            background_size = 'cover'
+            if '-contain' in background_filename:
+                background_size = 'contain'
 
-        if background_size is None:
-            background_size = 'cover'
+            elif '-cover' in background_filename:
+                background_size = 'cover'
 
-        for vertical_position in ('top', 'bottom', ):
-            for horizontal_position in ('left', 'right', ):
-                if vertical_position in background_filename \
-                        and horizontal_position in background_filename:
-                            background_position = '{} {}'.format(
-                                horizontal_position, vertical_position)
+            if background_size is None:
+                background_size = 'cover'
 
-        if background_position is None:
-            background_position = 'left top'
+            for vertical_position in ('top', 'bottom', ):
+                for horizontal_position in ('left', 'right', ):
+                    if vertical_position in background_filename \
+                            and horizontal_position in background_filename:
+                                background_position = '{} {}'.format(
+                                    horizontal_position, vertical_position)
 
-        css_data_string = self.__css_data_string.replace(
-            '{background_filename}', background_filename)
-        css_data_string = css_data_string.replace(
-            '{background_position}', background_position)
-        css_data_string = css_data_string.replace(
-            '{background_size}', background_size)
+            if background_position is None:
+                background_position = 'left top'
 
-        return css_data_string
+            css_data_string = self.__css_data_string[:] + MAIN_TREEVIEW_CSS
+
+            css_data_string = css_data_string.replace(
+                '{background_filename}', background_filename)
+            css_data_string = css_data_string.replace(
+                '{background_position}', background_position)
+            css_data_string = css_data_string.replace(
+                '{background_size}', background_size)
+
+            return css_data_string
+
+        return self.__css_data_string
 
     def get_random_background(self):
 
@@ -122,11 +130,6 @@ class BibEdApplication(Gtk.Application):
     def setup_resources_and_css(self):
 
         self.set_resource_base_path(BIBED_DATA_DIR)
-
-        with open(os.path.join(BIBED_DATA_DIR, 'style.css')) as css_file:
-            self.__css_data_string = css_file.read()
-
-        self.__css_data_string += MAIN_VBOX_CSS
 
         default_screen = Gdk.Screen.get_default()
 

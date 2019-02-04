@@ -33,7 +33,3 @@ button#close-button {
     background-color: #333333;
     border-radius: 5px;
 }
-
-treeview.view:not(:selected) {
-    background-color: transparent;
-}

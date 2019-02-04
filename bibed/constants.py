@@ -167,7 +167,11 @@ APP_MENU_XML = '''
 # Impossible to set background-opacity in GTK, and we don't have web hacks
 # like div:after. Thus we need to prepare the background images with an
 # already set transparency, like transparent PNGs or flattened JPEGs.
-MAIN_VBOX_CSS = '''
+MAIN_TREEVIEW_CSS = '''
+treeview.view:not(:selected) {
+    background-color: transparent;
+}
+
 scrolledwindow#main {
     background-color: white;
     background-image: url("{background_filename}");

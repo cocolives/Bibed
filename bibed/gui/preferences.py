@@ -77,6 +77,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         Gtk.Dialog.__init__(
             self, "{0} Preferences".format(APP_NAME), parent, 0)
 
+        # Needed for CSS reload.
+        self.application = parent.application
+
         self.set_modal(True)
 
         # TODO: get screen resolution to make HiDPI aware.
@@ -346,6 +349,33 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         if not sentry.usable:
             self.swi_use_sentry.set_sensitive(False)
+
+        # ————————————————————————————————————————————— Use treeview background
+
+        (self.lbl_use_treeview_background,
+         self.swi_use_treeview_background) = build_label_and_switch(
+            '<b>Use Bibed backgrounds</b>\n'
+            '<span foreground="grey" size="small">'
+            'Display light background in the main table view. Use '
+            '<span face="monospace">Shift-Control-R</span> to\n'
+            'randomly cycle backgrounds.</span>',
+            self.on_switch_activated,
+            gpod('use_treeview_background'),
+            func_args=('use_treeview_background', )
+
+        )
+
+        pg.attach_next_to(
+            self.lbl_use_treeview_background,
+            self.lbl_use_sentry,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.swi_use_treeview_background,
+            self.lbl_use_treeview_background,
+            Gtk.PositionType.RIGHT,
+            1, 1)
 
         # ———————————————————————————————————————————————————— End widgets
 
@@ -891,6 +921,11 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         else:
             sentry.disable()
+
+    def on_use_treeview_background_activated(self, is_active):
+
+        # Reload the whole application CSS, to enable or disable background.
+        self.application.reload_css_provider_data()
 
     def on_bib_add_timestamp_activated(self, is_active):
 
