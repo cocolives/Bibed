@@ -171,8 +171,8 @@ MAIN_VBOX_CSS = '''
 scrolledwindow#main {
     background-color: white;
     background-image: url("{background_filename}");
-    background-size: cover;
-    background-position: left top;
+    background-size: {background_size};
+    background-position: {background_position};
     background-repeat: no-repeat;
 }
 '''

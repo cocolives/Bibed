@@ -82,8 +82,37 @@ class BibEdApplication(Gtk.Application):
     @property
     def css_data(self):
 
-        return self.__css_data_string.replace(
-            '{background_filename}', self.get_random_background())
+        background_filename = self.get_random_background()
+        background_position = None
+        background_size = None
+
+        if '-contain' in background_filename:
+            background_size = 'contain'
+
+        elif '-cover' in background_filename:
+            background_size = 'cover'
+
+        if background_size is None:
+            background_size = 'cover'
+
+        for vertical_position in ('top', 'bottom', ):
+            for horizontal_position in ('left', 'right', ):
+                if vertical_position in background_filename \
+                        and horizontal_position in background_filename:
+                            background_position = '{} {}'.format(
+                                horizontal_position, vertical_position)
+
+        if background_position is None:
+            background_position = 'left top'
+
+        css_data_string = self.__css_data_string.replace(
+            '{background_filename}', background_filename)
+        css_data_string = css_data_string.replace(
+            '{background_position}', background_position)
+        css_data_string = css_data_string.replace(
+            '{background_size}', background_size)
+
+        return css_data_string
 
     def get_random_background(self):
 
