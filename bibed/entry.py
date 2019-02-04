@@ -25,6 +25,7 @@ from bibed.constants import (
 
 from bibed.preferences import defaults, preferences, gpod
 from bibed.utils import asciize
+from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
 from bibed.gui.gtk import GLib
 
@@ -433,18 +434,37 @@ class BibedEntry:
         timestamp = self.get_field('timestamp', default='')
 
         if timestamp:
-            tooltips.append('Added to database <b>{timestamp}</b>.'.format(
+            tooltips.append('Added to {filename} on <b>{timestamp}</b>.'.format(
+                filename=markup_bib_filename(
+                    self.database.filename,
+                    self.database.filetype),
                 timestamp=timestamp))
+
+        elif not self.is_trashed:
+            tooltips.append('Stored in {filename}.'.format(
+                filename=markup_bib_filename(
+                    self.database.filename,
+                    self.database.filetype,
+                    parenthesis=True)))
 
         if is_trashed:
             tFrom, tDate = self.trashed_informations
 
+            missing = False
+
+            try:
+                tType = self.database.files_store.get_filetype(tFrom)
+
+            except FileNotFoundError:
+                # Most probably a deleted database.
+                tType = FileTypes.USER
+                missing = True
+
             # TODO: what if trashed from QUEUE? FileTypes must be dynamic!
             tFrom = markup_bib_filename(
-                tFrom, FileTypes.USER, same_line=True,
-                same_size=True, parenthesis=True)
+                tFrom, tType, parenthesis=True, missing=missing)
 
-            tooltips.append('Trashed from <b>{tFrom}</b> on {tDate}.'.format(
+            tooltips.append('Trashed from {tFrom} on {tDate}.'.format(
                 tFrom=tFrom, tDate=tDate))
 
         return '\n\n'.join(tooltips)

@@ -189,7 +189,7 @@ def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
     return label
 
 
-def markup_bib_filename(filename, filetype, with_folder=True, same_line=False, small_size=True, same_size=False, parenthesis=False):
+def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, small_size=False, same_size=True, parenthesis=False, missing=False):
 
     assert filetype is not None
 
@@ -222,9 +222,16 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=False, s
     else:
         folder = None
 
+    if missing:
+        # Notice the ending space.
+        format_template = '<span color="red" size="{file_size}">missing file</span> '
+
+    else:
+        format_template = ''
+
     if filetype & FileTypes.USER:
-        format_template = (
-            '<{file_size}><b>{basename}</b></{file_size}>{separator}'
+        format_template += (
+            '<span size="{file_size}"><b>{basename}</b></span>{separator}'
             + (
                 '<span size="{folder_size}" color="grey">'
                 '{par_left}in {folder}{par_right}</span>'
@@ -242,7 +249,7 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=False, s
         # System files, or special entry (like “All”)…
         # No folder for them, anyway.
         # Thus, no need for separator.
-        format_template = '{basename}'
+        format_template += '{basename}'
         format_kwargs = {
             'basename': basename.title(),
         }

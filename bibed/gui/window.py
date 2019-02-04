@@ -1,5 +1,4 @@
 
-import os
 import logging
 
 from bibed.foundations import (
@@ -928,7 +927,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         cell.set_property(
             'markup', markup_bib_filename(
-                row[FSCols.FILENAME], row[FSCols.FILETYPE]))
+                row[FSCols.FILENAME], row[FSCols.FILETYPE],
+                small_size=True, same_size=False, same_line=False))
 
     def get_selected_filename(self):
 
