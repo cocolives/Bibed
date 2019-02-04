@@ -189,9 +189,10 @@ def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
     return label
 
 
-def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, small_size=False, same_size=True, parenthesis=False, missing=False):
+def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, small_size=False, big_size=False, same_size=True, parenthesis=False, missing=False):
 
     assert filetype is not None
+    assert not (small_size and big_size)
 
     # Get only the filename, not the extension.
     basename = os.path.basename(filename).rsplit('.', 1)[0]
@@ -254,13 +255,17 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
             'basename': basename.title(),
         }
 
-    if small_size:
+    if big_size:
+        file_size = 'large'
+        folder_size = 'small'
+
+    elif small_size:
         file_size = 'small'
         folder_size = 'xx-small'
 
     else:
         file_size = 'medium'
-        folder_size = 'small'
+        folder_size = 'x-small'
 
     if same_size:
         folder_size = file_size
@@ -283,6 +288,45 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
     })
 
     return format_template.format(**format_kwargs)
+
+
+def markup_entries(entries, count=None, max=None):
+    '''
+        :param count: then number of entries. Optional argument. In some
+            contexts you already have it. Passing it will save a len() call.
+            Otherwise, the function computes it.
+
+        :param max: the max number of entries to display textually before
+            counting others in the “and NNN other(s)” information. Must be
+            between 2 and 10.
+    '''
+
+    if count is None:
+        count = len(entries)
+
+    if max is None:
+        max = 10
+
+    elif max < 2:
+        max = 2
+
+    if max > 10:
+        max = 10
+
+    if count > max:
+        entries_list = '\n'.join(
+            '  - {}'.format(entry.short_display)
+            for entry in entries
+        ) + '\nand {other} other(s).'.format(
+            other=max - count
+        )
+    else:
+        entries_list = '\n'.join(
+            '  - {}'.format(entry.short_display)
+            for entry in entries
+        )
+
+    return entries_list
 
 
 def add_classes(widget, classes):
