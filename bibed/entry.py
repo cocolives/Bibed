@@ -14,6 +14,7 @@ from bibed.foundations import (
 )
 
 from bibed.constants import (
+    FileTypes,
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
@@ -24,6 +25,7 @@ from bibed.constants import (
 
 from bibed.preferences import defaults, preferences, gpod
 from bibed.utils import asciize
+from bibed.gui.helpers import markup_bib_filename
 from bibed.gui.gtk import GLib
 
 
@@ -435,12 +437,15 @@ class BibedEntry:
                 timestamp=timestamp))
 
         if is_trashed:
-            fkw = {
-                k: v for (k, v)
-                in zip(('tFrom', 'tDate'), self.trashed_informations)
-            }
+            tFrom, tDate = self.trashed_informations
+
+            # TODO: what if trashed from QUEUE? FileTypes must be dynamic!
+            tFrom = markup_bib_filename(
+                tFrom, FileTypes.USER, same_line=True,
+                same_size=True, parenthesis=True)
+
             tooltips.append('Trashed from <b>{tFrom}</b> on {tDate}.'.format(
-                **fkw))
+                tFrom=tFrom, tDate=tDate))
 
         return '\n\n'.join(tooltips)
 

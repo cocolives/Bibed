@@ -22,12 +22,13 @@ from bibed.constants import (
     BIBED_ASSISTANCE_EN,
 )
 
-from bibed.preferences import preferences, memories, gpod
+from bibed.preferences import memories, gpod
 from bibed.utils import get_user_home_directory
 from bibed.entry import BibedEntry
 
 from bibed.gui.helpers import (
     # scrolled_textview,
+    markup_bib_filename,
     add_classes,
     remove_classes,
     message_dialog,
@@ -923,53 +924,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def get_filename_cell_combobox(self, layout, cell, model, iter, *data):
 
-        def fancize_dirname(dirname):
-
-            if dirname == working_folder:
-                return 'Working folder'
-
-            elif dirname.startswith(working_folder):
-                remaining = dirname[len(working_folder):]
-
-                return '<i>Working folder</i> {remaining}'.format(
-                    remaining=remaining)
-
-            elif dirname.startswith(home_dir):
-                remaining = dirname[len(home_dir):]
-
-                return '<i>Home directory</i> {remaining}'.format(
-                    remaining=remaining)
-
-        home_dir = os.path.expanduser('~')
-        working_folder = preferences.working_folder
-
         row = model[iter]
 
-        filename = row[FSCols.FILENAME]
-        filetype = row[FSCols.FILETYPE]
-
-        # Get only the filename, not the extension.
-        basename = os.path.basename(filename).rsplit('.', 1)[0]
-
-        if filetype & FileTypes.USER:
-            format_template = (
-                '<small><b>{basename}</b></small>\n'
-                '<span size="xx-small" color="grey">in {folder}</span>'
-            )
-
-            format_kwargs = {
-                'basename': basename,
-                'folder': fancize_dirname(os.path.dirname(filename))
-            }
-
-        else:
-            # System files, “All” entry…
-            format_template = '{basename}'
-            format_kwargs = {
-                'basename': basename,
-            }
-
-        cell.set_property('markup', format_template.format(**format_kwargs))
+        cell.set_property(
+            'markup', markup_bib_filename(
+                row[FSCols.FILENAME], row[FSCols.FILETYPE]))
 
     def get_selected_filename(self):
 
