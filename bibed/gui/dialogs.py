@@ -65,7 +65,7 @@ class BibedMoveDialog(Gtk.MessageDialog):
                 'Please choose a destination for the following entries:\n'
                 '{entries_list}\n'.format(
                     entries_list=markup_entries(
-                        entries, entries_count)))
+                        entries, entries_count, 3)))
 
         else:
             entry = entries[0]
