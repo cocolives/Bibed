@@ -582,7 +582,7 @@ class BibedEntry:
         if self.is_trashed:
             trashedFrom, trashedDate = self.trashed_informations
         else:
-            trashedFrom, trashedDate = None
+            trashedFrom, trashedDate = None, None
 
         return (
             '{type} <b><i>{title}</i></b> '
