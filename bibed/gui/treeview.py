@@ -202,3 +202,26 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
                 return [model.get_iter(path) for path in paths]
         else:
             return None
+
+    # ————————————————————————————————————————————————————————————————— Signals
+
+    def on_treeview_column_clicked(self, column):
+
+        coltit = column.props.title
+        colidc = column.props.sort_indicator
+        colord = column.props.sort_order
+
+        if memories.treeview_sort_column is None:
+            memories.treeview_sort_column = coltit
+            memories.treeview_sort_indicator = colidc
+            memories.treeview_sort_order = colord
+
+        else:
+            if memories.treeview_sort_column != coltit:
+                memories.treeview_sort_column = coltit
+
+            if memories.treeview_sort_indicator != colidc:
+                memories.treeview_sort_indicator = colidc
+
+            if memories.treeview_sort_order != colord:
+                memories.treeview_sort_order = colord

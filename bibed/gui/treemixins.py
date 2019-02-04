@@ -251,28 +251,7 @@ class BibedEntryTreeViewMixin:
     def on_file_clicked(self, renderer, path):
 
         self.open_file_in_prefered_application(
-            entry=self.get_entry_by_path(path, only_row=True))
-
-    def on_treeview_column_clicked(self, column):
-
-        coltit = column.props.title
-        colidc = column.props.sort_indicator
-        colord = column.props.sort_order
-
-        if memories.treeview_sort_column is None:
-            memories.treeview_sort_column = coltit
-            memories.treeview_sort_indicator = colidc
-            memories.treeview_sort_order = colord
-
-        else:
-            if memories.treeview_sort_column != coltit:
-                memories.treeview_sort_column = coltit
-
-            if memories.treeview_sort_indicator != colidc:
-                memories.treeview_sort_indicator = colidc
-
-            if memories.treeview_sort_order != colord:
-                memories.treeview_sort_order = colord
+            self.get_entry_by_path(path, only_row=True))
 
     def on_treeview_row_activated(self, treeview, path, column):
 
