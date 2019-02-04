@@ -1004,8 +1004,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         if self.entry.database is None:
 
             self.entry.database = \
-                self.parent.application.get_database_from_filename(
-                    destination_filename)
+                self.parent.application.files.get_database(
+                    filename=destination_filename)
 
             # Now that we have a destination, do not allow to
             # change it until we implement the “move” operation.
