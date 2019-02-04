@@ -20,7 +20,7 @@ from bibed.constants import (
 
 from bibed.preferences import defaults, preferences, memories, gpod
 from bibed.entry import EntryFieldCheckMixin
-from bibed.store import NoDatabaseForFilename
+from bibed.exceptions import NoDatabaseForFilenameError
 
 from bibed.gui.helpers import (
     widget_properties,
@@ -312,7 +312,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             # In previous case (eg. “All”), this will be None.
             database = get_database(selected_filename)
 
-        except NoDatabaseForFilename:
+        except NoDatabaseForFilenameError:
             if last_selected_filename is not None:
                 selected_filename = last_selected_filename
                 database = get_database(selected_filename)

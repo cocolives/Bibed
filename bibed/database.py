@@ -7,6 +7,11 @@ import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
+from bibed.exceptions import(
+    BibedDatabaseException,
+    BibedDatabaseError,
+    IndexingFailedError,
+)
 from bibed.foundations import (  # NOQA
     BibedError,
     BibedException,
@@ -21,22 +26,7 @@ from bibed.entry import BibedEntry
 LOGGER = logging.getLogger(__name__)
 
 
-# —————————————————————————————————————————————————————————————————— Exceptions
-
-
-class BibedDatabaseException(BibedException):
-    pass
-
-
-class BibedDatabaseError(BibedError):
-    pass
-
-
-class IndexingFailedError(BibedDatabaseError):
-    pass
-
-
-# —————————————————————————————————————————————————————————— Controller Classes
+# ———————————————————————————————————————————————————————— Controller Classes
 
 
 class BibedDatabase:

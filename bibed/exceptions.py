@@ -15,7 +15,15 @@ class BibedDataStoreException(BibedException):
     pass
 
 
+class BibedDataStoreError(BibedError):
+    pass
+
+
 class BibedFileStoreException(BibedException):
+    pass
+
+
+class BibedFileStoreError(BibedError):
     pass
 
 
@@ -23,15 +31,15 @@ class AlreadyLoadedException(BibedFileStoreException):
     pass
 
 
-class NoDatabaseForFilenameError(BibedFileStoreException):
+class NoDatabaseForFilenameError(BibedFileStoreError):
     pass
 
 
-class FileNotFoundError(BibedFileStoreException):
+class FileNotFoundError(BibedFileStoreError):
     pass
 
 
-class BibKeyNotFoundError(BibedException):
+class BibKeyNotFoundError(BibedError):
     pass
 
 

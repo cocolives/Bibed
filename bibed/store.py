@@ -9,7 +9,6 @@ from bibed.foundations import (
     ldebug, lprint,
     lprint_caller_name,
     lprint_function_name,
-    BibedException,
 )
 
 from bibed.constants import (
@@ -24,6 +23,12 @@ from bibed.constants import (
 )
 
 from bibed.foundations import touch_file
+from bibed.exceptions import (
+    AlreadyLoadedException,
+    FileNotFoundError,
+    BibKeyNotFoundError,
+    NoDatabaseForFilenameError,
+)
 from bibed.utils import get_bibed_user_dir
 from bibed.preferences import memories
 from bibed.database import BibedDatabase
@@ -50,29 +55,6 @@ class PyinotifyEventHandler(pyinotify.ProcessEvent):
             LOGGER.debug('Modify event end ({}).'.format(event.pathname))
 
         return True
-
-
-class BibedDataStoreException(BibedException):
-    pass
-
-
-class BibedFileStoreException(BibedException):
-    pass
-
-
-class AlreadyLoadedException(BibedFileStoreException):
-    pass
-
-
-class NoDatabaseForFilename(BibedFileStoreException):
-    pass
-
-class FileNotFound(BibedFileStoreException):
-    pass
-
-
-class BibKeyNotFound(BibedException):
-    pass
 
 
 class BibedFileStoreNoWatchContextManager:
@@ -215,7 +197,7 @@ class BibedFileStore(Gtk.ListStore):
             try:
                 database = self.get_database(filename=trashed_from)
 
-            except NoDatabaseForFilename:
+            except NoDatabaseForFilenameError:
                 # Database is not loaded.
 
                 # Load without remembering, without affecting GUI.
@@ -375,14 +357,14 @@ class BibedFileStore(Gtk.ListStore):
                     # We must test all databases prior to raising “not found”.
                     pass
 
-            raise BibKeyNotFound
+            raise BibKeyNotFoundError
 
         else:
             try:
                 return self.databases[filename].get_entry_by_key(key)
 
             except KeyError:
-                raise BibKeyNotFound
+                raise BibKeyNotFoundError
 
     def get_database(self, filename=None, filetype=None):
         ''' Get a database, either for a filename *or* a filetype. '''
@@ -405,7 +387,7 @@ class BibedFileStore(Gtk.ListStore):
                 return self.databases[filename]
 
             except KeyError:
-                raise NoDatabaseForFilename
+                raise NoDatabaseForFilenameError
 
         filename_index = FSCols.FILENAME
         filetype_index = FSCols.FILETYPE
@@ -414,7 +396,7 @@ class BibedFileStore(Gtk.ListStore):
             if row[filetype_index] == filetype:
                 return self.databases[row[filename_index]]
 
-        raise NoDatabaseForFilename
+        raise NoDatabaseForFilenameError
 
     def get_filetype(self, filename):
 
@@ -422,7 +404,7 @@ class BibedFileStore(Gtk.ListStore):
             if row[FSCols.FILENAME] == filename:
                 return row[FSCols.FILETYPE]
 
-        raise FileNotFound
+        raise FileNotFoundError
     # ————————————————————————————————————————————————————————— File operations
 
     def parse(self, filename, filetype, impact_data_store=True, recompute=True):
