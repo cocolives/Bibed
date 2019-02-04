@@ -493,7 +493,9 @@ class BibEdApplication(Gtk.Application):
 
         # This will close system files too.
         self.files.close_all(
-            save_before=True,
+
+            # Save is done along-the-way at each user action that needs it.
+            save_before=False,
             recompute=False,
 
             # This will allow automatic reopen on next launch.
