@@ -191,6 +191,8 @@ def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
 
 def markup_bib_filename(filename, filetype, with_folder=True, same_line=False, small_size=True, same_size=False, parenthesis=False):
 
+    assert filetype is not None
+
     # Get only the filename, not the extension.
     basename = os.path.basename(filename).rsplit('.', 1)[0]
     dirname  = os.path.dirname(filename)
@@ -261,7 +263,7 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=False, s
             'par_left': '(',
             'par_right': ')',
         })
-        
+
     else:
         format_kwargs.update({
             'par_left': '',
