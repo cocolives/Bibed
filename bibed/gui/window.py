@@ -28,6 +28,7 @@ from bibed.entry import BibedEntry
 from bibed.gui.helpers import (
     # scrolled_textview,
     markup_bib_filename,
+    markup_entries,
     add_classes,
     remove_classes,
     message_dialog,
@@ -38,6 +39,7 @@ from bibed.gui.preferences import BibedPreferencesDialog
 from bibed.gui.treeview import BibedMainTreeView
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
+from bibed.gui.dialogs import BibedMoveDialog
 from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
 
 
@@ -233,6 +235,14 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         hb.pack_start(self.btn_add)
 
+        self.btn_move = Gtk.Button()
+        icon = Gio.ThemedIcon(name="go-next-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_move.add(image)
+        self.btn_move.connect('clicked', self.on_entries_move_clicked)
+
+        hb.pack_start(self.btn_move)
+
         self.btn_delete = Gtk.Button()  # edit-delete-symbolic
         icon = Gio.ThemedIcon(name="list-remove-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
@@ -427,7 +437,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             self.btn_file_close, self.cmb_files,
 
             # Entry-related buttons.
-            self.btn_add, self.btn_delete,
+            self.btn_add, self.btn_move, self.btn_delete,
         )
 
         if how_many_files:
@@ -445,7 +455,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def entry_selection_buttons_set_sensitive(self, is_sensitive):
 
-        for button in (self.btn_delete, ):
+        for button in (self.btn_move, self.btn_delete, ):
             button.set_sensitive(is_sensitive)
 
     # ———————————————————————————————————————————————————————————— “ON” actions
@@ -587,6 +597,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         elif ctrl and keyval == Gdk.KEY_l:
             self.cmb_files.grab_focus()
+
+        elif ctrl and keyval == Gdk.KEY_m:
+            self.btn_move.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_n:
             self.btn_add.emit('clicked')
@@ -802,6 +815,23 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         entry_add_dialog.destroy()
 
+    def on_entries_move_clicked(self, button):
+
+        selected_entries = self.treeview.get_selected_entries()
+
+        if selected_entries is None:
+            return
+
+        destination, moved_count, unchanged_count = BibedMoveDialog(
+            self, selected_entries, self.application.files).run()
+
+        if destination and moved_count > 0:
+            self.do_status_change(
+                '{count} entries moved to {destination}{unchanged}.'.format(
+                    count=len(selected_entries), destination=destination,
+                    unchanged=', {count} already there'.format(unchanged_count)
+                    if unchanged_count else ''))
+
     def on_entries_delete_clicked(self, button):
 
         use_trash = gpod('use_trash')
@@ -860,18 +890,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             else:
                 title = 'Delete {count} entries?'.format(count=entries_count)
 
-            if entries_count > 10:
-                entries_list = '\n'.join(
-                    '  - {}'.format(entry.short_display)
-                    for entry in selected_entries
-                ) + '\nand {other} other(s).'.format(
-                    other=10 - entries_count
-                )
-            else:
-                entries_list = '\n'.join(
-                    '  - {}'.format(entry.short_display)
-                    for entry in selected_entries
-                )
+            entries_list = markup_entries(selected_entries, entries_count)
 
             secondary_text = (
                 'This will permanently delete the following entries:\n'
