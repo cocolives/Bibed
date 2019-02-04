@@ -19,17 +19,21 @@ transition
 
 */
 
-GtkButton.close-all {
+button.close-all {
     background-color: black;
     background: black;
 }
 
-GtkButton#close-button {
+button#close-button {
     background-color: green;
     background: green;
 }
 
-GtkLabel.dnd-object {
+.dnd-object {
     background-color: #333333;
     border-radius: 5px;
+}
+
+treeview.view:not(:selected) {
+    background-color: transparent;
 }
