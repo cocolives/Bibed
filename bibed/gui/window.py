@@ -592,6 +592,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             self.do_activate()
 
+        elif ctrl_shift and keyval == Gdk.KEY_R:
+            # NOTE: the upper case 'R'
+
+            self.application.reload_css_provider_data()
+
         elif ctrl and keyval == Gdk.KEY_f:
             self.search.grab_focus()
 
