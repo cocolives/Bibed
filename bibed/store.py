@@ -413,7 +413,7 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint_function_name()
         # assert lprint(filename, recompute)
 
-        database = BibedDatabase(filename, self)
+        database = BibedDatabase(filename, filetype, self)
 
         self.databases[filename] = database
 

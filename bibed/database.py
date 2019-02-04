@@ -34,11 +34,12 @@ class BibedDatabase:
         higher-level operations between multiple databases, and synchronization
         with an underlying :class:`Gtk.ListStore`. '''
 
-    def __init__(self, filename, store):
+    def __init__(self, filename, filetype, store):
         ''' Create a :class:`~bibed.database.BibedDatabase` instance.
 
             :param filename: a full pathname, as a string, for a `BibTeX` /
-                `BibLaTeX`
+                `BibLaTeX` database.
+            :param fileype: the application file type, from `FileTypes` enum. This is used in tooltips and other descriptive fields, to decide if full pathname or folder is shown or not.
             :param store: a :class:`~bibed.store.BibedFileStore` instance. its
                 `.data_store` attribute will be kept handy in the current
                 database attributes.
@@ -51,6 +52,7 @@ class BibedDatabase:
         #       _internal_* fields at the BibedEntry level.
 
         self.filename    = filename
+        self.filetype    = filetype
         self.files_store = store
         self.data_store  = self.files_store.data_store
 
