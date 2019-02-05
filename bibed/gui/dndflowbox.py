@@ -32,7 +32,7 @@ def get_child_name(child):
         return None
 
 
-def dnd_scrolled_flowbox(name=None, title=None, dialog=None, child_type=None, child_widget=None):
+def dnd_scrolled_flowbox(name=None, title=None, dialog=None, child_type=None, child_widget=None, connect_to=None):
 
     if title is None:
         title = name.title()
@@ -63,7 +63,12 @@ def dnd_scrolled_flowbox(name=None, title=None, dialog=None, child_type=None, ch
     flowbox.set_max_children_per_line(3)
 
     flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
-    # flowbox.set_activate_on_single_click(False)
+    flowbox.set_activate_on_single_click(False)
+    flowbox.set_homogeneous(False)
+    flowbox.set_can_focus(False)
+
+    if connect_to:
+        flowbox.connect('child-activated', connect_to)
 
     scrolled.add(flowbox)
     frame.add(scrolled)
@@ -92,9 +97,6 @@ class DnDFlowBox(Gtk.FlowBox):
         else:
             self.build_child_func = self.build_child_with_icon
 
-        self.set_selection_mode(Gtk.SelectionMode.SINGLE)
-        self.set_homogeneous(False)
-
         self.setup_drag_and_drop()
 
     @property
@@ -119,28 +121,35 @@ class DnDFlowBox(Gtk.FlowBox):
 
         return self.children_labels[name].replace('_', '')
 
-    def build_child_flat(self, child_name, icon=None):
+    def get_icon(self, name, size=None):
 
-        if icon is None:
-            # Could also be 'orientation-portrait-symbolic'
-            icon_name = 'document-edit-symbolic'
+        if size is None:
+            size = '48x48'
+
+        base_path = os.path.join(BIBED_ICONS_DIR, self.child_type, size)
+
+        icon_path = os.path.join(base_path, name + '.png')
+
+        if not os.path.exists(icon_path):
+            icon_path = os.path.join(base_path, 'default.png')
+
+        return icon_path
+
+    def build_child_flat(self, child_name):
+
+        # if icon is None:
+        #     # Could also be 'orientation-portrait-symbolic'
+        #     icon_name = 'document-edit-symbolic'
 
         return flat_unclickable_button_in_hbox(
-            child_name, self.get_label(child_name), icon_name)
+            child_name, self.get_label(child_name),
+            icon_path=self.get_icon(child_name, '24x24'))
 
     def build_child_with_icon(self, child_name):
 
-        icon_path = os.path.join(BIBED_ICONS_DIR,
-                                 self.child_type,
-                                 child_name + '.png')
-
-        if not os.path.exists(icon_path):
-            icon_path = os.path.join(BIBED_ICONS_DIR,
-                                     self.child_type,
-                                     'default.png')
-
         return vbox_with_icon_and_label(
-            child_name, self.get_label(child_name), icon_path=icon_path)
+            child_name, self.get_label(child_name),
+            icon_path=self.get_icon(child_name, '48x48'))
 
     # ——————————————————————————————————————————————————————— FlowBox overrides
 
@@ -153,7 +162,9 @@ class DnDFlowBox(Gtk.FlowBox):
         child = self.build_child_func(child_name)
 
         if child_name == DROP_TEXT_NAME:
-            child = widget_properties(child, classes=['dnd-drop-target'])
+            child = widget_properties(child,
+                                      classes=['dnd-drop-target'],
+                                      can_focus=False)
 
         if index is None:
             # HEADS UP: index can be 0 (thus False)

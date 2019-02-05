@@ -84,6 +84,11 @@ class BibedDatabase:
             # Needs to be a tuple for re-indexation operations.
             self.entries[entry['ID']] = [entry, index]
 
+    def __str__(self):
+
+        return 'Database(file={}, type={})'.format(
+            os.path.basename(self.filename), self.filetype)
+
     def get_entry_by_key(self, key):
 
         # assert lprint_function_name()
@@ -134,6 +139,9 @@ class BibedDatabase:
 
         self.data_store.insert_entry(entry)
 
+        if __debug__:
+            LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
+
     def delete_entry(self, entry):
         ''' Delete an entry from the current database.
 
@@ -165,6 +173,9 @@ class BibedDatabase:
             self.entries[btp_entry['ID']][1] -= 1
 
         assert self.check_indexes()
+
+        if __debug__:
+            LOGGER.debug('{0}.delete_entry({1}) done.'.format(self, entry))
 
     def move_entry(self, entry, destination_database):
         ''' Move an entry from a database to another.
@@ -198,6 +209,10 @@ class BibedDatabase:
 
         self.delete_entry(entry)
 
+        if __debug__:
+            LOGGER.debug('{0}.move_entry({1}) into {1} done.'.format(
+                self, entry, destination_database))
+
     def update_entry_key(self, entry):
 
         # assert lprint_function_name()
@@ -220,6 +235,9 @@ class BibedDatabase:
         # idem in bibtexparser database.
         del self.bibdb.entries[old_index]
         self.bibdb.entries.insert(old_index, entry.entry)
+
+        if __debug__:
+            LOGGER.debug('{0}.update_entry_key({1}) done.'.format(self, entry))
 
     def backup(self):
 
@@ -265,6 +283,9 @@ class BibedDatabase:
 
             with open(filename, 'w') as bibfile:
                 bibfile.write(self.writer.write(self.bibdb))
+
+        if __debug__:
+            LOGGER.debug('{0}.write(): written to disk.'.format(self))
 
     def check_indexes(self):
 

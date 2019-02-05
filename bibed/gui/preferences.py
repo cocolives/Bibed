@@ -73,8 +73,6 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.setup_page_accels()
         self.setup_page_creator_editor()
         self.setup_page_interface_customization()
-        # self.setup_page_editor_fields()
-
         self.setup_finish()
 
         self.show_all()
@@ -644,7 +642,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
             (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
                 name=qualify, title=title, dialog=self,
                 child_type='type', child_widget='icon'
-                if qualify == 'main' else 'simple')
+                if qualify == 'main' else 'simple',
+                connect_to=self.on_flowbox_type_item_activated)
 
             if qualify == 'main':
                 children = defl_main if pref_main is None else pref_main
@@ -736,107 +735,6 @@ class BibedPreferencesDialog(Gtk.Dialog):
             )
         )
 
-    def setup_page_editor_fields(self):
-
-        def build_dnd(qualify, title):
-
-            defl_main  = defaults.types.main
-            defl_other = defaults.types.other
-            pref_main  = preferences.types.main
-            pref_other = preferences.types.other
-
-            (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
-                name=qualify, title=title, dialog=self,
-                child_type='type', child_widget='icon'
-                if qualify == 'main' else 'simple')
-
-            if qualify == 'main':
-                children = defl_main if pref_main is None else pref_main
-
-            else:
-                children = defl_other if pref_other is None else pref_other
-                # dnd_area.drag_source_set_icon_name(Gtk.STOCK_GO_BACK)
-
-            dnd_area.add_items(children)
-
-            return (frame, scrolled, dnd_area)
-
-        pef = grid_with_common_params()
-
-        (self.fr_creator_dnd_main,
-         self.sw_creator_dnd_main,
-         self.fb_creator_dnd_main) = build_dnd('main', '   Main types   ')
-        (self.fr_creator_dnd_other,
-         self.sw_creator_dnd_other,
-         self.fb_creator_dnd_other) = build_dnd('other', '   Other types   ')
-
-        self.lbl_creator = widget_properties(label_with_markup(
-            '<big>Main and other entry types</big>\n'
-            '<span foreground="grey">'
-            'Drag and drop items from one side to another\n'
-            'to have</span> main <span foreground="grey">'
-            'items displayed first in entry\n'
-            'creator assistant, and</span> other '
-            '<span foreground="grey">accessible\n'
-            'in a folded area of the assistant.\n\n'
-            'Note: they will appear in the exact order\n'
-            'you organize them into.'
-            '</span>'),
-            expand=False,
-            halign=Gtk.Align.START,
-            valign=Gtk.Align.START)
-
-        self.btn_creator_reset = widget_properties(
-            Gtk.Button('Reset to defaults'),
-            expand=False,
-            halign=Gtk.Align.CENTER,
-            valign=Gtk.Align.END,
-            margin_top=GRID_ROWS_SPACING,
-            margin_bottom=GRID_ROWS_SPACING)
-
-        self.btn_creator_reset.connect('clicked', self.on_creator_reset)
-
-        if preferences.types.main or preferences.types.other:
-            self.btn_creator_reset.set_sensitive(True)
-
-        # debug_widget(self.lbl_creator)
-        pef.attach(
-            self.lbl_creator,
-            0, 0, 1, 1
-        )
-
-        pef.attach_next_to(
-            self.btn_creator_reset,
-            self.lbl_creator,
-            Gtk.PositionType.BOTTOM,
-            1, 1
-        )
-
-        pef.attach_next_to(
-            self.fr_creator_dnd_main,
-            self.lbl_creator,
-            Gtk.PositionType.RIGHT,
-            1, 2
-        )
-
-        pef.attach_next_to(
-            self.fr_creator_dnd_other,
-            self.fr_creator_dnd_main,
-            Gtk.PositionType.RIGHT,
-            1, 2
-        )
-
-        self.page_editor_fields = pef
-
-        self.notebook.append_page(
-            self.page_editor_fields,
-            vbox_with_icon_and_label(
-                'creator',
-                'Creator',
-                icon_name='document-new-symbolic',
-            )
-        )
-
     def setup_finish(self):
 
         self.on_bib_add_timestamp_activated(
@@ -845,6 +743,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.on_bib_add_owner_activated(
             self.swi_bib_add_owner.get_active()
         )
+
+    # ———————————————————————————————————————————————————————————— Gtk & Signal
 
     def run(self):
 
@@ -1012,3 +912,111 @@ class BibedPreferencesDialog(Gtk.Dialog):
         if save:
             preferences.save()
             self.btn_creator_reset.set_sensitive(True)
+
+    def on_flowbox_type_item_activated(self, flowbox, flowchild, *args, **kwargs):
+
+        print('GO', flowbox.get_name(), '→', flowchild.get_child().get_name())
+
+    # ———————————————————————————————————————————————————— Types fields editor
+
+    def setup_page_editor_fields(self):
+
+        def build_dnd(qualify, title):
+
+            defl_main  = defaults.types.main
+            defl_other = defaults.types.other
+            pref_main  = preferences.types.main
+            pref_other = preferences.types.other
+
+            (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
+                name=qualify, title=title, dialog=self,
+                child_type='type', child_widget='icon'
+                if qualify == 'main' else 'simple',
+                connect_to=self.on_flowbox_type_item_activated)
+
+            if qualify == 'main':
+                children = defl_main if pref_main is None else pref_main
+
+            else:
+                children = defl_other if pref_other is None else pref_other
+                # dnd_area.drag_source_set_icon_name(Gtk.STOCK_GO_BACK)
+
+            dnd_area.add_items(children)
+
+            return (frame, scrolled, dnd_area)
+
+        pef = grid_with_common_params()
+
+        (self.fr_creator_dnd_main,
+         self.sw_creator_dnd_main,
+         self.fb_creator_dnd_main) = build_dnd('main', '   Main types   ')
+        (self.fr_creator_dnd_other,
+         self.sw_creator_dnd_other,
+         self.fb_creator_dnd_other) = build_dnd('other', '   Other types   ')
+
+        self.lbl_creator = widget_properties(label_with_markup(
+            '<big>Main and other entry types</big>\n'
+            '<span foreground="grey">'
+            'Drag and drop items from one side to another\n'
+            'to have</span> main <span foreground="grey">'
+            'items displayed first in entry\n'
+            'creator assistant, and</span> other '
+            '<span foreground="grey">accessible\n'
+            'in a folded area of the assistant.\n\n'
+            'Note: they will appear in the exact order\n'
+            'you organize them into.'
+            '</span>'),
+            expand=False,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.START)
+
+        self.btn_creator_reset = widget_properties(
+            Gtk.Button('Reset to defaults'),
+            expand=False,
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.END,
+            margin_top=GRID_ROWS_SPACING,
+            margin_bottom=GRID_ROWS_SPACING)
+
+        self.btn_creator_reset.connect('clicked', self.on_creator_reset)
+
+        if preferences.types.main or preferences.types.other:
+            self.btn_creator_reset.set_sensitive(True)
+
+        # debug_widget(self.lbl_creator)
+        pef.attach(
+            self.lbl_creator,
+            0, 0, 1, 1
+        )
+
+        pef.attach_next_to(
+            self.btn_creator_reset,
+            self.lbl_creator,
+            Gtk.PositionType.BOTTOM,
+            1, 1
+        )
+
+        pef.attach_next_to(
+            self.fr_creator_dnd_main,
+            self.lbl_creator,
+            Gtk.PositionType.RIGHT,
+            1, 2
+        )
+
+        pef.attach_next_to(
+            self.fr_creator_dnd_other,
+            self.fr_creator_dnd_main,
+            Gtk.PositionType.RIGHT,
+            1, 2
+        )
+
+        self.page_editor_fields = pef
+
+        self.notebook.append_page(
+            self.page_editor_fields,
+            vbox_with_icon_and_label(
+                'creator',
+                'Creator',
+                icon_name='document-new-symbolic',
+            )
+        )
