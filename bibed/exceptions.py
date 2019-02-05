@@ -8,7 +8,17 @@ class BibedError(BibedException):
     pass
 
 
-# ———————————————————————————————————————————————————————————————— Stores exceptions
+# ———————————————————————————————————————————————————————————— utils exceptions
+
+
+class ActionError(BibedError):
+    def __init__(self, action, *args, **kwargs):
+        self.action = action
+
+        super().__init__(*args, **kwargs)
+
+
+# ——————————————————————————————————————————————————————————— Stores exceptions
 
 
 class BibedDataStoreException(BibedException):
@@ -43,7 +53,7 @@ class BibKeyNotFoundError(BibedError):
     pass
 
 
-# —————————————————————————————————————————————————————————————— Database exceptions
+# ————————————————————————————————————————————————————————— Database exceptions
 
 
 class BibedDatabaseException(BibedException):
@@ -58,7 +68,7 @@ class IndexingFailedError(BibedDatabaseError):
     pass
 
 
-# ——————————————————————————————————————————————————————————————————— GUI exceptions
+# —————————————————————————————————————————————————————————————— GUI exceptions
 
 
 class BibedTreeViewException(BibedException):
