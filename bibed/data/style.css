@@ -17,6 +17,8 @@ padding
 margin
 transition
 
+http://www.code-couleur.com/dictionnaire/couleur-c.html
+
 */
 
 button.close-all {
@@ -30,6 +32,16 @@ button#close-button {
 }
 
 .dnd-object {
-    background-color: #333333;
+    /* Beurre */
+    background-color: #F0E36B;
     border-radius: 5px;
+    padding: 10px;
+}
+
+.dnd-drop-target {
+    /* Beurre frais */
+    background-color: #FFF48D;
+    font-weight: bolder;
+    border-radius: 5px;
+    padding: 10px;
 }
