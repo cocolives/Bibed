@@ -40,6 +40,18 @@ from bibed.gui.gtk import Gtk, Gdk, Gio
 LOGGER = logging.getLogger(__name__)
 
 
+class EntryBlockSignalContextManager:
+    def __init__(self, entry, handler):
+        self.entry = entry
+        self.handler = handler
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.entry.handler_unblock_by_func(self.handler)
+
+
 class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     @property
@@ -86,15 +98,15 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             )
         )
 
-        assert lprint(
-            entry_has_key,
-            entry_has_database,
-            entry_has_more_than_id_and_type,
-            entry_is_known,
-            entry_is_new,
-            key_is_unique,
-            result
-        )
+        # assert lprint(
+        #     entry_has_key,
+        #     entry_has_database,
+        #     entry_has_more_than_id_and_type,
+        #     entry_is_known,
+        #     entry_is_new,
+        #     key_is_unique,
+        #     result
+        # )
 
         return result
 
@@ -168,6 +180,16 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         self.show_all()
 
         self.first_focus()
+
+    # ————————————————————————————————————————————————————————————————— blocker
+
+    def block_changed_signal(self, field):
+
+        field.handler_block_by_func(self.on_field_changed)
+
+        return EntryBlockSignalContextManager(field, self.on_field_changed)
+
+    # ————————————————————————————————————————————————————————— Interface build
 
     def on_key_pressed(self, widget, event):
 
@@ -888,6 +910,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         self.box.add(self.stack_switcher)
         self.box.add(self.stack)
 
+    # ————————————————————————————————————————————————————————————— Gtk signals
+
     def on_key_compute_clicked(self, widget, entry):
 
         LOGGER.info('Compute Button Clicked.')
@@ -1097,6 +1121,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     def set_field_value(self, field_name, value, widget=None):
 
+        # assert lprint_function_name()
+
         if widget is None:
             widget = self.fields[field_name]
 
@@ -1111,9 +1137,6 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         else:
             LOGGER.warning('Unhandled field {}'.format(field_name))
             return None
-
-        # Make update_entry_and_save_file() notice the change.
-        self.changed_fields.add(field_name)
 
     def __check_field_wrapper(self, field_name, field, fix_errors=False):
 
@@ -1156,6 +1179,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         if not self.__check_field_wrapper(field_name, entry):
             return
 
+        assert ldebug('Field {} changed and OK, marking it.', field_name)
+
         # Multiple updates to same widget will be
         # recorded only once, thanks to the set.
         self.changed_fields.add(field_name)
@@ -1189,6 +1214,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     def fix_all_error_fields(self):
 
+        # assert lprint_function_name()
+
         # Mock a transient entry to fix fields from.
         copy_entry = self.entry.copy()
         copy_entry.update_fields(
@@ -1212,8 +1239,14 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                 fixed_value = fix_method(field_name, field, field_value,
                                          entry=copy_entry, files=self.files)
 
-            self.set_field_value(field_name, fixed_value, field)
+            # Block “changed” signal and update changed_fields ouselves,
+            # Else it happens in another thread/reality, and ou caller
+            # update_entry_and_save_file() continues too fast and
+            # doesn't “see” the update.
+            with self.block_changed_signal(field):
+                self.set_field_value(field_name, fixed_value, field)
 
+                self.changed_fields.add(field_name)
             try:
                 self.error_fields.remove(field_name)
 
@@ -1257,8 +1290,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                 return
 
         LOGGER.info(
-            'update_entry_and_save_file(): will save {0}@{1}({2})'.format(
-                entry.key, entry.type, ', '.join(self.changed_fields)))
+            'update_entry_and_save_file(): will save {0}: {1}'.format(
+                entry, ', '.join(self.changed_fields)))
 
         # User renamed the key via popover.
         key_updated = False
