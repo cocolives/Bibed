@@ -563,18 +563,29 @@ def build_help_popover(attached_to, help_markup, position, onfocus_list):
     return popover
 
 
-def vbox_with_icon_and_label(icon_name, label_text):
+def vbox_with_icon_and_label(name, label_markup, icon_name=None, icon_path=None):
+
+    assert icon_name is not None or icon_path is not None
 
     label_box = Gtk.VBox()
+    label_box.set_name(name)
     label_box.set_border_width(BOXES_BORDER_WIDTH)
 
-    label_box.pack_start(
-        Gtk.Image.new_from_icon_name(
+    if icon_name:
+        icon = Gtk.Image.new_from_icon_name(
             icon_name,
             Gtk.IconSize.DIALOG
-        ), False, False, 0
-    )
-    label_box.pack_start(Gtk.Label(label_text), True, True, 0)
+        )
+    else:
+        icon = Gtk.Image.new_from_file(
+            icon_path
+        )
+
+    label = Gtk.Label()
+    label.set_markup(label_markup)
+
+    label_box.pack_start(icon, False, False, 0)
+    label_box.pack_start(label, True, True, 0)
     label_box.set_size_request(100, 100)
     label_box.show_all()
 
@@ -617,9 +628,9 @@ def flat_unclickable_label(label_text, icon_name=None):
     return label
 
 
-def flat_unclickable_button_in_hbox(label_text, icon_name=None):
+def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None):
 
-    label_with_icon = widget_properties(
+    hbox = widget_properties(
         Gtk.HBox(),
         expand=False,
         halign=Gtk.Align.START,
@@ -627,25 +638,30 @@ def flat_unclickable_button_in_hbox(label_text, icon_name=None):
         classes=['dnd-object'],
     )
 
-    label_with_icon.set_border_width(BOXES_BORDER_WIDTH)
+    hbox.set_name(name)
+
+    hbox.set_border_width(BOXES_BORDER_WIDTH)
 
     if icon_name is not None:
         icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.BUTTON)
-        label_with_icon.pack_start(icon, False, False, 0)
+        hbox.pack_start(icon, False, False, 0)
 
-    label_with_icon.pack_start(widget_properties(
-        Gtk.Label(label_text),
+    label = Gtk.Label()
+    label.set_markup(label_markup)
+
+    hbox.pack_start(widget_properties(
+        label,
         expand=False,
         halign=Gtk.Align.CENTER,
         valign=Gtk.Align.CENTER,
         # debug=True
     ), False, False, 0)
 
-    label_with_icon.set_size_request(30, 30)
+    hbox.set_size_request(30, 30)
 
-    label_with_icon.show_all()
+    hbox.show_all()
 
-    return label_with_icon
+    return hbox
 
 
 def flat_unclickable_button_in_grid(label_text, icon_name=None):
@@ -670,9 +686,6 @@ def flat_unclickable_button_in_grid(label_text, icon_name=None):
     label_with_icon.show_all()
 
     return label_with_icon
-
-
-flat_unclickable_button = flat_unclickable_button_in_hbox
 
 
 def in_scrolled(widget, width=None, height=None):
