@@ -20,6 +20,14 @@ transition
 http://www.code-couleur.com/dictionnaire/couleur-c.html
 
 */
+.splash-screen {
+    border-radius: 5px;
+}
+.splash-screen label {
+    padding-right: 20px;
+    font-size: 30px;
+}
+
 
 button.close-all {
     background-color: black;
@@ -31,7 +39,7 @@ button#close-button {
     background: green;
 }
 
-.dnd-object {
+.dnd-object-deactivated {
     /* Beurre */
     background-color: #F0E36B;
     border-radius: 5px;
