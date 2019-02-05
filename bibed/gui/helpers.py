@@ -389,7 +389,7 @@ def debug_widget(widget):
     print('\tmargin_end={0}'.format(widget.props.margin_end))
 
 
-def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, debug=False):
+def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, can_focus=None, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA
 
@@ -513,6 +513,10 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
             connect_signal, connect_to,
             *connect_args, **connect_kwargs)
 
+    if can_focus is not None:
+        if __debug__ and debug: mp('can_focus', can_focus)  # NOQA
+        widget.set_can_focus(can_focus)
+
     if no_show_all:
         if __debug__ and debug: mp('SET no_show_all')  # NOQA
         widget.set_no_show_all(True)
@@ -630,7 +634,7 @@ def flat_unclickable_label(label_text, icon_name=None):
     return label
 
 
-def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None):
+def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None):
 
     hbox = widget_properties(
         Gtk.HBox(),
@@ -644,11 +648,20 @@ def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None):
 
     hbox.set_border_width(BOXES_BORDER_WIDTH)
 
-    if icon_name is not None:
-        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.BUTTON)
+    if icon_name:
+        icon = Gtk.Image.new_from_icon_name(
+            icon_name,
+            Gtk.IconSize.BUTTON
+        )
         hbox.pack_start(icon, False, False, 0)
 
-    label = Gtk.Label()
+    elif icon_path:
+        icon = Gtk.Image.new_from_file(
+            icon_path
+        )
+        hbox.pack_start(icon, False, False, 0)
+
+    label = widget_properties(Gtk.Label(), margin_left=10)
     label.set_markup(label_markup)
 
     hbox.pack_start(widget_properties(
