@@ -356,8 +356,13 @@ def grid_with_common_params(column_homogeneous=False, row_homogeneous=False):
     grid.set_border_width(GRID_BORDER_WIDTH)
     grid.set_column_spacing(GRID_COLS_SPACING)
     grid.set_row_spacing(GRID_ROWS_SPACING)
-    # grid.set_column_homogeneous(True)
-    # grid.set_row_homogeneous(True)
+
+    if column_homogeneous:
+        grid.set_column_homogeneous(True)
+
+    if row_homogeneous:
+        grid.set_row_homogeneous(True)
+
     return grid
 
 
@@ -616,9 +621,10 @@ def flat_unclickable_button_in_hbox(label_text, icon_name=None):
 
     label_with_icon = widget_properties(
         Gtk.HBox(),
-        expand=True,
-        halign=Gtk.Align.FILL,
-        valign=Gtk.Align.FILL,
+        expand=False,
+        halign=Gtk.Align.START,
+        valign=Gtk.Align.CENTER,
+        classes=['dnd-object'],
     )
 
     label_with_icon.set_border_width(BOXES_BORDER_WIDTH)
@@ -629,11 +635,13 @@ def flat_unclickable_button_in_hbox(label_text, icon_name=None):
 
     label_with_icon.pack_start(widget_properties(
         Gtk.Label(label_text),
-        classes=['dnd-object'],
+        expand=False,
+        halign=Gtk.Align.CENTER,
+        valign=Gtk.Align.CENTER,
         # debug=True
     ), False, False, 0)
 
-    label_with_icon.set_size_request(100, 30)
+    label_with_icon.set_size_request(30, 30)
 
     label_with_icon.show_all()
 
@@ -755,11 +763,13 @@ def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state, func_ar
         valign=Gtk.Align.CENTER
     )
 
+    # Set the switch before connecting the
+    # signal, else this triggers the callback(s).
+    switch.set_active(swi_initial_state)
+
     switch.connect(
         'notify::active',
         swi_notify_func, *func_args)
-
-    switch.set_active(swi_initial_state)
 
     return label, switch
 
