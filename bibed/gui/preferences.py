@@ -17,7 +17,6 @@ from bibed.preferences import defaults, preferences, gpod
 from bibed.gui.helpers import (
     label_with_markup,
     widget_properties,
-    frame_defaults,
     add_classes, remove_classes,
     grid_with_common_params,
     vbox_with_icon_and_label,
@@ -25,47 +24,12 @@ from bibed.gui.helpers import (
     build_entry_field_labelled_entry,
     # debug_widget,
 )
-from bibed.gui.dndflowbox import DnDFlowBox
+from bibed.gui.dndflowbox import dnd_scrolled_flowbox
 from bibed.gui.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
 
 OWNER_NAME_RE = re.compile('^[a-z]([- :,@_a-z0-9]){2,}$', re.IGNORECASE)
-
-
-def dnd_scrolled_flowbox(name=None, title=None, dialog=None):
-
-    if title is None:
-        title = name.title()
-
-    frame = frame_defaults(title)
-
-    scrolled = Gtk.ScrolledWindow()
-
-    scrolled.set_policy(Gtk.PolicyType.NEVER,
-                        Gtk.PolicyType.AUTOMATIC)
-
-    # debug_widget(scrolled)
-
-    flowbox = widget_properties(
-        DnDFlowBox(name=name, dialog=dialog),
-        expand=True,
-    )
-
-    # flowbox.set_valign(Gtk.Align.START)
-    flowbox.set_max_children_per_line(3)
-    flowbox.set_min_children_per_line(2)
-
-    flowbox.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
-    # flowbox.set_activate_on_single_click(False)
-
-    scrolled.add(flowbox)
-    frame.add(scrolled)
-
-    # scrolled.set_size_request(100, 100)
-    flowbox.set_size_request(100, 100)
-
-    return frame, scrolled, flowbox
 
 
 # —————————————————————————————————————————————————————————————————— Classes
@@ -384,8 +348,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_general,
             vbox_with_icon_and_label(
-                'preferences-system-symbolic',
-                'General'
+                'general',
+                'General',
+                icon_name='preferences-system-symbolic',
             )
         )
 
@@ -501,8 +466,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_accels,
             vbox_with_icon_and_label(
-                'preferences-desktop-keyboard-shortcuts-symbolic',
-                'Accelerators'
+                'accelerators',
+                'Accelerators',
+                icon_name='preferences-desktop-keyboard-shortcuts-symbolic',
             )
         )
 
@@ -660,8 +626,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_creator,
             vbox_with_icon_and_label(
-                'bookmark-new-symbolic',
-                'Creator / Editor'
+                'creator_editor',
+                'Creator / Editor',
+                icon_name='bookmark-new-symbolic',
             )
         )
 
@@ -675,7 +642,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
             pref_other = preferences.types.other
 
             (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
-                name=qualify, title=title, dialog=self)
+                name=qualify, title=title, dialog=self,
+                child_type='type', child_widget='icon'
+                if qualify == 'main' else 'simple')
 
             if qualify == 'main':
                 children = defl_main if pref_main is None else pref_main
@@ -688,7 +657,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
             return (frame, scrolled, dnd_area)
 
-        pic = grid_with_common_params()
+        pic = grid_with_common_params()  # column_homogeneous=True
 
         (self.fr_creator_dnd_main,
          self.sw_creator_dnd_main,
@@ -714,6 +683,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
             valign=Gtk.Align.START)
 
         self.btn_creator_reset = widget_properties(
+            # edit-clear-all-symbolic
+
             Gtk.Button('Reset to defaults'),
             expand=False,
             halign=Gtk.Align.CENTER,
@@ -723,8 +694,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         self.btn_creator_reset.connect('clicked', self.on_creator_reset)
 
-        if preferences.types.main or preferences.types.other:
-            self.btn_creator_reset.set_sensitive(True)
+        self.btn_creator_reset.set_sensitive(
+            bool(preferences.types.main and preferences.types.main != defaults.types.main) or bool(preferences.types.other and preferences.types.other != defaults.types.other)
+        )
 
         # debug_widget(self.lbl_creator)
         pic.attach(
@@ -758,8 +730,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_interface_customization,
             vbox_with_icon_and_label(
-                'preferences-desktop-screensaver-symbolic',
-                'Interface customization'
+                'interface_customization',
+                'Interface customization',
+                icon_name='preferences-desktop-screensaver-symbolic',
             )
         )
 
@@ -773,7 +746,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
             pref_other = preferences.types.other
 
             (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
-                name=qualify, title=title, dialog=self)
+                name=qualify, title=title, dialog=self,
+                child_type='type', child_widget='icon'
+                if qualify == 'main' else 'simple')
 
             if qualify == 'main':
                 children = defl_main if pref_main is None else pref_main
@@ -856,8 +831,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_editor_fields,
             vbox_with_icon_and_label(
-                'document-new-symbolic',
-                'Creator'
+                'creator',
+                'Creator',
+                icon_name='document-new-symbolic',
             )
         )
 
