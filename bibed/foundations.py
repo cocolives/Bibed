@@ -7,6 +7,8 @@ import yaml
 import inspect
 import logging
 
+from datetime import timedelta
+
 from yaml.representer import Representer
 
 from bibed.styles import (
@@ -340,6 +342,13 @@ def touch_file(filename):
             f.write('\n')
 
         assert ldebug('touch_file(): created “{}”.', filename)
+
+
+def seconds_to_string(elapsed):
+
+    # See https://stackoverflow.com/a/12344609/654755
+
+    return str(timedelta(seconds=elapsed))
 
 
 # ———————————————————————————————————————————————————————————————— Classes

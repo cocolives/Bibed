@@ -2,8 +2,7 @@
 import os
 import logging
 import random
-
-from collections import OrderedDict
+import time
 
 from bibed.constants import (
     APP_ID,
@@ -19,10 +18,10 @@ from bibed.constants import (
 )
 
 from bibed.foundations import (
-    lprint,
-    lprint_function_name,
-    set_process_title,
+    lprint, lprint_function_name,
     touch_file,
+    set_process_title,
+    seconds_to_string,
 )
 
 # Import Gtk before preferences, to initialize GI.
@@ -57,6 +56,9 @@ GLib.set_application_name(APP_NAME)
 class BibEdApplication(Gtk.Application):
 
     def __init__(self, *args, **kwargs):
+
+        self.time_start = kwargs.pop('time_start')
+
         super().__init__(*args, application_id=APP_ID,
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
                          **kwargs)
@@ -362,6 +364,9 @@ class BibEdApplication(Gtk.Application):
         if search_grab_focus:
             self.window.search.grab_focus()
 
+        LOGGER.info('Startup time (including session restore): {}'.format(
+            seconds_to_string(time.time() - self.time_start)))
+
         self.window.present()
 
     def do_command_line(self, command_line):
@@ -558,5 +563,8 @@ class BibEdApplication(Gtk.Application):
             remember_close=False,
         )
 
-        LOGGER.info('Terminating application.')
         self.quit()
+
+        LOGGER.info(
+            'Terminating application; ran {}.'.format(
+                seconds_to_string(time.time() - self.time_start)))

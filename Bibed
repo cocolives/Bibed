@@ -30,6 +30,7 @@ programs live.
 '''
 
 import sys
+import time
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -47,6 +48,8 @@ def setup_logging(level=logging.INFO):
 
 
 if __name__ == "__main__":
+    time_start = time.time()
+
     if __debug__:
         setup_logging(logging.DEBUG)
     else:
@@ -65,6 +68,6 @@ if __name__ == "__main__":
     if gpod('use_sentry'):
         sentry.enable()
 
-    app = BibEdApplication()
+    app = BibEdApplication(time_start=time_start)
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)
