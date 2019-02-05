@@ -13,7 +13,7 @@ from bibed.constants import (
 )
 
 from bibed.preferences import preferences
-from bibed.gui.gtk import Gtk, Gdk
+from bibed.gui.gtk import GLib, Gtk, Gdk
 
 
 LOGGER = logging.getLogger(__name__)
@@ -247,8 +247,8 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
 
         format_kwargs = {
             'separator': ' ' if same_line else '\n',
-            'basename': basename,
-            'folder': folder,
+            'basename': GLib.markup_escape_text(basename),
+            'folder': GLib.markup_escape_text(folder),
         }
 
     else:
@@ -257,6 +257,8 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
         # Thus, no need for separator.
         format_template += '{basename}'
         format_kwargs = {
+            # No need to GLib.markup_escape_text(),
+            # Bibed's filenames are ascii-proof.
             'basename': basename.title(),
         }
 
