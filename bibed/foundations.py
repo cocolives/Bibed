@@ -414,6 +414,13 @@ class AttributeDict(object):
     def __repr__(self):
         return str(self.__dict__)
 
+    def copy(self):
+        ''' WARNING: this returns a DICT!! '''
+
+        return {
+            key: getattr(self, key) for key in self.keys_to_dump
+        }
+
     def items(self):
 
         # assert lprint_caller_name()
