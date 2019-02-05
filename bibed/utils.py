@@ -2,6 +2,7 @@
 import os
 import re
 import logging
+import subprocess
 
 from bibed.constants import (
     PREFERENCES_FILENAME,
@@ -10,7 +11,10 @@ from bibed.constants import (
     BIBED_APP_DIR_WIN32,
 )
 
+from bibed.exceptions import ActionError
+
 from bibed.foundations import (
+    is_osx, is_windows,
     lprint_caller_name,
     lprint_function_name,
     AttributeDict,
@@ -71,7 +75,7 @@ def get_user_home_directory():
 
     # https://stackoverflow.com/a/10644400/654755
 
-    if os.name != 'posix':
+    if is_windows():
         from win32com.shell import shellcon, shell
         home_dir = shell.SHGetFolderPath(0, shellcon.CSIDL_APPDATA, 0, 0)
 
@@ -85,7 +89,7 @@ def get_user_home_directory():
 def get_bibed_user_dir():
     ''' OS-dependant storage directory. '''
 
-    if os.name != 'posix':
+    if is_windows():
         bibed_base_dir = BIBED_APP_DIR_WIN32
 
     else:
@@ -109,6 +113,30 @@ def make_bibed_user_dir():
     except Exception:
         LOGGER.exception(
             'While creating preferences directory “{}”'.format(bibed_user_dir))
+
+
+def open_with_system_launcher(filename):
+
+    if filename.startswith(':') and filename.lower().endswith(':pdf'):
+        # get rid of older filenames like “:/home/olive/myfile.pdf:PDF”
+        filename = filename[1:-4]
+
+    if is_osx():
+        command = ['open', filename]
+
+    elif is_windows():
+        command = ['start', filename]
+
+    else:
+        # Linux
+        command = ['xdg-open', filename]
+
+    try:
+        # This will raise an exception if any error is encountered.
+        subprocess.check_call(command)
+
+    except Exception:
+        raise ActionError(' '.join(command))
 
 
 def to_lower_if_not_none(data):
