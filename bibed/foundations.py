@@ -26,7 +26,11 @@ LOGGER = logging.getLogger(__name__)
 # ————————————————————————————————————————————————————————————— Functions
 
 def is_osx():
-    return sys.platform == "darwin"
+    return sys.platform == 'darwin'
+
+
+def is_windows():
+    return os.name != 'posix'
 
 
 def load_library(names, shared=True):
@@ -339,7 +343,7 @@ def touch_file(filename):
 
 
 # ———————————————————————————————————————————————————————————————— Classes
-    
+
 
 class AttributeDict(object):
     """
