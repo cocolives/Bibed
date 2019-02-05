@@ -46,7 +46,7 @@ from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
 LOGGER = logging.getLogger(__name__)
 
 
-class BibebWindowBlockSignalsContextManager:
+class BibedWindowBlockSignalsContextManager:
     def __init__(self, window):
         self.win = window
 
@@ -981,7 +981,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.cmb_files.handler_block_by_func(self.on_files_combo_changed)
 
-        return BibebWindowBlockSignalsContextManager(self)
+        return BibedWindowBlockSignalsContextManager(self)
 
     def unblock_signals(self):
 
