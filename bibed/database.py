@@ -199,6 +199,11 @@ class BibedDatabase:
 
         assert entry.gid >= 0
 
+        # This is important for the delete operation to act
+        # on the right database, else “self” could be the
+        # destination and thus delete() just after add().
+        source_database = entry.database
+
         # This is important, else GUI will still write in source database.
         entry.database = destination_database
 
@@ -206,12 +211,11 @@ class BibedDatabase:
         #       add*() and delete*() methods already do what's needed.
 
         destination_database.add_entry(entry)
-
-        self.delete_entry(entry)
+        source_database.delete_entry(entry)
 
         if __debug__:
-            LOGGER.debug('{0}.move_entry({1}) into {1} done.'.format(
-                self, entry, destination_database))
+            LOGGER.debug('{0}.move_entry({1}) to {2} done.'.format(
+                source_database, entry, destination_database))
 
     def update_entry_key(self, entry):
 
