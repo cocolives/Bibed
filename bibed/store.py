@@ -3,7 +3,7 @@ import time
 import logging
 import pyinotify
 
-from threading import Lock
+from threading import RLock
 
 from bibed.foundations import (
     ldebug, lprint,
@@ -109,7 +109,7 @@ class BibedFileStore(Gtk.ListStore):
 
         # Global lock to avoid concurrent writes,
         # which are destructive on flat files.
-        self.file_write_lock = Lock()
+        self.file_write_lock = RLock()
 
         # Stores the GLib.idle_add() source.
         self.save_trigger_source = None
@@ -610,28 +610,31 @@ class BibedFileStore(Gtk.ListStore):
 
         '''
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
         # assert lprint(filename)
 
         if self.file_write_lock.acquire(blocking=False) is False:
             return
 
-        assert ldebug('Programming save of {0} in 1 second.', filename)
+        # Useless, everything runs too fast.
+        # self.clear_save_callback()
+
+        assert ldebug('Programming save of {0} when idle.', filename)
 
         self.save_trigger_source = GLib.idle_add(
             self.save_trigger_callback, filename)
 
     def save_trigger_callback(self, filename):
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
-        time.sleep(1)
+        # time.sleep(1)
+
+        self.save(filename)
 
         # The trigger acquired the lock to avoid concurrent / parallel save().
         # We need to release to allow the database save() method to re-lock.
         self.file_write_lock.release()
-
-        self.save(filename)
 
     def clear_save_callback(self):
 
