@@ -1,4 +1,4 @@
-
+import os
 import logging
 
 from bibed.foundations import (
@@ -815,10 +815,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
             entry_edit_dialog = BibedEntryDialog(
                 parent=self, entry=entry)
 
-            entry_edit_dialog.run()
+            response = entry_edit_dialog.run()
 
-            # Update the number of entries if relevant.
-            self.update_title()
+            if response:
+                # Update the number of entries if relevant.
+                self.update_title()
+
+                self.do_status_change(
+                    '{entry} added to {database}.'.format(
+                        entry=response, database=os.path.basename(response.database.filename)))
 
             entry_edit_dialog.destroy()
 

@@ -1054,7 +1054,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         if gpod('bib_auto_save'):
             # Dialog is closing. using fix_errors=True is the ONLY way
             # to save the maximum of what the user created / modified.
-            self.update_entry_and_save_file(save=True, fix_errors=True)
+            return self.update_entry_and_save_file(save=True, fix_errors=True)
 
         else:
             # If user did not save, be sure we don't
@@ -1330,3 +1330,5 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         # Reset changed fields now that everything is saved.
         self.reset_fields(with_brand_new=True)
+
+        return entry

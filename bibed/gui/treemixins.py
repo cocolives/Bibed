@@ -301,14 +301,15 @@ class BibedEntryTreeViewMixin:
         entry_edit_dialog = BibedEntryDialog(
             parent=self.window, entry=entry)
 
-        entry_edit_dialog.run()
+        response = entry_edit_dialog.run()
 
-        # TODO: convert this test to Gtk.Response.OK and CANCEL
-        #       to know if we need to insert/update or not.
-        if entry.database is not None and entry_edit_dialog.can_save:
-            # TODO: update list_store directly.
-            # Entry was saved to disk, insert it in the treeview.
-            self.main_model.update_entry(entry)
+        if response:
+            # Update the number of entries if relevant.
+            self.window.update_title()
+
+            self.do_status_change(
+                '{entry} modified in {database}.'.format(
+                    entry=response, database=os.path.basename(response.database.filename)))
 
         entry_edit_dialog.destroy()
 
