@@ -608,7 +608,8 @@ class BibedEntry:
                 if self.year else '',
 
                 trashed=' <span color="grey">(trashed on {tDate} from <span face="monospace">{tFrom}</span>)</span>'.format(
-                    tFrom=os.path.basename(trashedFrom),
+                    tFrom=GLib.markup_escape_text(
+                        os.path.basename(trashedFrom)),
                     tDate=trashedDate
                 ) if self.is_trashed else '',
             )
