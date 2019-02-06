@@ -26,7 +26,7 @@ from bibed.utils import get_user_home_directory
 from bibed.entry import BibedEntry
 
 from bibed.gui.helpers import (
-    # scrolled_textview,
+    flash_field,
     markup_bib_filename,
     markup_entries,
     add_classes,
@@ -518,6 +518,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # TODO: remove call if not needed anymore.
         self.sync_shown_hidden()
+
+        # In case there is a search in progress, focus the field to make
+        # the user notice why she could be seeing nothing (like empty file).
+        if self.get_search_text():
+            flash_field(self.search)
 
     def on_key_pressed(self, widget, event):
 

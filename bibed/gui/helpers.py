@@ -21,6 +21,33 @@ LOGGER = logging.getLogger(__name__)
 # ——————————————————————————————————————————————————————————————————— Functions
 
 
+def is_dark_theme():
+
+    '''
+    	gint		textAvg, bgAvg;
+
+
+	textAvg = style->text[GTK_STATE_NORMAL].red / 256 +
+	        style->text[GTK_STATE_NORMAL].green / 256 +
+	        style->text[GTK_STATE_NORMAL].blue / 256;
+
+
+	bgAvg = style->bg[GTK_STATE_NORMAL].red / 256 +
+	        style->bg[GTK_STATE_NORMAL].green / 256 +
+	        style->bg[GTK_STATE_NORMAL].blue / 256;
+
+
+	if (textAvg > bgAvg)
+		darkTheme = TRUE;
+
+        cf. https://lzone.de/blog/Detecting%20a%20Dark%20Theme%20in%20GTK
+
+        We need to detect if automathemely is installed.
+        https://www.linuxuprising.com/2018/08/automatically-switch-to-light-dark-gtk.html
+    '''
+    pass
+
+
 def get_screen_resolution():
 
     if os.name != 'posix':
@@ -350,6 +377,38 @@ def remove_classes(widget, classes):
 
     for class_name in classes:
         style_context.remove_class(class_name)
+
+
+def flash_field(field, number=None, interval=None):
+
+    if number is None:
+        number = 9
+
+    if number % 2 == 0:
+        # Be sure we don't let the field in error state…
+        number += 1
+
+    if interval is None:
+        interval = 100
+
+    def _flash_field_callback(field, interval, current, number):
+
+        if current % 2 == 0:
+            add_classes(field, ['error'])
+        else:
+            remove_classes(field, ['error'])
+
+        if current < number:
+            GLib.timeout_add(interval,
+                             _flash_field_callback, field,
+                             interval, current + 1, number)
+
+        # stop the interval, we relaunched it already.
+        return False
+
+    GLib.timeout_add(interval,
+                     _flash_field_callback, field,
+                     interval, 0, number)
 
 
 def grid_with_common_params(column_homogeneous=False, row_homogeneous=False):
