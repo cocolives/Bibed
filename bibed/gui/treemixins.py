@@ -19,7 +19,8 @@ from bibed.constants import (
     COL_SEPARATOR_WIDTH,
 )
 
-from bibed.preferences import memories  # , gpod
+from bibed.utils import open_with_system_launcher
+# from bibed.preferences import memories  # , gpod
 from bibed.entry import BibedEntry
 
 from bibed.gui.entry import BibedEntryDialog
@@ -204,15 +205,52 @@ class BibedEntryTreeViewMixin:
         return self.get_entry_by_path(model.get_path(treeiter),
                                       with_global_id=True)
 
+    def get_entries_by_paths(self, paths, with_global_id=False, return_iter=False, only_rows=False):
+
+        # Are we on the list store, or a filter ?
+        model   = self.get_model()
+        rows    = []
+        entries = []
+
+        key_index  = BibAttrs.KEY
+        file_index = BibAttrs.FILENAME
+        gid_index  = BibAttrs.GLOBAL_ID
+
+        for path in paths:
+            treeiter = model.get_iter(path)
+            row      = model[treeiter]
+
+            if only_rows:
+                rows.append(row)
+                continue
+
+            bib_key  = row[key_index]
+            filename = row[file_index]
+
+            entry = self.files.get_entry_by_key(bib_key, filename=filename)
+
+            if with_global_id:
+                entry.gid = row[gid_index]
+
+            if return_iter:
+                entries.append((entry, treeiter, ))
+                
+            else:
+                entries.append(entry)
+
+        if only_rows:
+            return rows
+
+        return entries
+
     def get_selected_entries(self):
         ''' Used in Gtk.SelectionMode.MULTIPLE. '''
 
-        paths = self.get_selected_rows(paths_only=True)
+        return self.get_entries_by_paths(
+            self.get_selected_rows(paths_only=True),
+            with_global_id=True
+        )
 
-        return [
-            self.get_entry_by_path(path, with_global_id=True)
-            for path in paths
-        ]
     # ————————————————————————————————————————————————————————————— Gtk signals
 
     def on_quality_clicked(self, renderer, path):
