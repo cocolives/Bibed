@@ -139,6 +139,12 @@ def open_with_system_launcher(filename):
         raise ActionError(' '.join(command))
 
 
+def friendly_filename(filename):
+
+    # the base name, without extension.
+    return os.path.basename(filename).rsplit('.', 1)[0]
+
+
 def to_lower_if_not_none(data):
 
     if data is None:

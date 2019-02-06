@@ -218,6 +218,8 @@ class BibEdApplication(Gtk.Application):
 
     def data_filter_method(self, model, iter, data):
 
+        matched_files = self.window.matched_files
+
         try:
             filter_text = self.window.search.get_text()
 
@@ -243,6 +245,7 @@ class BibEdApplication(Gtk.Application):
                     return False
 
         if filter_text is None:
+            matched_files.add(row[BibAttrs.FILENAME])
             return True
 
         filter_text = filter_text.strip().lower()
@@ -293,7 +296,8 @@ class BibEdApplication(Gtk.Application):
         for word in full_text:
             if word not in ' '.join(model_full_text_data):
                 return False
-
+                
+        matched_files.add(row[BibAttrs.FILENAME])
         return True
 
     # ———————————————————————————————————————————————————————————— do “actions”

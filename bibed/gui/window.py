@@ -22,7 +22,7 @@ from bibed.constants import (
 )
 
 from bibed.preferences import memories, gpod
-from bibed.utils import get_user_home_directory
+from bibed.utils import get_user_home_directory, friendly_filename
 from bibed.entry import BibedEntry
 
 from bibed.gui.helpers import (
@@ -374,16 +374,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # because this points either to the TreeModelFilter or the main model.
         row_count = len(self.treeview.get_model())
 
-        try:
-            active_file = self.get_selected_filename()
+        active_files = self.get_selected_files(with_type=True)
+        active_files_count = len(active_files)
 
-        except TypeError:
-            # Application is closing, we have no file left open.
-            active_file = None
+        if active_files_count > 1:
+            pass
 
         # TODO: translate “All”, or modify method to get the type, and switch
         #       on type instead of name, at least for the “All” entry.
-        if active_file == 'All':
+        if active_files[0][0] == 'All':
 
             search_text = self.get_search_text()
 
@@ -391,36 +390,35 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 # We have to gather files count from
                 # current global filter results.
 
-                files_matched = set()
-
-                for row in self.treeview.get_model():
-                    files_matched.add(row[BibAttrs.FILENAME])
-
-                # assert lprint(files_matched)
-
-                file_count = len(files_matched)
+                files_count = len(self.matched_files)
 
             else:
                 # Why not simply self.filtered_files ?
-                file_count = len(self.cmb_files.get_model())
+                files_count = len(self.cmb_files.get_model())
 
-                if file_count > 2:
+                if files_count > 2:
                     # Remove the “All” entry
-                    file_count -= 1
+                    files_count -= 1
 
-        elif active_file is None:
-            file_count = 0
+        elif active_files is []:
+            files_count = 0
 
         else:
-            file_count = 1
+            files_count = 1
 
-        title_value = '{0}'.format(APP_NAME)
+        if active_files:
+            title_value = '{0} – {1}'.format(
+                APP_NAME,
+                friendly_filename(active_files[0][0])
+                if active_files_count == 1
+                else '{} files selected'.format(active_files_count)
+            )
 
         subtitle_value = '{0} item{1} in {2} file{3}'.format(
             row_count,
             's' if row_count > 1 else '',
-            file_count,
-            's' if file_count > 1 else '',
+            files_count,
+            's' if files_count > 1 else '',
         )
 
         self.headerbar.props.title = title_value
@@ -979,6 +977,16 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         return filename
 
+    def get_selected_files(self, with_type=False):
+
+        if with_type:
+            return [
+                (self.get_selected_filename(),
+                 self.application.files.get_filetype(self.get_selected_filename())),
+            ]
+
+        return [self.get_selected_filename()]
+
     def set_selected_filename(self, filename):
 
         for row in self.filtered_files:
@@ -1042,6 +1050,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 del memories.search_text
 
         def refilter():
+            self.matched_files = set()
             self.treeview.set_model(self.application.sorter)
             self.application.filter.refilter()
 
@@ -1054,6 +1063,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             if filename is None or filename == 'All':
                 # No search, no filename; get ALL data, unfiltered.
                 self.treeview.set_model(self.application.data)
+                self.matched_files = set()
 
             else:
                 refilter()
