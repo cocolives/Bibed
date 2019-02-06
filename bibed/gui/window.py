@@ -817,7 +817,8 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             entry_edit_dialog.run()
 
-            # self.do_filter_data_store()
+            # Update the number of entries if relevant.
+            self.update_title()
 
             entry_edit_dialog.destroy()
 
