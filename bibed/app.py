@@ -35,6 +35,7 @@ from bibed.store import (
     AlreadyLoadedException,
 )
 
+from bibed.gui.splash import BibedSplash
 from bibed.gui.window import BibEdWindow
 
 
@@ -76,6 +77,7 @@ class BibEdApplication(Gtk.Application):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
+        self.splash = None
 
         self.setup_data_store()
 
@@ -202,6 +204,16 @@ class BibEdApplication(Gtk.Application):
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.data_filter_method)
 
+    def launch_splash(self):
+
+        self.splash = BibedSplash()
+        self.splash.start()
+
+    def close_splash(self):
+
+        self.splash.destroy()
+        self.splash = None
+
     # ——————————————————————————————————————————————————————— data store filter
 
     def data_filter_method(self, model, iter, data):
@@ -290,6 +302,10 @@ class BibEdApplication(Gtk.Application):
         Gtk.Application.do_startup(self)
 
         self.setup_resources_and_css()
+
+        # TODO: splash doesn't work.
+        # self.launch_splash()
+
         self.setup_actions()
         self.setup_app_menu()
 
@@ -363,6 +379,9 @@ class BibEdApplication(Gtk.Application):
 
         if search_grab_focus:
             self.window.search.grab_focus()
+
+        # TODO: splash doesn't work.
+        # self.close_splash()
 
         LOGGER.info('Startup time (including session restore): {}'.format(
             seconds_to_string(time.time() - self.time_start)))
