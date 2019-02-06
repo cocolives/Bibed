@@ -851,7 +851,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         trashed_entries = []
 
-        for entry in selected_entries:
+        # Copy, else “changed during iteration” occurs, but for an
+        # unknown reason it does not produce any error, and gets
+        # unnoticed (and some entries are not processed…).
+        for entry in selected_entries[:]:
             if entry.is_trashed:
                 trashed_entries.append(entry)
                 selected_entries.remove(entry)
