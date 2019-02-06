@@ -9,11 +9,11 @@ from bibed.foundations import (
 
 from bibed.constants import (
     APP_NAME,
-    BibAttrs,
+    # BibAttrs,
     FSCols,
     FileTypes,
     # BIBED_ICONS_DIR,
-    SEARCH_WIDTH_NORMAL,
+    # SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
     COMBO_CHARS_DIVIDER,
     RESIZE_SIZE_MULTIPLIER,
@@ -37,6 +37,7 @@ from bibed.gui.helpers import (
 )
 from bibed.gui.preferences import BibedPreferencesDialog
 from bibed.gui.treeview import BibedMainTreeView
+from bibed.gui.search import BibedSearchBar
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
 from bibed.gui.dialogs import BibedMoveDialog
@@ -110,17 +111,13 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.setup_treeview()
         self.setup_network()
 
+        self.setup_searchbar()
         self.setup_stack()
 
         self.setup_headerbar()
         self.setup_statusbar()
 
         self.setup_vbox()
-
-        self.vbox.pack_start(self.stack, True, True, 0)
-        self.vbox.pack_end(self.statusbar, False, True, 0)
-
-        self.add(self.vbox)
 
     def setup_icon(self):
 
@@ -137,6 +134,19 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # self.set_default_icon_list([pixbuf])
         # self.set_icon_list([pixbuf])
         pass
+
+    def setup_searchbar(self):
+
+        # used to speed up title updates during searches.
+        self.matched_files = set()
+
+        self.search = Gtk.SearchEntry()
+
+        self.search.props.width_chars = SEARCH_WIDTH_EXPANDED
+        self.search.connect('search-changed',
+                            self.on_search_filter_changed)
+
+        self.searchbar = BibedSearchBar(self.search)
 
     def setup_stack(self):
 
@@ -176,6 +186,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def setup_vbox(self):
         self.vbox = Gtk.VBox()
 
+        self.vbox.pack_start(self.searchbar, False, True, 0)
+        self.vbox.pack_start(self.stack, True, True, 0)
+        self.vbox.pack_end(self.statusbar, False, True, 0)
+
+        self.add(self.vbox)
+
     def setup_statusbar(self):
 
         self.statusbar = Gtk.Statusbar()
@@ -193,87 +209,96 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.set_titlebar(hb)
 
         # This is to connect the headerbar close button to our quit method.
-        self.connect("delete-event", self.application.on_quit)
+        self.connect('delete-event', self.application.on_quit)
 
         # ———————————————————————— Left side, from start to end
 
-        bbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        Gtk.StyleContext.add_class(bbox.get_style_context(), "linked")
+        bbox_file = widget_properties(
+            Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
+            classes=['linked'],
+        )
 
         self.btn_file_new = Gtk.Button()
-        self.btn_file_new.connect("clicked", self.on_file_new_clicked)
-        icon = Gio.ThemedIcon(name="document-new-symbolic")
+        self.btn_file_new.connect('clicked', self.on_file_new_clicked)
+        icon = Gio.ThemedIcon(name='document-new-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_new.add(image)
-        bbox.add(self.btn_file_new)
+
+        bbox_file.add(self.btn_file_new)
 
         self.btn_file_open = Gtk.Button()
         self.btn_file_open.connect("clicked", self.on_file_open_clicked)
         icon = Gio.ThemedIcon(name="document-open-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_open.add(image)
-        bbox.add(self.btn_file_open)
 
-        hb.pack_start(bbox)
+        bbox_file.add(self.btn_file_open)
+
+        hb.pack_start(bbox_file)
 
         self.btn_file_close = Gtk.Button()
-        self.btn_file_close.connect("clicked", self.on_file_close_clicked)
-        icon = Gio.ThemedIcon(name="window-close-symbolic")
+        self.btn_file_close.connect('clicked', self.on_file_close_clicked)
+        icon = Gio.ThemedIcon(name='window-close-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_close.add(image)
         self.btn_file_close_switch_icon(False)
         hb.pack_start(self.btn_file_close)
 
         files_combo = self.setup_files_combobox()
+
         hb.pack_start(files_combo)
 
+        bbox_entry = widget_properties(
+            Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
+            classes=['linked'],
+        )
+
         self.btn_add = Gtk.Button()
-        icon = Gio.ThemedIcon(name="list-add-symbolic")
+        icon = Gio.ThemedIcon(name='list-add-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_add.add(image)
         self.btn_add.connect('clicked', self.on_entry_add_clicked)
 
-        hb.pack_start(self.btn_add)
+        bbox_entry.add(self.btn_add)
 
         self.btn_move = Gtk.Button()
-        icon = Gio.ThemedIcon(name="go-next-symbolic")
+        icon = Gio.ThemedIcon(name='go-next-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_move.add(image)
         self.btn_move.connect('clicked', self.on_entries_move_clicked)
 
-        hb.pack_start(self.btn_move)
+        bbox_entry.add(self.btn_move)
 
         self.btn_delete = Gtk.Button()  # edit-delete-symbolic
-        icon = Gio.ThemedIcon(name="list-remove-symbolic")
+        icon = Gio.ThemedIcon(name='list-remove-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_delete.add(image)
         self.btn_delete.connect('clicked', self.on_entries_delete_clicked)
 
-        hb.pack_start(self.btn_delete)
+        bbox_entry.add(self.btn_delete)
+
+        hb.pack_start(bbox_entry)
 
         # ————————————————————————————— Right side, from end to start
 
         self.btn_preferences = Gtk.Button()
-        self.btn_preferences.connect(
-            "clicked", self.on_preferences_clicked)
-
-        icon = Gio.ThemedIcon(name="preferences-system-symbolic")
+        icon = Gio.ThemedIcon(name='preferences-system-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_preferences.add(image)
+        self.btn_preferences.connect(
+            'clicked', self.on_preferences_clicked)
+
         hb.pack_end(self.btn_preferences)
 
         hb.pack_end(self.stack_switcher)
 
-        self.search = Gtk.SearchEntry()
-        self.search.connect("search-changed",
-                            self.on_search_filter_changed)
-        self.search.connect("focus-in-event",
-                            self.on_search_focus_event)
-        self.search.connect("focus-out-event",
-                            self.on_search_focus_event)
-        self.search.props.width_chars = SEARCH_WIDTH_NORMAL
+        self.btn_search = Gtk.Button()
+        icon = Gio.ThemedIcon(name='system-search-symbolic')
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_search.add(image)
+        self.btn_search.connect('clicked', self.on_search_clicked)
 
-        hb.pack_end(self.search)
+        hb.pack_end(self.btn_search)
 
         self.headerbar = hb
 
@@ -524,6 +549,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
     def on_key_pressed(self, widget, event):
 
+        search_result = self.searchbar.handle_event(event)
+
+        if search_result:
+            return True
+
         # get search context
         search_text = self.search.get_text().strip()
 
@@ -601,7 +631,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
             self.application.reload_css_provider_data()
 
         elif ctrl and keyval == Gdk.KEY_f:
-            self.search.grab_focus()
+            self.searchbar.set_search_mode(True)
 
         elif ctrl and keyval == Gdk.KEY_comma:
             self.btn_preferences.emit('clicked')
@@ -686,6 +716,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 except Exception:
                     pass
 
+                if self.searchbar.get_search_mode():
+                    self.searchbar.set_search_mode(False)
+
             else:
                 row = self.treeview.get_selected_row()
 
@@ -705,14 +738,6 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         # Stop propagation of signal, we handled it.
         return True
-
-    def on_search_focus_event(self, search, event):
-
-        if self.search.has_focus():
-            self.search.props.width_chars = SEARCH_WIDTH_EXPANDED
-
-        else:
-            self.search.props.width_chars = SEARCH_WIDTH_NORMAL
 
     def on_file_new_clicked(self, button):
         ''' Create a new file. '''
@@ -934,6 +959,11 @@ class BibEdWindow(Gtk.ApplicationWindow):
             title, secondary_text,
             delete_callback, selected_entries
         )
+
+    def on_search_clicked(self, button):
+
+        if not self.searchbar.get_search_mode():
+            self.searchbar.set_search_mode(True)
 
     def on_preferences_clicked(self, button):
 

@@ -121,6 +121,17 @@ FILETYPES_COLORS = {
     FileTypes.USER      : '#000000',
 }
 
+SEARCH_SPECIALS = (
+    ('t', BibAttrs.TYPE, 'type'),
+    ('k', BibAttrs.KEY, 'key'),
+    ('a', BibAttrs.AUTHOR, 'author'),
+    ('i', BibAttrs.TITLE, 'title'),
+    ('j', BibAttrs.JOURNAL, 'journal'),
+    ('y', BibAttrs.YEAR, 'year'),
+    ('f', BibAttrs.FILE, 'file'),
+    ('u', BibAttrs.URL, 'URL'),
+)
+
 
 # See GUI constants later for icons.
 JABREF_QUALITY_KEYWORDS = [

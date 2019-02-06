@@ -13,6 +13,7 @@ from bibed.constants import (
     BIBED_ICONS_DIR,
     BIBED_BACKGROUNDS_DIR,
     BibAttrs,
+    SEARCH_SPECIALS,
     BIBTEXPARSER_VERSION,
     MAIN_TREEVIEW_CSS,
 )
@@ -265,21 +266,10 @@ class BibEdApplication(Gtk.Application):
                 full_text.append(word)
 
         for key, val in specials:
-            if key == 't':  # TYPE
-                if val not in row[BibAttrs.TYPE].lower():
-                    return False
-
-            if key == 'k':  # (bib) KEY
-                if val not in row[BibAttrs.KEY].lower():
-                    return False
-
-            if key == 'j':
-                if val not in row[BibAttrs.JOURNAL].lower():
-                    return False
-
-            if key == 'y':
-                if int(val) != int(row[BibAttrs.YEAR]):
-                    return False
+            for char, index, label in SEARCH_SPECIALS:
+                if key == char:
+                    if val not in row[index].lower():
+                        return False
 
         # TODO: unaccented / delocalized search.
 
@@ -296,7 +286,7 @@ class BibEdApplication(Gtk.Application):
         for word in full_text:
             if word not in ' '.join(model_full_text_data):
                 return False
-                
+
         matched_files.add(row[BibAttrs.FILENAME])
         return True
 
@@ -382,6 +372,7 @@ class BibEdApplication(Gtk.Application):
                     break
 
         if search_grab_focus:
+            self.window.searchbar.set_search_mode(True)
             self.window.search.grab_focus()
 
         # TODO: splash doesn't work.
