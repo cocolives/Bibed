@@ -25,7 +25,7 @@ from bibed.gui.helpers import (
     # debug_widget,
 )
 from bibed.gui.dndflowbox import dnd_scrolled_flowbox
-from bibed.gui.gtk import Gtk
+from bibed.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
 

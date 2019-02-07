@@ -19,7 +19,7 @@ from bibed.gui.helpers import (
     widget_properties,
 )
 
-from bibed.gui.gtk import Gtk
+from bibed.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
 

@@ -10,7 +10,7 @@ from bibed.preferences import memories  # , gpod
 
 from bibed.gui.renderers import CellRendererTogglePixbuf
 from bibed.gui.treemixins import BibedEntryTreeViewMixin
-from bibed.gui.gtk import Gtk, Pango
+from bibed.gtk import Gtk, Pango
 
 
 LOGGER = logging.getLogger(__name__)

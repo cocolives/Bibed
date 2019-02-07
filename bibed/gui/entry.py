@@ -35,7 +35,7 @@ from bibed.gui.helpers import (
     grid_with_common_params,
 )
 
-from bibed.gui.gtk import Gtk, Gdk, Gio
+from bibed.gtk import Gtk, Gdk, Gio
 
 LOGGER = logging.getLogger(__name__)
 

@@ -27,7 +27,7 @@ from bibed.preferences import defaults, preferences, gpod
 from bibed.utils import asciize
 from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
-from bibed.gui.gtk import GLib
+from bibed.gtk import GLib
 
 
 LOGGER = logging.getLogger(__name__)

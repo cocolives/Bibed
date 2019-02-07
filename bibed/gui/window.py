@@ -41,7 +41,7 @@ from bibed.gui.search import BibedSearchBar
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
 from bibed.gui.dialogs import BibedMoveDialog
-from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
+from bibed.gtk import Gio, GLib, Gtk, Gdk, Pango
 
 
 LOGGER = logging.getLogger(__name__)

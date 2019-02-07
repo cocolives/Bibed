@@ -1,7 +1,7 @@
 
 from bibed.gui.dndflowbox import dnd_scrolled_flowbox
 from bibed.gui.splash import BibedSplashWindow
-from bibed.gui.gtk import Gtk
+from bibed.gtk import Gtk
 
 
 class DragDropWindow(Gtk.Window):

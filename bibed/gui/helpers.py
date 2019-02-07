@@ -13,7 +13,7 @@ from bibed.constants import (
 )
 
 from bibed.preferences import preferences
-from bibed.gui.gtk import GLib, Gtk, Gdk
+from bibed.gtk import GLib, Gtk, Gdk
 
 
 LOGGER = logging.getLogger(__name__)

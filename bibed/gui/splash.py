@@ -4,7 +4,7 @@ from threading import Thread
 
 from bibed.constants import BIBED_DATA_DIR
 from bibed.gui.helpers import widget_properties
-from bibed.gui.gtk import Gtk
+from bibed.gtk import Gtk
 
 
 class BibedSplashWindow(Gtk.Window):

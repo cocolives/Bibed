@@ -12,7 +12,7 @@ from bibed.constants import (
 
 # from bibed.gui.renderers import CellRendererTogglePixbuf
 # from bibed.gui.treemixins import BibedEntryTreeViewMixin
-from bibed.gui.gtk import Gtk
+from bibed.gtk import Gtk
 
 
 LOGGER = logging.getLogger(__name__)

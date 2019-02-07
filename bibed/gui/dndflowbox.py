@@ -12,7 +12,7 @@ from bibed.gui.helpers import (
     widget_properties,
     frame_defaults,
 )
-from bibed.gui.gtk import Gtk, Gdk
+from bibed.gtk import Gtk, Gdk
 
 
 LOGGER = logging.getLogger(__name__)

@@ -22,7 +22,7 @@ from bibed.gui.helpers import (
     # scrolled_textview,
 )
 
-from bibed.gui.gtk import Gtk
+from bibed.gtk import Gtk
 
 
 LOGGER = logging.getLogger(__name__)

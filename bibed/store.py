@@ -34,7 +34,7 @@ from bibed.preferences import memories
 from bibed.database import BibedDatabase
 from bibed.entry import BibedEntry
 
-from bibed.gui.gtk import GLib, Gtk
+from bibed.gtk import Gio, GLib, Gtk
 
 
 LOGGER = logging.getLogger(__name__)

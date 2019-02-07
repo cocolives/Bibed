@@ -24,7 +24,7 @@ from bibed.utils import open_with_system_launcher
 from bibed.entry import BibedEntry
 
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gui.gtk import Gtk, Pango, GdkPixbuf
+from bibed.gtk import Gtk, Pango, GdkPixbuf
 
 
 class BibedEntryTreeViewMixin:
