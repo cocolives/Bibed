@@ -306,11 +306,6 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.headerbar = hb
 
-    def files_separator_func(self, model, iter, *data):
-
-        # Keep only non-system entries in main window ComboBox.
-        return model[iter][FSCols.FILETYPE] & FileTypes.SEPARATOR
-
     def setup_network(self):
 
         self.lbl_network = widget_properties(
@@ -397,7 +392,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         else:
             if self.application.files.num_user:
                 title_value = '{0} – NO FILE SELECTED'.format(APP_NAME)
-                
+
             else:
                 title_value = '{0} – Welcome!'.format(APP_NAME)
 
@@ -572,6 +567,10 @@ class BibedWindow(Gtk.ApplicationWindow):
                 self.treeview.copy_url_to_clipboard()
             else:
                 self.treeview.open_url_in_webbrowser()
+
+        elif ctrl_shift and keyval == Gdk.KEY_T:
+
+            self.treeview.switch_tooltips()
 
         elif ctrl and keyval == Gdk.KEY_s:
 

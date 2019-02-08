@@ -6,7 +6,7 @@ from bibed.constants import (
     CELLRENDERER_PIXBUF_PADDING,
 )
 from bibed.exceptions import BibedTreeViewException
-from bibed.preferences import memories  # , gpod
+from bibed.preferences import preferences, memories, gpod
 
 from bibed.gui.renderers import CellRendererTogglePixbuf
 from bibed.gui.treemixins import BibedEntryTreeViewMixin
@@ -53,8 +53,9 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         self.set_fixed_height_mode(True)
 
         try:
-            # Not required neither.
-            self.set_tooltip_column(self.TOOLTIP_COLUMN)
+            if gpod('treeview_show_tooltips'):
+                # Not required neither.
+                self.set_tooltip_column(self.TOOLTIP_COLUMN)
 
         except AttributeError:
             pass
@@ -162,6 +163,40 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
                     col.props.sort_indicator = memories.treeview_sort_indicator
                     # print(col.get_sort_indicator())
                     break
+
+    def switch_tooltips(self, state=None):
+
+        tooltip_column = getattr(self, 'TOOLTIP_COLUMN', None)
+
+        if tooltip_column is None:
+            return
+
+        def switch_off():
+            self.set_tooltip_column(-1)
+
+            # Autosave is ON, because direct attribute.
+            preferences.treeview_show_tooltips = False
+
+        def switch_on():
+            self.set_tooltip_column(self.TOOLTIP_COLUMN)
+
+            # Autosave is ON, because direct attribute.
+            preferences.treeview_show_tooltips = True
+
+        if state is None:
+            if self.get_tooltip_column() == -1:
+                switch_on()
+            else:
+                switch_off()
+        else:
+            if state:
+                switch_on()
+            else:
+                switch_off()
+
+        self.do_status_change('Tooltips switched {}.'.format(
+            'off' if self.get_tooltip_column() == -1 else 'ON'
+        ))
 
     # ——————————————————————————————————————————————————————— Generic selection
 

@@ -312,6 +312,32 @@ class BibedPreferencesDialog(Gtk.Dialog):
         if not sentry.usable:
             self.swi_use_sentry.set_sensitive(False)
 
+        # ————————————————————————————————————————————— Use treeview tooltips
+
+        (self.lbl_treeview_show_tooltips,
+         self.swi_treeview_show_tooltips) = build_label_and_switch(
+            '<b>Display tooltips in main view</b>\n'
+            '<span foreground="grey" size="small">'
+            'Show bibliographic entries preview as you hover them with'
+            'your mouse cursor. Use <span face="monospace">Shift-Control-T</span> to toggle this setting while in the main view.</span>',
+            self.on_switch_activated,
+            gpod('treeview_show_tooltips'),
+            func_args=('treeview_show_tooltips', )
+
+        )
+
+        pg.attach_next_to(
+            self.lbl_treeview_show_tooltips,
+            self.lbl_use_sentry,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.swi_treeview_show_tooltips,
+            self.lbl_treeview_show_tooltips,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
         # ————————————————————————————————————————————— Use treeview background
 
         (self.lbl_use_treeview_background,
@@ -329,7 +355,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         pg.attach_next_to(
             self.lbl_use_treeview_background,
-            self.lbl_use_sentry,
+            self.lbl_treeview_show_tooltips,
             Gtk.PositionType.BOTTOM,
             1, 1)
 
@@ -797,6 +823,10 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         else:
             sentry.disable()
+
+    def on_treeview_show_tooltips_activated(self, is_active):
+
+        self.application.window.treeview.switch_tooltips(is_active)
 
     def on_use_treeview_background_activated(self, is_active):
 
