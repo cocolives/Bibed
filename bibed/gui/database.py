@@ -54,6 +54,7 @@ class BibedDatabaseListBox(Gtk.ListBox):
         self.bind_model(self.user_files, self.create_database_row)
 
         self.connect('selected-rows-changed', self.on_selected_rows_changed)
+        self.connect('row-activated', self.parent.popdown)
 
     def files_filter_func(self, database, *data):
 
@@ -269,8 +270,6 @@ class BibedDatabasePopover(Gtk.Popover):
 
         self.setup_system_buttons()
 
-        self.setup_dismiss_button()
-
         self.add(self.grid)
 
         self.sync_buttons_states()
@@ -289,6 +288,12 @@ class BibedDatabasePopover(Gtk.Popover):
         except IndexError:
             # No children. Don't bother.
             pass
+
+    def popdown(self, *args):
+
+        super().popdown()
+
+        self.window.treeview.grab_focus()
 
     def sync_buttons_states(self, sync_parent=True):
 
@@ -431,21 +436,6 @@ class BibedDatabasePopover(Gtk.Popover):
         self.grid.attach_next_to(
             self.box_system,
             self.listbox,
-            Gtk.PositionType.BOTTOM,
-            1, 1)
-
-    def setup_dismiss_button(self):
-
-        def on_dismiss_clicked(*args):
-            self.popdown()
-
-        self.btn_dismiss = Gtk.Button('Dismiss')
-        self.btn_dismiss.connect(
-            'clicked', on_dismiss_clicked)
-
-        self.grid.attach_next_to(
-            self.btn_dismiss,
-            self.box_system,
             Gtk.PositionType.BOTTOM,
             1, 1)
 
