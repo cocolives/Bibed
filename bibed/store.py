@@ -405,12 +405,12 @@ class BibedFileStore(Gio.ListStore):
 
     def sync_selection(self, selected_databases):
 
-        assert lprint('SYNC SELECTION', [x.filename for x in selected_databases])
+        # assert lprint('SYNC SELECTION', [x.filename for x in selected_databases])
 
         for database in self:
             database.selected = bool(database in selected_databases)
 
-        assert lprint('AFTER SYNC', [str(db) for db in self])
+        # assert lprint('AFTER SYNC', [str(db) for db in self])
 
     # —————————————————————————————————————————————————————————————— Properties
 

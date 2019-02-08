@@ -388,7 +388,6 @@ class BibEdApplication(Gtk.Application):
                         databases_to_select.append(system_database)
 
         if databases_to_select:
-            print('DB SELECT', tuple(str(x) for x in databases_to_select))
             self.window.set_selected_databases(databases_to_select)
 
             # Selecting a system database is the only case that doesn't
