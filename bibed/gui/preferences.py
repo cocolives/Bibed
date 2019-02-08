@@ -15,6 +15,7 @@ from bibed.sentry import sentry
 from bibed.preferences import defaults, preferences, gpod
 
 from bibed.gui.helpers import (
+    in_scrolled,
     label_with_markup,
     widget_properties,
     add_classes, remove_classes,
@@ -47,7 +48,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.set_modal(True)
 
         # TODO: get screen resolution to make HiDPI aware.
-        self.set_default_size(500, 300)
+        self.set_default_size(450, 350)
 
         self.set_border_width(BOXES_BORDER_WIDTH)
 
@@ -370,7 +371,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.page_general = pg
 
         self.notebook.append_page(
-            self.page_general,
+            in_scrolled(self.page_general),
             vbox_with_icon_and_label(
                 'general',
                 'General',
