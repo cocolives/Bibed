@@ -34,6 +34,7 @@ from bibed.gui.helpers import (
     message_dialog,
     widget_properties,
     label_with_markup,
+    flat_unclickable_button_in_hbox,
 )
 from bibed.gui.preferences import BibedPreferencesDialog
 from bibed.gui.database import BibedDatabasePopover
@@ -163,7 +164,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         stack.add_titled(
             self.treeview_sw,
             'database',
-            'BIB Database'
+            'BIB Databases'
         )
 
         stack.child_set_property(
@@ -216,31 +217,38 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         bbox_file = widget_properties(
             Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
-            classes=['linked'],
+            # classes=['linked'],
         )
 
         self.btn_file_new = Gtk.Button()
+        self.btn_file_new.set_tooltip_markup('Create an empty BIB database')
         self.btn_file_new.connect('clicked', self.on_file_new_clicked)
         icon = Gio.ThemedIcon(name='document-new-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_new.add(image)
+        self.btn_file_new.set_relief(Gtk.ReliefStyle.NONE)
 
         bbox_file.add(self.btn_file_new)
 
         self.btn_file_open = Gtk.Button()
+        self.btn_file_open.set_tooltip_markup('Open an existing BIB database')
         self.btn_file_open.connect('clicked', self.on_file_open_clicked)
         icon = Gio.ThemedIcon(name='document-open-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_open.add(image)
+        self.btn_file_open.set_relief(Gtk.ReliefStyle.NONE)
 
         bbox_file.add(self.btn_file_open)
 
         hb.pack_start(bbox_file)
 
+        # object-select-symbolic
         self.btn_file_select = Gtk.Button()
-        icon = Gio.ThemedIcon(name='object-select-symbolic')
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.btn_file_select.add(image)
+        self.btn_file_select.set_tooltip_markup('Select databases to display in main view')
+        self.btn_file_select.add(flat_unclickable_button_in_hbox(
+            'file_select', 'Databases',
+            icon_name='drive-multidisk-symbolic',
+        ))
 
         self.files_popover = BibedDatabasePopover(
             self.btn_file_select, window=self)
@@ -258,6 +266,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         )
 
         self.btn_add = Gtk.Button()
+        self.btn_add.set_tooltip_markup('Add a bibliography entry')
         icon = Gio.ThemedIcon(name='list-add-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_add.add(image)
@@ -266,6 +275,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         bbox_entry.add(self.btn_add)
 
         self.btn_move = Gtk.Button()
+        self.btn_move.set_tooltip_markup('Move selected entries to another database')
         icon = Gio.ThemedIcon(name='go-next-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_move.add(image)
@@ -274,6 +284,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         bbox_entry.add(self.btn_move)
 
         self.btn_delete = Gtk.Button()  # edit-delete-symbolic
+        self.btn_delete.set_tooltip_markup('Trash or delete selected entries')
         icon = Gio.ThemedIcon(name='list-remove-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_delete.add(image)
@@ -286,6 +297,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         # ————————————————————————————— Right side, from end to start
 
         self.btn_preferences = Gtk.Button()
+        self.btn_preferences.set_tooltip_markup('Show application preferences')
         icon = Gio.ThemedIcon(name='preferences-system-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_preferences.add(image)
@@ -297,6 +309,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         hb.pack_end(self.stack_switcher)
 
         self.btn_search = Gtk.Button()
+        self.btn_search.set_tooltip_markup('Start searching in selected databases')
         icon = Gio.ThemedIcon(name='system-search-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_search.add(image)
@@ -548,25 +561,25 @@ class BibedWindow(Gtk.ApplicationWindow):
         # if ctrl and keyval_name == 's':
 
         if ctrl and keyval == Gdk.KEY_c:
-            self.treeview.copy_single_key_to_clipboard()
+            self.treeview.copy_entries_keys_formatted_to_clipboard()
 
         if ctrl and keyval == Gdk.KEY_k:
-            self.treeview.copy_raw_key_to_clipboard()
+            self.treeview.copy_entries_keys_raw_to_clipboard()
 
         elif ctrl and keyval == Gdk.KEY_u:
 
             if gpod('url_action_opens_browser'):
-                self.treeview.open_url_in_webbrowser()
+                self.treeview.open_entries_urls_in_browser()
             else:
-                self.treeview.copy_url_to_clipboard()
+                self.treeview.copy_entries_urls_to_clipboard()
 
         elif ctrl_shift and keyval == Gdk.KEY_U:
             # NOTE: the upper case 'U'
 
             if gpod('url_action_opens_browser'):
-                self.treeview.copy_url_to_clipboard()
+                self.treeview.copy_entries_urls_to_clipboard()
             else:
-                self.treeview.open_url_in_webbrowser()
+                self.treeview.open_entries_urls_in_browser()
 
         elif ctrl_shift and keyval == Gdk.KEY_T:
 
@@ -580,7 +593,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
             LOGGER.info('Control-S pressed (no action yet).')
 
-            # given cmb_files, save one or ALL files.
+            # TODO: save selected files.
 
         elif ctrl and keyval == Gdk.KEY_r:
 
@@ -621,10 +634,12 @@ class BibedWindow(Gtk.ApplicationWindow):
             self.btn_file_select.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_m:
-            self.btn_move.emit('clicked')
+            if self.application.files.num_user:
+                self.btn_move.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_n:
-            self.btn_add.emit('clicked')
+            if self.application.files.num_user:
+                self.btn_add.emit('clicked')
 
         elif not ctrl and keyval == Gdk.KEY_Delete:
             self.btn_delete.emit('clicked')
@@ -634,8 +649,9 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         elif ctrl and keyval == Gdk.KEY_w:
 
-            LOGGER.info('REIMPLEMENT HERE')
-            # self.btn_file_close.emit('clicked')
+            for database in tuple(
+                    self.application.files.selected_user_databases):
+                self.application.close_file(database.filename)
 
         elif search_text and (
             keyval in (Gdk.KEY_Down, Gdk.KEY_Up) or (
@@ -702,7 +718,11 @@ class BibedWindow(Gtk.ApplicationWindow):
                 if self.searchbar.get_search_mode():
                     self.searchbar.set_search_mode(False)
 
+            elif self.searchbar.get_search_mode():
+                self.searchbar.set_search_mode(False)
+
             else:
+
                 rows = self.treeview.get_selected_rows()
 
                 if rows not in (None, []):
@@ -710,10 +730,11 @@ class BibedWindow(Gtk.ApplicationWindow):
 
                 else:
                     application_files = self.application.files
-                    selected_databases = \
-                        self.files_popover.listbox.get_selected_databases()
+                    selected_user_databases = tuple(
+                        application_files.selected_user_databases)
 
-                    if len(selected_databases) != application_files.num_user:
+                    if len(selected_user_databases) \
+                            != application_files.num_user:
                         self.files_popover.listbox.select_all()
 
             self.treeview.grab_focus()
@@ -956,6 +977,8 @@ class BibedWindow(Gtk.ApplicationWindow):
         #     LOGGER.info("The OK button was clicked")
 
         self.preferences_dialog.hide()
+        self.preferences_dialog.destroy()
+        self.preferences_dialog = None
 
     # ————————————————————————————————————————————————————————————— GET proxies
 
