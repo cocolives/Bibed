@@ -1,8 +1,6 @@
-import os
 import logging
 
 from bibed.foundations import lprint, lprint_caller_name
-from bibed.constants import BIBED_ICONS_DIR
 
 from bibed.preferences import defaults
 
@@ -11,6 +9,7 @@ from bibed.gui.helpers import (
     vbox_with_icon_and_label,
     widget_properties,
     frame_defaults,
+    get_icon,
 )
 from bibed.gtk import Gtk, Gdk
 
@@ -121,20 +120,6 @@ class DnDFlowBox(Gtk.FlowBox):
 
         return self.children_labels[name].replace('_', '')
 
-    def get_icon(self, name, size=None):
-
-        if size is None:
-            size = '48x48'
-
-        base_path = os.path.join(BIBED_ICONS_DIR, self.child_type, size)
-
-        icon_path = os.path.join(base_path, name + '.png')
-
-        if not os.path.exists(icon_path):
-            icon_path = os.path.join(base_path, 'default.png')
-
-        return icon_path
-
     def build_child_flat(self, child_name):
 
         # if icon is None:
@@ -143,13 +128,13 @@ class DnDFlowBox(Gtk.FlowBox):
 
         return flat_unclickable_button_in_hbox(
             child_name, self.get_label(child_name),
-            icon_path=self.get_icon(child_name, '24x24'))
+            icon_path=get_icon(child_name, self.child_type, '24x24'))
 
     def build_child_with_icon(self, child_name):
 
         return vbox_with_icon_and_label(
             child_name, self.get_label(child_name),
-            icon_path=self.get_icon(child_name, '48x48'))
+            icon_path=get_icon(child_name, self.child_type, '48x48'))
 
     # ——————————————————————————————————————————————————————— FlowBox overrides
 
