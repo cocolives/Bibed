@@ -199,7 +199,7 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
                 return paths
             else:
                 # Gtk.TreeRowReference.new(model, path)
-                return [model.get_iter(path) for path in paths]
+                return [model[model.get_iter(path)] for path in paths]
         else:
             return None
 
