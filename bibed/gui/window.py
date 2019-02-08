@@ -960,8 +960,8 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def on_search_clicked(self, button):
 
-        if not self.searchbar.get_search_mode():
-            self.searchbar.set_search_mode(True)
+        self.searchbar.set_search_mode(
+            not self.searchbar.get_search_mode())
 
     def on_preferences_clicked(self, button):
 
