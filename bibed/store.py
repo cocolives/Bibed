@@ -18,6 +18,7 @@ from bibed.constants import (
     FSCols,
     FileTypes,
     FILETYPES_COLORS,
+    BIBED_SYSTEM_IMPORTED_NAME,
     BIBED_SYSTEM_QUEUE_NAME,
     BIBED_SYSTEM_TRASH_NAME,
 )
@@ -89,18 +90,21 @@ class BibedFileStoreNoWatchContextManager:
             self.store.inotify_add_watch(self.filename)
 
 
-class BibedFileStore(Gtk.ListStore):
-    ''' Stores filenames and BIB databases. '''
+class BibedFileStore(Gio.ListStore):
+    ''' Stores filenames and BIB databases.
+
+
+        .. warning:: never override :meth:`__len__` to alter the real number of
+            items in self, because GObject iteration process relies on the
+            real value. That's why we've got `num_user` and `num_system`.
+    '''
 
     def __init__(self):
-        super().__init__(*FILE_STORE_LIST_ARGS)
+        super().__init__()
 
         # cached number of files.
         self.num_user   = 0
         self.num_system = 0
-
-        # BibedDatabase(s), linked to filenames
-        self.databases = {}
 
         # A reference to the datastore,
         # to handle system files internally.
@@ -115,12 +119,6 @@ class BibedFileStore(Gtk.ListStore):
         self.save_trigger_source = None
 
         self.setup_inotify()
-
-    def __len__(self):
-
-        # assert lprint_function_name()
-
-        return self.num_user
 
     def lock(self, blocking=True):
 
@@ -148,6 +146,7 @@ class BibedFileStore(Gtk.ListStore):
         bibed_user_dir = get_bibed_user_dir()
 
         for filename, filetype in (
+            (BIBED_SYSTEM_IMPORTED_NAME, FileTypes.IMPORTED),
             (BIBED_SYSTEM_QUEUE_NAME, FileTypes.QUEUE),
             (BIBED_SYSTEM_TRASH_NAME, FileTypes.TRASH),
         ):
@@ -157,7 +156,8 @@ class BibedFileStore(Gtk.ListStore):
             if not os.path.exists(full_pathname):
                 touch_file(full_pathname)
 
-            self.load(full_pathname, filetype)
+            # load() returns a database.
+            self.load(full_pathname, filetype).selected = False
 
     def trash_entries(self, entries):
         '''
@@ -307,7 +307,7 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint(filename)
 
         for row in self:
-            if row[0] == filename:
+            if row.filename == filename:
                 return True
 
         return False
@@ -321,9 +321,9 @@ class BibedFileStore(Gtk.ListStore):
             filetype = FileTypes.USER
 
         return [
-            row[FSCols.FILENAME]
-            for row in self
-            if row[FSCols.FILETYPE] == filetype
+            db.filename
+            for db in self
+            if db.filetype == filetype
         ]
 
     def has_bib_key(self, key):
@@ -331,15 +331,15 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint_function_name()
         # assert lprint(key)
 
-        for filename, database in self.databases.items():
+        for database in self:
 
             for entry in database.itervalues():
                 if key == entry.key:
-                    return filename
+                    return database.filename
 
                 # look in aliases (valid old key values) too.
                 if key in entry.get_field('ids', '').split(','):
-                    return filename
+                    return database.filename
 
         return None
 
@@ -349,7 +349,7 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint(key, filename)
 
         if filename is None:
-            for filename, database in self.databases.items():
+            for database in self:
                 try:
                     database.get_entry_by_key(key)
 
@@ -361,9 +361,9 @@ class BibedFileStore(Gtk.ListStore):
 
         else:
             try:
-                return self.databases[filename].get_entry_by_key(key)
+                return self.get_database(filename).get_entry_by_key(key)
 
-            except KeyError:
+            except NoDatabaseForFilenameError:
                 raise BibKeyNotFoundError
 
     def get_database(self, filename=None, filetype=None):
@@ -383,28 +383,93 @@ class BibedFileStore(Gtk.ListStore):
         )
 
         if filetype is None:
-            try:
-                return self.databases[filename]
+            for database in self:
+                if database.filename == filename:
+                    return database
 
-            except KeyError:
-                raise NoDatabaseForFilenameError
+            raise NoDatabaseForFilenameError(filename)
 
-        filename_index = FSCols.FILENAME
-        filetype_index = FSCols.FILETYPE
+        for database in self:
+            if database.filetype == filetype:
+                return database
 
-        for row in self:
-            if row[filetype_index] == filetype:
-                return self.databases[row[filename_index]]
-
-        raise NoDatabaseForFilenameError
+        raise NoDatabaseForFilenameError(filetype)
 
     def get_filetype(self, filename):
 
-        for row in self:
-            if row[FSCols.FILENAME] == filename:
-                return row[FSCols.FILETYPE]
+        for database in self:
+            if database.filename == filename:
+                return database.filetype
 
         raise FileNotFoundError
+
+    def sync_selection(self, selected_databases):
+
+        assert lprint('SYNC SELECTION', [x.filename for x in selected_databases])
+
+        for database in self:
+            database.selected = bool(database in selected_databases)
+
+        assert lprint('AFTER SYNC', [str(db) for db in self])
+
+    # —————————————————————————————————————————————————————————————— Properties
+
+    @property
+    def system_databases(self):
+
+        for database in self:
+            if database.filetype & FileTypes.SYSTEM:
+                yield database
+
+    @property
+    def selected_system_databases(self):
+
+        for database in self:
+            if database.filetype & FileTypes.SYSTEM and database.selected:
+                yield database
+
+    @property
+    def user_databases(self):
+
+        for database in self:
+            if database.filetype & FileTypes.USER:
+                yield database
+
+    @property
+    def selected_user_databases(self):
+
+        for database in self:
+            if database.filetype & FileTypes.USER and database.selected:
+                yield database
+
+    @property
+    def selected_databases(self):
+
+        for database in self:
+            if database.selected:
+                yield database
+
+    @property
+    def trash(self):
+
+        for database in self:
+            if database.filetype & FileTypes.TRASH:
+                return database
+
+    @property
+    def queue(self):
+
+        for database in self:
+            if database.filetype & FileTypes.QUEUE:
+                return database
+
+    @property
+    def imported(self):
+
+        for database in self:
+            if database.filetype & FileTypes.IMPORTED:
+                return database
+
     # ————————————————————————————————————————————————————————— File operations
 
     def parse(self, filename, filetype, impact_data_store=True, recompute=True):
@@ -415,8 +480,6 @@ class BibedFileStore(Gtk.ListStore):
 
         database = BibedDatabase(filename, filetype, self)
 
-        self.databases[filename] = database
-
         if impact_data_store:
             for entry in database.values():
                 self.data_store.append(entry, filetype)
@@ -425,12 +488,14 @@ class BibedFileStore(Gtk.ListStore):
             if recompute:
                 self.data_store.do_recompute_global_ids()
 
+        return database
+
     def load(self, filename, filetype=None, recompute=True):
 
         # assert lprint_function_name()
         # assert lprint(filename, filetype, recompute)
 
-        if filename in self.databases:
+        if self.has(filename):
             raise AlreadyLoadedException
 
         if filetype is None:
@@ -445,9 +510,11 @@ class BibedFileStore(Gtk.ListStore):
             recompute = False
             inotify = False
 
-        self.parse(filename, filetype,
-                   impact_data_store=impact_data_store,
-                   recompute=recompute)
+        database = self.parse(
+            filename, filetype,
+            impact_data_store=impact_data_store,
+            recompute=recompute
+        )
 
         if inotify:
             self.inotify_add_watch(filename)
@@ -455,21 +522,22 @@ class BibedFileStore(Gtk.ListStore):
         if filetype == FileTypes.USER:
             self.num_user += 1
 
-            if self.num_user == 2:
-                self.prepend(('—', FileTypes.SEPARATOR, ))
-                self.prepend(('All', FileTypes.ALL, ))
-
         elif filetype & FileTypes.SYSTEM:
             self.num_system += 1
 
         # Append to the store as last operation, for
         # everything to be ready for the interface signals.
         # Without this, window title fails to update properly.
-        self.append((filename, filetype, ))
+        self.append(database)
+
+        if __debug__:
+            LOGGER.debug('Loaded file “{}”.'.format(filename))
 
         if not filetype & FileTypes.SYSTEM:
             memories.add_open_file(filename)
             memories.add_recent_file(filename)
+
+        return database
 
     def save(self, thing):
 
@@ -477,40 +545,47 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint(thing)
 
         if isinstance(thing, BibedEntry):
-            database = thing.database
+            database_to_write = thing.database
+
+            assert database_to_write is not None, 'Entry has no database!'
 
         elif isinstance(thing, BibedDatabase):
-            database = thing
+            database_to_write = thing
 
         elif isinstance(thing, str):
-            database = self.databases[thing]
+            database_to_write = self.get_database(filename=thing)
 
-        database.write()
+        else:
+            raise NotImplementedError(type(thing))
+
+        database_to_write.write()
 
     def close(self, filename, save_before=True, recompute=True, remember_close=True):
 
         # assert lprint_function_name()
         # assert lprint(filename, save_before, recompute, remember_close)
 
-        filetype_index = FSCols.FILETYPE
+        database_to_remove = None
+        index_to_remove = None
         impact_data_store = True
-        row_to_remove = None
         inotify = True
 
-        for row in self:
-            if row[FSCols.FILENAME] == filename:
-                if row[filetype_index] == FileTypes.USER:
+        for index, database in enumerate(self):
+
+            if database.filename == filename:
+                if database.filetype == FileTypes.USER:
                     self.num_user -= 1
 
-                elif row[filetype_index] == FileTypes.SYSTEM:
+                elif database.filetype == FileTypes.SYSTEM:
                     self.num_system -= 1
 
-                elif row[filetype_index] == FileTypes.TRANSIENT:
+                elif database.filetype == FileTypes.TRANSIENT:
                     impact_data_store = False
                     recompute = False
                     inotify = False
 
-                row_to_remove = row
+                database_to_remove = database
+                index_to_remove = index
                 break
 
         if inotify:
@@ -518,35 +593,30 @@ class BibedFileStore(Gtk.ListStore):
 
         if save_before:
             # self.clear_save_callback()
-            self.save(filename)
+            self.save(database_to_remove)
 
-        self.remove(row_to_remove.iter)
+        assert database_to_remove is not None
+
+        self.remove(index_to_remove)
+
+        if __debug__:
+            LOGGER.debug('Closed “{}”.'.format(filename))
 
         if impact_data_store:
             self.clear_data(filename, recompute=recompute)
-
-        # Remove the “All” special entry
-        if self.num_user == 1:
-            for row in self:
-                if row[filetype_index] == FileTypes.ALL:
-                    # remove the separator, then “All”
-                    self.remove(self.iter_next(row.iter))
-                    self.remove(row.iter)
-
-                    # Then exit, else store goes mad looping on None.
-                    break
 
         if impact_data_store and remember_close:
             memories.remove_open_file(filename)
 
     def close_all(self, save_before=True, recompute=True, remember_close=True):
 
-        for row in self:
-            if row[FSCols.FILETYPE] not in (FileTypes.SYSTEM, FileTypes.USER):
+        # Again, still, copy()/slice() self to avoid misses.
+        for index, database in enumerate(self[:]):
+            if database.filetype not in (FileTypes.SYSTEM, FileTypes.USER):
                 continue
 
             self.close(
-                row[FSCols.FILENAME],
+                database.filename,
                 save_before=save_before,
                 recompute=recompute,
                 remember_close=remember_close
@@ -586,20 +656,15 @@ class BibedFileStore(Gtk.ListStore):
         # assert lprint_function_name()
         # assert lprint(filename, recompute)
 
-        column_filetype = FSCols.FILETYPE
-        column_filename = FSCols.FILENAME
-
         if filename is None:
-            # clear ALL USER data (no system).
-            for row in self:
-                if row[column_filetype] == FileTypes.USER:
-                    self.clear_data(row[column_filename], recompute=recompute)
-            return
+            # clear all USER data only (no system).
+            for database in self:
+                if database.filetype == FileTypes.USER:
+                    self.data_store.clear_data(
+                        database.filename, recompute=recompute)
 
-        # keep references handy for speed in loops.
-        self.data_store.clear_data(filename, recompute=recompute)
-
-        del self.databases[filename]
+        else:
+            self.data_store.clear_data(filename, recompute=recompute)
 
     def trigger_save(self, filename):
         ''' function called by anywhere in the code to trigger a save().
@@ -652,6 +717,10 @@ class BibedFileStore(Gtk.ListStore):
 
 
 class BibedDataStore(Gtk.ListStore):
+
+    #
+    # TODO: convert BibedEntry to a GObject subclass and simplify all of this.
+    #
 
     def __init__(self, *args, **kwargs):
 

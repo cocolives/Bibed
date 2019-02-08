@@ -28,7 +28,7 @@ from bibed.foundations import (
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
 
-from bibed.utils import to_lower_if_not_none
+from bibed.utils import to_lower_if_not_none, friendly_filename
 from bibed.preferences import preferences, memories, gpod
 from bibed.store import (
     BibedDataStore,
@@ -37,7 +37,7 @@ from bibed.store import (
 )
 
 from bibed.gui.splash import BibedSplash
-from bibed.gui.window import BibEdWindow
+from bibed.gui.window import BibedWindow
 
 
 LOGGER = logging.getLogger(__name__)
@@ -219,6 +219,7 @@ class BibEdApplication(Gtk.Application):
 
     def data_filter_method(self, model, iter, data):
 
+        # a local reference for faster access.
         matched_files = self.window.matched_files
 
         try:
@@ -231,19 +232,21 @@ class BibEdApplication(Gtk.Application):
         row = model[iter]
 
         try:
-            filter_file = self.window.get_selected_filename()
+            selected_filenames = self.window.get_selected_filenames()
 
         except TypeError:
             # The window is not yet constructed.
             return True
 
         else:
-            # TODO: translate 'All'
-            if filter_file != 'All':
-                if row[BibAttrs.FILENAME] != filter_file:
-                    # The current row is not part of displayed
-                    # filename. No need to go further.
-                    return False
+            if not selected_filenames:
+                # No data should match when no file is selected.
+                return False
+
+            elif row[BibAttrs.FILENAME] not in selected_filenames:
+                # The current row is not part of displayed
+                # files. No need to go further.
+                return False
 
         if filter_text is None:
             matched_files.add(row[BibAttrs.FILENAME])
@@ -315,7 +318,8 @@ class BibEdApplication(Gtk.Application):
         # For GUI-setup-order related reasons,
         # we need to delay some things.
         search_grab_focus = False
-        combo_set_active = None
+        databases_to_select = []
+        filenames_to_select = []
 
         # We only allow a single window and raise any existing ones
         if not self.window:
@@ -323,7 +327,7 @@ class BibEdApplication(Gtk.Application):
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = BibEdWindow(title='Main Window', application=self)
+            self.window = BibedWindow(title='Main Window', application=self)
             self.window.show_all()
 
             if preferences.remember_open_files:
@@ -340,8 +344,11 @@ class BibEdApplication(Gtk.Application):
                         search_grab_focus = True
 
                     # Idem, same problem.
-                    if memories.combo_filename is not None:
-                        combo_set_active = memories.combo_filename
+                    if memories.selected_filenames is not None:
+                        filenames_to_select = memories.selected_filenames
+
+                    else:
+                        filenames_to_select = memories.open_files.copy()
 
                     # Then, load all previously opened files.
                     # Get a copy to avoid the set being changed while we load,
@@ -355,21 +362,49 @@ class BibEdApplication(Gtk.Application):
 
                         for filename in memories.open_files.copy():
                             try:
-                                self.open_file(filename)
+                                database = self.open_file(filename,
+                                                          select=False)
 
                             except (IOError, OSError):
                                 # TODO: move this into store ?
                                 memories.remove_open_file(filename)
 
-        # make interface consistent with data.
-        self.window.do_activate()
+                            else:
+                                if filename in filenames_to_select:
+                                    # we have to convert filenames to databases
+                                    # because all of this seems to happen too
+                                    # fast for store to be ready to return
+                                    # .get_database() results before the end
+                                    # of the current method.
+                                    databases_to_select.append(database)
 
-        if combo_set_active:
-            for row in self.window.filtered_files:
-                if row[0] == combo_set_active:
-                    # assert lprint('ACTIVATE', combo_set_active, len(self.window.filtered_files))
-                    self.window.cmb_files.set_active_iter(row.iter)
-                    break
+        if sorted(filenames_to_select) != sorted([x.filename for x in databases_to_select]):
+            # Most probably a system file was selected before closing.
+            # Try to get it again.
+
+            for filename in filenames_to_select:
+                for system_database in self.files.system_databases:
+                    if filename == system_database.filename:
+                        databases_to_select.append(system_database)
+
+        if databases_to_select:
+            print('DB SELECT', tuple(str(x) for x in databases_to_select))
+            self.window.set_selected_databases(databases_to_select)
+
+            # Selecting a system database is the only case that doesn't
+            # trigger a full window / treeview update. Fake it.
+            if len(tuple(self.files.selected_system_databases)):
+                self.window.on_selected_files_changed()
+        else:
+            if not self.files.num_user:
+                # No database. Trigger a treeview filter
+                # anyway to hide the system entries if any.
+                self.window.on_selected_files_changed()
+                self.window.do_activate()
+
+            else:
+                self.window.files_popover.listbox.select_all()
+                # self.window.do_activate()
 
         if search_grab_focus:
             self.window.searchbar.set_search_mode(True)
@@ -416,7 +451,7 @@ class BibEdApplication(Gtk.Application):
 
         self.open_file(filename)
 
-    def open_file(self, filename, recompute=True):
+    def open_file(self, filename, select=True, recompute=True):
         ''' Add a file to the application. '''
 
         # assert lprint_function_name()
@@ -427,7 +462,7 @@ class BibEdApplication(Gtk.Application):
 
         try:
             # Note: via events, this will update the window title.
-            self.files.load(filename, recompute=recompute)
+            database = self.files.load(filename, recompute=recompute)
 
         except AlreadyLoadedException:
             self.do_notification('“{}” already loaded.'.format(filename))
@@ -441,12 +476,11 @@ class BibEdApplication(Gtk.Application):
             self.window.do_status_change(message)
             return
 
-        if len(self.files) > 1:
-            # Now that we have more than one file,
-            # make active and select 'All' by default.
-            self.window.cmb_files.set_sensitive(True)
+        if select:
+            self.window.set_selected_databases([database])
 
-        self.window.cmb_files.set_active(0)
+        # Needed for correct session reload.
+        return database
 
     def reload_files(self, message=None):
 
@@ -476,15 +510,6 @@ class BibEdApplication(Gtk.Application):
                          save_before=save_before,
                          recompute=recompute,
                          remember_close=remember_close)
-
-        if len(self.files) < 2:
-            # Now that we have more than one file,
-            # make active and select 'All' by default.
-            self.window.cmb_files.set_active(0)
-            self.window.cmb_files.set_sensitive(False)
-
-        else:
-            self.window.cmb_files.set_active(0)
 
     # ———————————————————————————————————————————————————————————— on “actions”
 

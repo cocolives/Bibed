@@ -7,11 +7,16 @@ import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
+from bibed.constants import (
+    FileTypes
+)
+
 from bibed.exceptions import (
     # BibedDatabaseException,
     # BibedDatabaseError,
     IndexingFailedError,
 )
+
 from bibed.foundations import (
     lprint, ldebug,
     lprint_caller_name,
@@ -19,18 +24,29 @@ from bibed.foundations import (
 )
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
-
+from bibed.gtk import GObject
 
 LOGGER = logging.getLogger(__name__)
 
 
 # ———————————————————————————————————————————————————————— Controller Classes
 
+class BibedDatabase(GObject.GObject):
+    ''' GOject subclass that wraps a :mod:`bibtexparser` database for faster
+        access, higher-level operations between multiple databases, and updates
+        to a same-level :class:`Gtk.ListStore`.
 
-class BibedDatabase:
-    ''' Wraps a :mod:`bibtexparser` database, for faster access and
-        higher-level operations between multiple databases, and synchronization
-        with an underlying :class:`Gtk.ListStore`. '''
+        Beiing a GObject subclass makes it directly usable in GTK GUI objects,
+        which is not the less cool feature of it.
+    '''
+
+    # NOTE: https://stackoverflow.com/a/11180599/654755
+
+    filename = GObject.property(type=str)
+    filetype = GObject.property(type=int, default=FileTypes.USER)
+
+    # Used in the GUI to know which file(s) is(are) selected.
+    selected = GObject.property(type=bool, default=False)
 
     def __init__(self, filename, filetype, store):
         ''' Create a :class:`~bibed.database.BibedDatabase` instance.
@@ -49,8 +65,10 @@ class BibedDatabase:
         #       and rebuild them just for write(), like we do for
         #       _internal_* fields at the BibedEntry level.
 
-        self.filename    = filename
-        self.filetype    = filetype
+        super().__init__()
+
+        self.filename = filename
+        self.filetype = filetype
         self.files_store = store
         self.data_store  = self.files_store.data_store
 
@@ -86,8 +104,14 @@ class BibedDatabase:
 
     def __str__(self):
 
-        return 'Database(file={}, type={})'.format(
-            os.path.basename(self.filename), self.filetype)
+        return 'BibedDatabase({}[{}]{})'.format(
+            os.path.basename(self.filename),
+            self.filetype,
+            ' SELECTED' if self.selected else '')
+
+    def __len__(self):
+
+        return len(self.entries)
 
     def get_entry_by_key(self, key):
 
