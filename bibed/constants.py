@@ -13,6 +13,8 @@ BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
 BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
+BIBED_SYSTEM_IMPORTED_NAME = 'imported.bib'
+
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
@@ -105,6 +107,7 @@ FileTypes.SEPARATOR = 0x8000000
 FileTypes.SYSTEM    = 0x00ff000
 FileTypes.TRASH     = 0x0001000
 FileTypes.QUEUE     = 0x0002000
+FileTypes.IMPORTED  = 0x0004000
 FileTypes.TRANSIENT = 0x0080000
 FileTypes.USER      = 0x0000fff
 FileTypes.NOTFOUND  = 0x0000800
