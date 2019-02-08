@@ -13,7 +13,7 @@ from bibed.constants import (
 )
 
 from bibed.preferences import preferences
-from bibed.gtk import GLib, Gtk, Gdk
+from bibed.gtk import GLib, Gtk, Gdk, Gio
 
 
 LOGGER = logging.getLogger(__name__)
@@ -583,6 +583,12 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
     return widget
 
 
+def widget_call_method(widgets, method_name, *args, **kwargs):
+
+    for widget in widgets:
+        getattr(widget, method_name)(*args, **kwargs)
+
+
 def build_help_popover(attached_to, help_markup, position, onfocus_list):
 
     popover = Gtk.Popover()
@@ -637,10 +643,9 @@ def vbox_with_icon_and_label(name, label_markup, icon_name=None, icon_path=None)
     label_box.set_border_width(BOXES_BORDER_WIDTH)
 
     if icon_name:
-        icon = Gtk.Image.new_from_icon_name(
-            icon_name,
-            Gtk.IconSize.DIALOG
-        )
+        gicon = Gio.ThemedIcon(name=icon_name)
+        icon = Gtk.Image.new_from_gicon(gicon, Gtk.IconSize.DIALOG)
+
     else:
         icon = Gtk.Image.new_from_file(
             icon_path
@@ -693,14 +698,14 @@ def flat_unclickable_label(label_text, icon_name=None):
     return label
 
 
-def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None):
+def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None, classes=None):
 
     hbox = widget_properties(
         Gtk.HBox(),
         expand=False,
         halign=Gtk.Align.START,
         valign=Gtk.Align.CENTER,
-        classes=['dnd-object'],
+        classes=classes,
     )
 
     hbox.set_name(name)
