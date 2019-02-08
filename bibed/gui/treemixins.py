@@ -1,5 +1,4 @@
-
-import webbrowser
+import os
 
 # from bibed.foundations import ldebug
 from bibed.constants import (
@@ -19,7 +18,10 @@ from bibed.constants import (
     COL_SEPARATOR_WIDTH,
 )
 
-from bibed.utils import open_with_system_launcher
+from bibed.utils import (
+    open_with_system_launcher,
+    open_urls_in_web_browser,
+)
 # from bibed.preferences import memories  # , gpod
 from bibed.entry import BibedEntry
 
@@ -197,14 +199,6 @@ class BibedEntryTreeViewMixin:
 
         return entry
 
-    def get_selected_entry(self):
-        ''' Used in Gtk.SelectionMode.SINGLE. '''
-
-        model, treeiter = self.get_selected()
-
-        return self.get_entry_by_path(model.get_path(treeiter),
-                                      with_global_id=True)
-
     def get_entries_by_paths(self, paths, with_global_id=False, return_iter=False, only_rows=False):
 
         # Are we on the list store, or a filter ?
@@ -234,7 +228,7 @@ class BibedEntryTreeViewMixin:
 
             if return_iter:
                 entries.append((entry, treeiter, ))
-                
+
             else:
                 entries.append(entry)
 
@@ -283,13 +277,13 @@ class BibedEntryTreeViewMixin:
 
     def on_url_clicked(self, renderer, path):
 
-        self.open_url_in_webbrowser(
-            entry=self.get_entry_by_path(path, only_row=True))
+        self.open_entries_urls_in_browser(
+            [self.get_entry_by_path(path, only_row=True)])
 
     def on_file_clicked(self, renderer, path):
 
         self.open_file_in_prefered_application(
-            self.get_entry_by_path(path, only_row=True))
+            [self.get_entry_by_path(path, only_row=True)])
 
     def on_treeview_row_activated(self, treeview, path, column):
 
@@ -313,22 +307,59 @@ class BibedEntryTreeViewMixin:
 
         entry_edit_dialog.destroy()
 
-    # ——————————————————————————————————————————————————————————— Entry actions
+    # —————————————————————————————————————————————————————————— “Copy” actions
 
-    def copy_to_clipboard_or_action(self, field_index, transform_func=None, action_func=None, action_message=None, row=None):
+    def copy_entries_keys_raw_to_clipboard(self, rows=None):
+        return self.copy_to_clipboard_or_action(BibAttrs.KEY, rows=rows)
 
-        if row is None:
-            row = self.get_selected_row()
+    def copy_entries_keys_formatted_to_clipboard(self, rows=None):
+        return self.copy_to_clipboard_or_action(
+            BibAttrs.KEY,
+            transform_func=BibedEntry.single_bibkey_format,
+            rows=rows,
+        )
+
+    def copy_entries_urls_to_clipboard(self, rows=None):
+        return self.copy_to_clipboard_or_action(BibAttrs.URL, rows=rows)
+
+    # —————————————————————————————————————————————————————————— “Open” Actions
+
+    def open_entries_urls_in_browser(self, rows=None):
+        return self.copy_to_clipboard_or_action(
+            BibAttrs.URL,
+            action_func=open_urls_in_web_browser,
+            action_message='opened in web browser',
+            rows=rows,
+        )
+
+    def open_file_in_prefered_application(self, rows=None):
+        return self.copy_to_clipboard_or_action(
+            BibAttrs.FILE,
+            action_func=open_with_system_launcher,
+            action_message='opened in prefered application',
+            rows=rows,
+        )
+
+    # —————————————————————————————————————————————————————————— Generic method
+
+    def copy_to_clipboard_or_action(self, field_index, transform_func=None, action_func=None, action_message=None, rows=None):
+
+        if rows is None:
+            rows = self.get_selected_rows()
         else:
-            row = row
+            rows = rows
 
-        if row is None:
+        if rows is None:
             self.do_status_change(
                 'Nothing selected; nothing copied to clipboard.')
             return
 
-        entry_gid  = row[BibAttrs.GLOBAL_ID]
-        entry_data = row[field_index]
+        entry_gids = []
+        entry_data = []
+
+        for row in rows:
+            entry_gids.append(row[BibAttrs.GLOBAL_ID])
+            entry_data.append(row[field_index])
 
         if entry_data:
             transformed_data = (
@@ -337,11 +368,13 @@ class BibedEntryTreeViewMixin:
             )
 
             if action_func is None:
-                self.clipboard.set_text(transformed_data, len=-1)
+                final_data = '\n'.join(transformed_data)
+
+                self.clipboard.set_text(final_data, len=-1)
 
                 self.do_status_change(
-                    '“{data}” copied to clipboard (from entry {key}).'.format(
-                        data=transformed_data, key=entry_gid))
+                    '{data} copied to clipboard (from entry {key}).'.format(
+                        data='{} line(s), {} chars'.format(len(transformed_data), len(final_data)), key=entry_gids))
 
             else:
                 action_func(transformed_data)
@@ -354,42 +387,9 @@ class BibedEntryTreeViewMixin:
                             if action_message is None
                             else action_message
                         ),
-                        key=entry_gid,
+                        key=entry_gids,
                     )
                 )
 
         else:
             self.do_status_change('Selected entry {key}.'.format(key=entry_gid))
-
-    def copy_raw_key_to_clipboard(self, row=None):
-        return self.copy_to_clipboard_or_action(BibAttrs.KEY, row=row)
-
-    def copy_url_to_clipboard(self, row=None):
-        return self.copy_to_clipboard_or_action(BibAttrs.URL, row=row)
-
-    def copy_single_key_to_clipboard(self, row=None):
-        return self.copy_to_clipboard_or_action(
-            BibAttrs.KEY,
-            transform_func=BibedEntry.single_bibkey_format,
-            row=row,
-        )
-
-    def open_url_in_webbrowser(self, row=None):
-        return self.copy_to_clipboard_or_action(
-            BibAttrs.URL,
-            action_func=webbrowser.open_new_tab,
-            action_message='opened in web browser',
-            row=row,
-        )
-
-    def open_file_in_prefered_application(self, row=None):
-
-        # TODO: and an action to open in file browser.
-
-        # return self.copy_to_clipboard_or_action(
-        #     BibAttrs.KEY,
-        #     action_func=webbrowser.open_new_tab,
-        #     action_message='opened in web browser',
-        #     entry=entry,
-        # )
-        pass
