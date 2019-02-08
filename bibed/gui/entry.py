@@ -327,8 +327,14 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
             last_selected_filename = None
 
-        # The “current” file in main window. Takes precedences on memories.
-        selected_filename = self.parent.get_selected_filename()
+        try:
+            # The first selected user database.
+            selected_filename = tuple(self.files.selected_user_databases)[0]
+
+        except IndexError:
+            # The first user database. This should not fail because the
+            # button and the shortcut are disabled if not file is open.
+            selected_filename = tuple(self.files.user_databases)[0]
 
         try:
             # In previous case (eg. “All”), this will be None.
