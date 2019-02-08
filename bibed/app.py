@@ -1,8 +1,8 @@
 
 import os
 import logging
-
-from collections import OrderedDict
+import random
+import time
 
 from bibed.constants import (
     APP_ID,
@@ -11,21 +11,24 @@ from bibed.constants import (
     APP_MENU_XML,
     BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
+    BIBED_BACKGROUNDS_DIR,
     BibAttrs,
+    SEARCH_SPECIALS,
     BIBTEXPARSER_VERSION,
+    MAIN_TREEVIEW_CSS,
 )
 
 from bibed.foundations import (
-    lprint,
-    lprint_function_name,
-    set_process_title,
+    lprint, lprint_function_name,
     touch_file,
+    set_process_title,
+    seconds_to_string,
 )
 
 # Import Gtk before preferences, to initialize GI.
-from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Notify
+from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
 
-from bibed.utils import to_lower_if_not_none
+from bibed.utils import to_lower_if_not_none, friendly_filename
 from bibed.preferences import preferences, memories, gpod
 from bibed.store import (
     BibedDataStore,
@@ -33,7 +36,8 @@ from bibed.store import (
     AlreadyLoadedException,
 )
 
-from bibed.gui.window import BibEdWindow
+from bibed.gui.splash import BibedSplash
+from bibed.gui.window import BibedWindow
 
 
 LOGGER = logging.getLogger(__name__)
@@ -54,6 +58,9 @@ GLib.set_application_name(APP_NAME)
 class BibEdApplication(Gtk.Application):
 
     def __init__(self, *args, **kwargs):
+
+        self.time_start = kwargs.pop('time_start')
+
         super().__init__(*args, application_id=APP_ID,
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
                          **kwargs)
@@ -71,9 +78,59 @@ class BibEdApplication(Gtk.Application):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
-        self.files = OrderedDict()
+        self.splash = None
+
+        self.setup_data_store()
 
     # ——————————————————————————————————————————————————————————— setup methods
+
+    @property
+    def css_data(self):
+
+        with open(os.path.join(BIBED_DATA_DIR, 'style.css')) as css_file:
+            self.__css_data_string = css_file.read()
+
+        if gpod('use_treeview_background'):
+            background_filename = self.get_random_background()
+            background_position = None
+            background_size = None
+
+            if '-contain' in background_filename:
+                background_size = 'contain'
+
+            elif '-cover' in background_filename:
+                background_size = 'cover'
+
+            if background_size is None:
+                background_size = 'cover'
+
+            for vertical_position in ('top', 'bottom', ):
+                for horizontal_position in ('left', 'right', ):
+                    if vertical_position in background_filename \
+                            and horizontal_position in background_filename:
+                                background_position = '{} {}'.format(
+                                    horizontal_position, vertical_position)
+
+            if background_position is None:
+                background_position = 'left top'
+
+            css_data_string = self.__css_data_string[:] + MAIN_TREEVIEW_CSS
+
+            css_data_string = css_data_string.replace(
+                '{background_filename}', background_filename)
+            css_data_string = css_data_string.replace(
+                '{background_position}', background_position)
+            css_data_string = css_data_string.replace(
+                '{background_size}', background_size)
+
+            return css_data_string
+
+        return self.__css_data_string
+
+    def get_random_background(self):
+
+        for root, dirs, files in os.walk(BIBED_BACKGROUNDS_DIR):
+            return os.path.join(BIBED_BACKGROUNDS_DIR, random.choice(files))
 
     def setup_resources_and_css(self):
 
@@ -90,14 +147,19 @@ class BibEdApplication(Gtk.Application):
         # print icon_info.get_filename()
 
         self.css_provider = Gtk.CssProvider()
-        self.css_provider.load_from_path(
-            os.path.join(BIBED_DATA_DIR, 'style.css'))
+
+        self.reload_css_provider_data()
 
         self.style_context = Gtk.StyleContext()
         self.style_context.add_provider_for_screen(
             default_screen,
             self.css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_USER)
+
+    def reload_css_provider_data(self):
+
+        # This will fill the CSS string with a random background on the fly.
+        self.css_provider.load_from_data(bytes(self.css_data.encode('utf-8')))
 
     def setup_actions(self):
 
@@ -128,11 +190,14 @@ class BibEdApplication(Gtk.Application):
 
     def setup_data_store(self):
 
-        # Stores All BIB entries.
-        self.data = BibedDataStore()
-
         # Stores open files (user / system / other)
-        self.files = BibedFileStore(self.data)
+        self.files = BibedFileStore()
+
+        # Stores All BIB entries.
+        self.data = BibedDataStore(files_store=self.files)
+
+        # This must be done after the data store has loaded.
+        self.files.load_system_files()
 
         # Keep the filter data sortable along the way.
         self.filter = self.data.filter_new()
@@ -140,9 +205,22 @@ class BibEdApplication(Gtk.Application):
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.data_filter_method)
 
+    def launch_splash(self):
+
+        self.splash = BibedSplash()
+        self.splash.start()
+
+    def close_splash(self):
+
+        self.splash.destroy()
+        self.splash = None
+
     # ——————————————————————————————————————————————————————— data store filter
 
     def data_filter_method(self, model, iter, data):
+
+        # a local reference for faster access.
+        matched_files = self.window.matched_files
 
         try:
             filter_text = self.window.search.get_text()
@@ -154,21 +232,24 @@ class BibEdApplication(Gtk.Application):
         row = model[iter]
 
         try:
-            filter_file = self.window.get_selected_filename()
+            selected_filenames = self.window.get_selected_filenames()
 
         except TypeError:
             # The window is not yet constructed.
             return True
 
         else:
-            # TODO: translate 'All'
-            if filter_file != 'All':
-                if row[BibAttrs.FILENAME] != filter_file:
-                    # The current row is not part of displayed
-                    # filename. No need to go further.
-                    return False
+            if not selected_filenames:
+                # No data should match when no file is selected.
+                return False
+
+            elif row[BibAttrs.FILENAME] not in selected_filenames:
+                # The current row is not part of displayed
+                # files. No need to go further.
+                return False
 
         if filter_text is None:
+            matched_files.add(row[BibAttrs.FILENAME])
             return True
 
         filter_text = filter_text.strip().lower()
@@ -188,21 +269,10 @@ class BibEdApplication(Gtk.Application):
                 full_text.append(word)
 
         for key, val in specials:
-            if key == 't':  # TYPE
-                if val not in row[BibAttrs.TYPE].lower():
-                    return False
-
-            if key == 'k':  # (bib) KEY
-                if val not in row[BibAttrs.KEY].lower():
-                    return False
-
-            if key == 'j':
-                if val not in row[BibAttrs.JOURNAL].lower():
-                    return False
-
-            if key == 'y':
-                if int(val) != int(row[BibAttrs.YEAR]):
-                    return False
+            for char, index, label in SEARCH_SPECIALS:
+                if key == char:
+                    if val not in row[index].lower():
+                        return False
 
         # TODO: unaccented / delocalized search.
 
@@ -220,6 +290,7 @@ class BibEdApplication(Gtk.Application):
             if word not in ' '.join(model_full_text_data):
                 return False
 
+        matched_files.add(row[BibAttrs.FILENAME])
         return True
 
     # ———————————————————————————————————————————————————————————— do “actions”
@@ -228,9 +299,12 @@ class BibEdApplication(Gtk.Application):
         Gtk.Application.do_startup(self)
 
         self.setup_resources_and_css()
+
+        # TODO: splash doesn't work.
+        # self.launch_splash()
+
         self.setup_actions()
         self.setup_app_menu()
-        self.setup_data_store()
 
     def do_notification(self, message):
 
@@ -244,7 +318,8 @@ class BibEdApplication(Gtk.Application):
         # For GUI-setup-order related reasons,
         # we need to delay some things.
         search_grab_focus = False
-        combo_set_active = None
+        databases_to_select = []
+        filenames_to_select = []
 
         # We only allow a single window and raise any existing ones
         if not self.window:
@@ -252,7 +327,7 @@ class BibEdApplication(Gtk.Application):
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
-            self.window = BibEdWindow(title='Main Window', application=self)
+            self.window = BibedWindow(title='Main Window', application=self)
             self.window.show_all()
 
             if preferences.remember_open_files:
@@ -269,8 +344,11 @@ class BibEdApplication(Gtk.Application):
                         search_grab_focus = True
 
                     # Idem, same problem.
-                    if memories.combo_filename is not None:
-                        combo_set_active = memories.combo_filename
+                    if memories.selected_filenames is not None:
+                        filenames_to_select = memories.selected_filenames
+
+                    else:
+                        filenames_to_select = memories.open_files.copy()
 
                     # Then, load all previously opened files.
                     # Get a copy to avoid the set being changed while we load,
@@ -284,24 +362,58 @@ class BibEdApplication(Gtk.Application):
 
                         for filename in memories.open_files.copy():
                             try:
-                                self.open_file(filename)
+                                database = self.open_file(filename,
+                                                          select=False)
 
                             except (IOError, OSError):
                                 # TODO: move this into store ?
                                 memories.remove_open_file(filename)
 
-        # make interface consistent with data.
-        self.window.do_activate()
+                            else:
+                                if filename in filenames_to_select:
+                                    # we have to convert filenames to databases
+                                    # because all of this seems to happen too
+                                    # fast for store to be ready to return
+                                    # .get_database() results before the end
+                                    # of the current method.
+                                    databases_to_select.append(database)
 
-        if combo_set_active:
-            for row in self.window.filtered_files:
-                if row[0] == combo_set_active:
-                    # assert lprint('ACTIVATE', combo_set_active, len(self.window.filtered_files))
-                    self.window.cmb_files.set_active_iter(row.iter)
-                    break
+        if sorted(filenames_to_select) != sorted([x.filename for x in databases_to_select]):
+            # Most probably a system file was selected before closing.
+            # Try to get it again.
+
+            for filename in filenames_to_select:
+                for system_database in self.files.system_databases:
+                    if filename == system_database.filename:
+                        databases_to_select.append(system_database)
+
+        if databases_to_select:
+            self.window.set_selected_databases(databases_to_select)
+
+            # Selecting a system database is the only case that doesn't
+            # trigger a full window / treeview update. Fake it.
+            if len(tuple(self.files.selected_system_databases)):
+                self.window.on_selected_files_changed()
+        else:
+            if not self.files.num_user:
+                # No database. Trigger a treeview filter
+                # anyway to hide the system entries if any.
+                self.window.on_selected_files_changed()
+                self.window.do_activate()
+
+            else:
+                self.window.files_popover.listbox.select_all()
+                # self.window.do_activate()
 
         if search_grab_focus:
+            self.window.searchbar.set_search_mode(True)
             self.window.search.grab_focus()
+
+        # TODO: splash doesn't work.
+        # self.close_splash()
+
+        LOGGER.info('Startup time (including session restore): {}'.format(
+            seconds_to_string(time.time() - self.time_start)))
 
         self.window.present()
 
@@ -317,6 +429,15 @@ class BibEdApplication(Gtk.Application):
         self.activate()
         return 0
 
+    def run(self, *args, **kwargs):
+
+        try:
+            super().run(*args, **kwargs)
+
+        except KeyboardInterrupt:
+            LOGGER.warning('Interrupted, terminating properly…')
+            self.on_quit(None, None)
+
     # ———————————————————————————————————————————— higher level file operations
     # TODO: move them to main window?
 
@@ -329,7 +450,7 @@ class BibEdApplication(Gtk.Application):
 
         self.open_file(filename)
 
-    def open_file(self, filename, recompute=True):
+    def open_file(self, filename, select=True, recompute=True):
         ''' Add a file to the application. '''
 
         # assert lprint_function_name()
@@ -340,7 +461,7 @@ class BibEdApplication(Gtk.Application):
 
         try:
             # Note: via events, this will update the window title.
-            self.files.load(filename, recompute=recompute)
+            database = self.files.load(filename, recompute=recompute)
 
         except AlreadyLoadedException:
             self.do_notification('“{}” already loaded.'.format(filename))
@@ -354,12 +475,11 @@ class BibEdApplication(Gtk.Application):
             self.window.do_status_change(message)
             return
 
-        if len(self.files) > 1:
-            # Now that we have more than one file,
-            # make active and select 'All' by default.
-            self.window.cmb_files.set_sensitive(True)
+        if select:
+            self.window.set_selected_databases([database])
 
-        self.window.cmb_files.set_active(0)
+        # Needed for correct session reload.
+        return database
 
     def reload_files(self, message=None):
 
@@ -389,15 +509,6 @@ class BibEdApplication(Gtk.Application):
                          save_before=save_before,
                          recompute=recompute,
                          remember_close=remember_close)
-
-        if len(self.files) < 2:
-            # Now that we have more than one file,
-            # make active and select 'All' by default.
-            self.window.cmb_files.set_active(0)
-            self.window.cmb_files.set_sensitive(False)
-
-        else:
-            self.window.cmb_files.set_active(0)
 
     # ———————————————————————————————————————————————————————————— on “actions”
 
@@ -481,12 +592,17 @@ class BibEdApplication(Gtk.Application):
 
         # This will close system files too.
         self.files.close_all(
-            save_before=True,
+
+            # Save is done along-the-way at each user action that needs it.
+            save_before=False,
             recompute=False,
 
             # This will allow automatic reopen on next launch.
             remember_close=False,
         )
 
-        LOGGER.info('Terminating application.')
         self.quit()
+
+        LOGGER.info(
+            'Terminating application; ran {}.'.format(
+                seconds_to_string(time.time() - self.time_start)))

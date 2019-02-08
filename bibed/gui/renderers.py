@@ -1,6 +1,6 @@
 
 from bibed.constants import CELLRENDERER_PIXBUF_PADDING
-from bibed.gui.gtk import GObject, Gtk
+from bibed.gtk import GObject, Gtk
 
 
 class CellRendererTogglePixbuf(Gtk.CellRendererPixbuf):

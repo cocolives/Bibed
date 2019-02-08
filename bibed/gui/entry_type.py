@@ -17,12 +17,16 @@ from bibed.preferences import defaults, preferences
 from bibed.gui.helpers import (
     widget_properties,
     label_with_markup,
+    get_icon,
+    find_child_by_class,
+    vbox_with_icon_and_label,
+    flat_unclickable_button_in_hbox,
     # in_scrolled,
     # frame_defaults,
     # scrolled_textview,
 )
 
-from bibed.gui.gtk import Gtk
+from bibed.gtk import Gtk
 
 
 LOGGER = logging.getLogger(__name__)
@@ -65,12 +69,12 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
     def setup_stack(self):
 
-        def build_types_grid(qualify, children, btn_markup, size, size_multiplier):
+        def build_types_grid(qualify, children, btn_markup, size, size_multiplier, button_generator, icon_size, button_halign, button_margin):
 
             grid = Gtk.Grid()
-            grid.set_border_width(BOXES_BORDER_WIDTH * size_multiplier)
-            grid.set_column_spacing(GRID_COLS_SPACING * size_multiplier)
-            grid.set_row_spacing(GRID_ROWS_SPACING * size_multiplier)
+            grid.set_border_width(BOXES_BORDER_WIDTH)
+            grid.set_column_spacing(GRID_COLS_SPACING / 2)
+            grid.set_row_spacing(GRID_ROWS_SPACING / 2)
 
             types_labels = defaults.types.labels
 
@@ -83,14 +87,6 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
             for index, child_name in enumerate(children):
 
-                label = widget_properties(
-                    Gtk.Label(),
-                    expand=False,
-                    margin=BOXES_BORDER_WIDTH * size_multiplier,
-                    halign=Gtk.Align.CENTER,
-                    valign=Gtk.Align.CENTER,
-                )
-
                 type_node = getattr(defaults.fields.by_type, child_name)
                 type_doc  = getattr(defaults.types.docs, child_name)
 
@@ -100,22 +96,22 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
                 assert(getattr(types_labels, child_name) is not None)
 
-                label.set_markup_with_mnemonic(
-                    btn_markup.format(
-                        size=size, label=getattr(types_labels, child_name),
-                        help=GENERIC_HELP_SYMBOL
-                        if type_doc else ''))
-
                 btn = widget_properties(
                     Gtk.Button(),
                     expand=True,
-                    margin=BOXES_BORDER_WIDTH * size_multiplier,
-                    halign=Gtk.Align.CENTER,
+                    margin=button_margin,
+                    halign=button_halign,
                     valign=Gtk.Align.CENTER,
                 )
-                btn.add(label)
+                btn.add(button_generator(
+                    child_name, btn_markup.format(
+                        size=size, label=getattr(types_labels, child_name),
+                        help=GENERIC_HELP_SYMBOL
+                        if type_doc else ''),
+                    icon_path=get_icon(child_name, 'type', icon_size)))
                 btn.set_relief(Gtk.ReliefStyle.NONE)
-                label.set_mnemonic_widget(btn)
+
+                find_child_by_class(btn, Gtk.Label).set_mnemonic_widget(btn)
                 btn.connect('clicked', self.on_type_clicked, child_name)
 
                 if not type_has_fields:
@@ -178,10 +174,22 @@ class BibedEntryTypeDialog(Gtk.Dialog):
             size_multiplier = 3
 
         self.grid_types_main = build_types_grid(
-            'main', types_main, label_tmpl_main, font_size, size_mult_main
+            'main', types_main,
+            label_tmpl_main,
+            font_size, size_mult_main,
+            vbox_with_icon_and_label,
+            '48x48',
+            button_halign=Gtk.Align.CENTER,
+            button_margin=BOXES_BORDER_WIDTH * size_multiplier
         )
         self.grid_types_other = build_types_grid(
-            'other', types_other, label_tmpl_other, font_size, size_mult_other
+            'other', types_other,
+            label_tmpl_other,
+            font_size, size_mult_other,
+            flat_unclickable_button_in_hbox,
+            '24x24',
+            button_halign=Gtk.Align.START,
+            button_margin=BOXES_BORDER_WIDTH / size_multiplier
         )
 
         stack_switcher = widget_properties(
@@ -189,7 +197,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.CENTER,
             valign=Gtk.Align.CENTER,
-            margin=GRID_BORDER_WIDTH * size_multiplier,
+            margin=GRID_BORDER_WIDTH,
         )
 
         stack_switcher.set_stack(stack)

@@ -1,5 +1,6 @@
 import os
 import bibtexparser
+from collections import defaultdict
 
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
@@ -7,6 +8,13 @@ APP_ID = 'es.cocoliv.bibed'
 BIBED_DATA_DIR = os.path.join(os.path.realpath(
     os.path.abspath(os.path.dirname(__file__))), 'data')
 BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
+BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
+
+
+BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
+BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
+BIBED_SYSTEM_IMPORTED_NAME = 'imported.bib'
+
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
@@ -21,43 +29,41 @@ def icon(name):
 
 
 class Anything:
-    pass
+    ''' An object that can have any attribute. '''
+    def __init__(self, args_list=None):
+        '''
+            :param args_list: an iterable of strings, of which any will be
+                set as attribute of self with incremental integer value.
+                This is useful to build named enums.
+        '''
+        if args_list:
+            for index, arg in enumerate(args_list):
+                setattr(self, arg, index)
 
-
-BibAttrs = Anything()
 
 # Sync this with DATA_STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
-BibAttrs.GLOBAL_ID = 0
-BibAttrs.FILENAME  = 1
-BibAttrs.ID        = 2
-BibAttrs.TOOLTIP   = 3
-BibAttrs.TYPE      = 4
-BibAttrs.KEY       = 5
-BibAttrs.FILE      = 6
-BibAttrs.URL       = 7
-BibAttrs.DOI       = 8
-BibAttrs.AUTHOR    = 9
-BibAttrs.TITLE     = 10
-BibAttrs.SUBTITLE  = 11
-BibAttrs.JOURNAL   = 12
-BibAttrs.YEAR      = 13
-BibAttrs.DATE      = 14
-BibAttrs.QUALITY   = 15
-BibAttrs.READ      = 16
-BibAttrs.COMMENT   = 17
-
-# Sync this with FILE_STORE_LIST_ARGS and store:BibedFileStore()
-FSCols = Anything()
-FSCols.FILENAME = 0
-FSCols.FILETYPE = 1
-
-FileTypes = Anything()
-FileTypes.SPECIAL = 0xff0000
-FileTypes.ALL     = 0x010000
-FileTypes.SYSTEM  = 0x00ff00
-FileTypes.TRASH   = 0x000100
-FileTypes.QUEUE   = 0x000200
-FileTypes.USER    = 0x0000ff
+BibAttrs = Anything((
+    'GLOBAL_ID',
+    'FILENAME',
+    'ID',
+    'TOOLTIP',
+    'TYPE',
+    'KEY',
+    'FILE',
+    'URL',
+    'DOI',
+    'AUTHOR',
+    'TITLE',
+    'SUBTITLE',
+    'JOURNAL',
+    'YEAR',
+    'DATE',
+    'QUALITY',
+    'READ',
+    'COMMENT',
+    'FILETYPE',
+    'COLOR',
+))
 
 
 DATA_STORE_LIST_ARGS = (
@@ -78,13 +84,57 @@ DATA_STORE_LIST_ARGS = (
     str,  # date
     str,  # quality
     str,  # read status
-    str,  # has comments
+    str,  # comment (text field)
+    int,  # file type
+    str,  # foreground color
 )
+
+# Sync this with FILE_STORE_LIST_ARGS and store:BibedFileStore()
+FSCols = Anything((
+    'FILENAME',
+    'FILETYPE',
+))
 
 FILE_STORE_LIST_ARGS = (
     str,  # filename
     int,  # filetype (see FileTypes)
 )
+
+FileTypes = Anything()
+FileTypes.SPECIAL   = 0xff00000
+FileTypes.ALL       = 0x0100000
+FileTypes.SEPARATOR = 0x8000000
+FileTypes.SYSTEM    = 0x00ff000
+FileTypes.TRASH     = 0x0001000
+FileTypes.QUEUE     = 0x0002000
+FileTypes.IMPORTED  = 0x0004000
+FileTypes.TRANSIENT = 0x0080000
+FileTypes.USER      = 0x0000fff
+FileTypes.NOTFOUND  = 0x0000800
+
+
+FILETYPES_COLORS = {
+    FileTypes.SPECIAL   : '#000000',
+    FileTypes.ALL       : '#000000',
+    FileTypes.SEPARATOR : '#000000',
+    FileTypes.SYSTEM    : '#000000',
+    FileTypes.TRASH     : '#999',
+    FileTypes.QUEUE     : '#6c6',
+    FileTypes.TRANSIENT : '#afa',
+    FileTypes.USER      : '#000000',
+}
+
+SEARCH_SPECIALS = (
+    ('t', BibAttrs.TYPE, 'type'),
+    ('k', BibAttrs.KEY, 'key'),
+    ('a', BibAttrs.AUTHOR, 'author'),
+    ('i', BibAttrs.TITLE, 'title'),
+    ('j', BibAttrs.JOURNAL, 'journal'),
+    ('y', BibAttrs.YEAR, 'year'),
+    ('f', BibAttrs.FILE, 'file'),
+    ('u', BibAttrs.URL, 'URL'),
+)
+
 
 # See GUI constants later for icons.
 JABREF_QUALITY_KEYWORDS = [
@@ -103,7 +153,7 @@ BIBED_APP_DIR_POSIX  = '.config/bibed'
 
 # ———————————————————————————————————————————————————————————— GUI constants
 
-APP_MENU_XML = """
+APP_MENU_XML = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <menu id="app-menu">
@@ -126,7 +176,24 @@ APP_MENU_XML = """
     </section>
   </menu>
 </interface>
-"""
+'''
+
+# Impossible to set background-opacity in GTK, and we don't have web hacks
+# like div:after. Thus we need to prepare the background images with an
+# already set transparency, like transparent PNGs or flattened JPEGs.
+MAIN_TREEVIEW_CSS = '''
+treeview.view:not(:selected) {
+    background-color: transparent;
+}
+
+scrolledwindow#main {
+    background-color: white;
+    background-image: url("{background_filename}");
+    background-size: {background_size};
+    background-position: {background_position};
+    background-repeat: no-repeat;
+}
+'''
 
 BOXES_BORDER_WIDTH = 5
 
@@ -137,7 +204,7 @@ GRID_ROWS_SPACING = 20
 SEARCH_WIDTH_NORMAL   = 10
 SEARCH_WIDTH_EXPANDED = 30
 
-FILES_COMBO_DEFAULT_WIDTH = 25
+COMBO_CHARS_DIVIDER = 10
 
 # TODO: remove this when search / combo are implemented as sidebar / searchbar
 RESIZE_SIZE_MULTIPLIER = 0.20

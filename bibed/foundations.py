@@ -7,6 +7,8 @@ import yaml
 import inspect
 import logging
 
+from datetime import timedelta
+
 from yaml.representer import Representer
 
 from bibed.styles import (
@@ -26,7 +28,11 @@ LOGGER = logging.getLogger(__name__)
 # ————————————————————————————————————————————————————————————— Functions
 
 def is_osx():
-    return sys.platform == "darwin"
+    return sys.platform == 'darwin'
+
+
+def is_windows():
+    return os.name != 'posix'
 
 
 def load_library(names, shared=True):
@@ -338,15 +344,15 @@ def touch_file(filename):
         assert ldebug('touch_file(): created “{}”.', filename)
 
 
+def seconds_to_string(elapsed):
+
+    # See https://stackoverflow.com/a/12344609/654755
+
+    return str(timedelta(seconds=elapsed))
+
+
 # ———————————————————————————————————————————————————————————————— Classes
 
-class BibedException(Exception):
-    pass
-
-
-class BibedError(BibedException):
-    pass
-    
 
 class AttributeDict(object):
     """
@@ -416,6 +422,13 @@ class AttributeDict(object):
 
     def __repr__(self):
         return str(self.__dict__)
+
+    def copy(self):
+        ''' WARNING: this returns a DICT!! '''
+
+        return {
+            key: getattr(self, key) for key in self.keys_to_dump
+        }
 
     def items(self):
 

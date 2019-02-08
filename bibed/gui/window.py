@@ -1,4 +1,4 @@
-
+import os
 import logging
 
 from bibed.foundations import (
@@ -9,41 +9,47 @@ from bibed.foundations import (
 
 from bibed.constants import (
     APP_NAME,
-    BibAttrs,
+    # BibAttrs,
     FSCols,
     FileTypes,
     # BIBED_ICONS_DIR,
-    SEARCH_WIDTH_NORMAL,
+    # SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
-    FILES_COMBO_DEFAULT_WIDTH,
+    COMBO_CHARS_DIVIDER,
     RESIZE_SIZE_MULTIPLIER,
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
 )
 
 from bibed.preferences import memories, gpod
-from bibed.utils import get_user_home_directory
+from bibed.utils import get_user_home_directory, friendly_filename
 from bibed.entry import BibedEntry
 
 from bibed.gui.helpers import (
-    # scrolled_textview,
+    flash_field,
+    markup_bib_filename,
+    markup_entries,
     add_classes,
     remove_classes,
     message_dialog,
     widget_properties,
     label_with_markup,
+    flat_unclickable_button_in_hbox,
 )
 from bibed.gui.preferences import BibedPreferencesDialog
+from bibed.gui.database import BibedDatabasePopover
 from bibed.gui.treeview import BibedMainTreeView
+from bibed.gui.search import BibedSearchBar
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gui.gtk import Gio, GLib, Gtk, Gdk, Pango
+from bibed.gui.dialogs import BibedMoveDialog
+from bibed.gtk import Gio, GLib, Gtk, Gdk, Pango
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-class BibebWindowBlockSignalsContextManager:
+class BibedWindowBlockSignalsContextManager:
     def __init__(self, window):
         self.win = window
 
@@ -54,7 +60,7 @@ class BibebWindowBlockSignalsContextManager:
         self.win.unblock_signals()
 
 
-class BibEdWindow(Gtk.ApplicationWindow):
+class BibedWindow(Gtk.ApplicationWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -107,17 +113,13 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.setup_treeview()
         self.setup_network()
 
+        self.setup_searchbar()
         self.setup_stack()
 
         self.setup_headerbar()
         self.setup_statusbar()
 
         self.setup_vbox()
-
-        self.vbox.pack_start(self.stack, True, True, 0)
-        self.vbox.pack_end(self.statusbar, False, True, 0)
-
-        self.add(self.vbox)
 
     def setup_icon(self):
 
@@ -135,6 +137,19 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # self.set_icon_list([pixbuf])
         pass
 
+    def setup_searchbar(self):
+
+        # used to speed up title updates during searches.
+        self.matched_files = set()
+
+        self.search = Gtk.SearchEntry()
+
+        self.search.props.width_chars = SEARCH_WIDTH_EXPANDED
+        self.search.connect('search-changed',
+                            self.on_search_filter_changed)
+
+        self.searchbar = BibedSearchBar(self.search)
+
     def setup_stack(self):
 
         stack = Gtk.Stack()
@@ -149,7 +164,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         stack.add_titled(
             self.treeview_sw,
             'database',
-            'BIB Database'
+            'BIB Databases'
         )
 
         stack.child_set_property(
@@ -173,6 +188,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
     def setup_vbox(self):
         self.vbox = Gtk.VBox()
 
+        self.vbox.pack_start(self.searchbar, False, True, 0)
+        self.vbox.pack_start(self.stack, True, True, 0)
+        self.vbox.pack_end(self.statusbar, False, True, 0)
+
+        self.add(self.vbox)
+
     def setup_statusbar(self):
 
         self.statusbar = Gtk.Statusbar()
@@ -190,119 +211,113 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.set_titlebar(hb)
 
         # This is to connect the headerbar close button to our quit method.
-        self.connect("delete-event", self.application.on_quit)
+        self.connect('delete-event', self.application.on_quit)
 
         # ———————————————————————— Left side, from start to end
 
-        bbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        Gtk.StyleContext.add_class(bbox.get_style_context(), "linked")
+        bbox_file = widget_properties(
+            Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
+            # classes=['linked'],
+        )
 
         self.btn_file_new = Gtk.Button()
-        self.btn_file_new.connect("clicked", self.on_file_new_clicked)
-        icon = Gio.ThemedIcon(name="document-new-symbolic")
+        self.btn_file_new.set_tooltip_markup('Create an empty BIB database')
+        self.btn_file_new.connect('clicked', self.on_file_new_clicked)
+        icon = Gio.ThemedIcon(name='document-new-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_new.add(image)
-        bbox.add(self.btn_file_new)
+        self.btn_file_new.set_relief(Gtk.ReliefStyle.NONE)
+
+        bbox_file.add(self.btn_file_new)
 
         self.btn_file_open = Gtk.Button()
-        self.btn_file_open.connect("clicked", self.on_file_open_clicked)
-        icon = Gio.ThemedIcon(name="document-open-symbolic")
+        self.btn_file_open.set_tooltip_markup('Open an existing BIB database')
+        self.btn_file_open.connect('clicked', self.on_file_open_clicked)
+        icon = Gio.ThemedIcon(name='document-open-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_file_open.add(image)
-        bbox.add(self.btn_file_open)
+        self.btn_file_open.set_relief(Gtk.ReliefStyle.NONE)
 
-        hb.pack_start(bbox)
+        bbox_file.add(self.btn_file_open)
 
-        self.btn_file_close = Gtk.Button()
-        self.btn_file_close.connect("clicked", self.on_file_close_clicked)
-        icon = Gio.ThemedIcon(name="window-close-symbolic")
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.btn_file_close.add(image)
-        self.btn_file_close_switch_icon(False)
-        hb.pack_start(self.btn_file_close)
+        hb.pack_start(bbox_file)
 
-        files_combo = self.setup_files_combobox()
-        hb.pack_start(files_combo)
+        # object-select-symbolic
+        self.btn_file_select = Gtk.Button()
+        self.btn_file_select.set_tooltip_markup('Select databases to display in main view')
+        self.btn_file_select.add(flat_unclickable_button_in_hbox(
+            'file_select', 'Databases',
+            icon_name='drive-multidisk-symbolic',
+        ))
+
+        self.files_popover = BibedDatabasePopover(
+            self.btn_file_select, window=self)
+
+        self.btn_file_select.connect('clicked',
+                                     self.on_file_select_clicked,
+                                     self.files_popover)
+
+        # bbox_file.add(self.btn_file_select)
+        hb.pack_start(self.btn_file_select)
+
+        bbox_entry = widget_properties(
+            Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
+            classes=['linked'],
+        )
 
         self.btn_add = Gtk.Button()
-        icon = Gio.ThemedIcon(name="list-add-symbolic")
+        self.btn_add.set_tooltip_markup('Add a bibliography entry')
+        icon = Gio.ThemedIcon(name='list-add-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_add.add(image)
         self.btn_add.connect('clicked', self.on_entry_add_clicked)
 
-        hb.pack_start(self.btn_add)
+        bbox_entry.add(self.btn_add)
 
-        self.btn_delete = Gtk.Button()
-        icon = Gio.ThemedIcon(name="list-remove-symbolic")
+        self.btn_move = Gtk.Button()
+        self.btn_move.set_tooltip_markup('Move selected entries to another database')
+        icon = Gio.ThemedIcon(name='go-next-symbolic')
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_move.add(image)
+        self.btn_move.connect('clicked', self.on_entries_move_clicked)
+
+        bbox_entry.add(self.btn_move)
+
+        self.btn_delete = Gtk.Button()  # edit-delete-symbolic
+        self.btn_delete.set_tooltip_markup('Trash or delete selected entries')
+        icon = Gio.ThemedIcon(name='list-remove-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_delete.add(image)
-        self.btn_delete.connect('clicked', self.on_entry_delete_clicked)
+        self.btn_delete.connect('clicked', self.on_entries_delete_clicked)
 
-        hb.pack_start(self.btn_delete)
+        bbox_entry.add(self.btn_delete)
+
+        hb.pack_start(bbox_entry)
 
         # ————————————————————————————— Right side, from end to start
 
         self.btn_preferences = Gtk.Button()
-        self.btn_preferences.connect(
-            "clicked", self.on_preferences_clicked)
-
-        icon = Gio.ThemedIcon(name="preferences-system-symbolic")
+        self.btn_preferences.set_tooltip_markup('Show application preferences')
+        icon = Gio.ThemedIcon(name='preferences-system-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_preferences.add(image)
+        self.btn_preferences.connect(
+            'clicked', self.on_preferences_clicked)
+
         hb.pack_end(self.btn_preferences)
 
         hb.pack_end(self.stack_switcher)
 
-        self.search = Gtk.SearchEntry()
-        self.search.connect("search-changed",
-                            self.on_search_filter_changed)
-        self.search.connect("focus-in-event",
-                            self.on_search_focus_event)
-        self.search.connect("focus-out-event",
-                            self.on_search_focus_event)
-        self.search.props.width_chars = SEARCH_WIDTH_NORMAL
+        self.btn_search = Gtk.Button()
+        self.btn_search.set_tooltip_markup('Start searching in selected databases')
+        icon = Gio.ThemedIcon(name='system-search-symbolic')
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_search.add(image)
+        self.btn_search.connect('clicked', self.on_search_clicked)
 
-        hb.pack_end(self.search)
+        hb.pack_end(self.btn_search)
 
         self.headerbar = hb
-
-    def files_filter_func(self, model, iter, data):
-
-        # assert lprint_caller_name(levels=5)
-        # assert lprint_function_name()
-        # assert lprint(model[iter][FSCols.FILENAME],
-        #               model[iter][FSCols.FILETYPE],
-        #               FileTypes.SYSTEM)
-
-        # Keep only non-system entries in main window ComboBox.
-        return model[iter][FSCols.FILETYPE] != FileTypes.SYSTEM
-
-    def setup_files_combobox(self):
-
-        self.filtered_files = self.application.files.filter_new()
-        self.filtered_files.set_visible_func(self.files_filter_func)
-
-        files_combo = Gtk.ComboBox.new_with_model(self.filtered_files)
-        files_combo.connect('changed', self.on_files_combo_changed)
-
-        renderer_text = Gtk.CellRendererText(
-            ellipsize=Pango.EllipsizeMode.START)
-        renderer_text.props.max_width_chars = (
-            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
-        )
-
-        # TODO: replace this combo with a Gtk.StackSidebar()
-        # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/StackSidebar.html
-
-        files_combo.pack_start(renderer_text, True)
-        files_combo.add_attribute(renderer_text, 'text', 0)
-        files_combo.set_sensitive(False)
-
-        self.cmb_files_renderer = renderer_text
-        self.cmb_files = files_combo
-        self.cmb_files.set_size_request(150, -1)
-
-        return self.cmb_files
 
     def setup_network(self):
 
@@ -332,12 +347,18 @@ class BibEdWindow(Gtk.ApplicationWindow):
             Gtk.PolicyType.AUTOMATIC
         )
 
+        # For CSS.
+        self.treeview_sw.set_name('main')
+
         self.treeview = BibedMainTreeView(
             model=self.application.data,
             application=self.application,
             clipboard=self.application.clipboard,
             window=self,
         )
+
+        self.treeview.selection.connect(
+            'changed', self.on_treeview_selection_changed)
 
         self.treeview_sw.add(self.treeview)
 
@@ -346,52 +367,53 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # assert lprint_caller_name(levels=5)
         # assert lprint_function_name()
 
+        # This will automatically count or exclude user or system files,
+        # because this points either to the TreeModelFilter or the main model.
         row_count = len(self.treeview.get_model())
 
-        try:
-            active_file = self.get_selected_filename()
+        active_files = self.get_selected_filenames(with_type=True)
+        active_files_count = len(active_files)
 
-        except TypeError:
-            # Application is closing, we have no file left open.
-            active_file = None
+        if active_files_count > 1:
+            pass
 
-        # TODO: translate “All”
-        if active_file == 'All':
+        if active_files_count == self.application.files.num_user:
+            # All user files are selected.
 
             search_text = self.get_search_text()
 
             if search_text:
-                # We have to gather files count from current results.
+                # We have to gather files count from
+                # current global filter results.
 
-                files_matched = set()
-
-                for row in self.treeview.get_model():
-                    files_matched.add(row[BibAttrs.FILENAME])
-
-                # assert lprint(files_matched)
-
-                file_count = len(files_matched)
+                files_count = len(self.matched_files)
 
             else:
-                file_count = len(self.cmb_files.get_model())
-
-                if file_count > 2:
-                    # Remove the “All” entry
-                    file_count -= 1
-
-        elif active_file is None:
-            file_count = 0
+                files_count = self.application.files.num_user
 
         else:
-            file_count = 1
+            files_count = active_files_count
 
-        title_value = '{0}'.format(APP_NAME)
+        if active_files:
+            title_value = '{0} – {1}'.format(
+                APP_NAME,
+                friendly_filename(active_files[0][0])
+                if active_files_count == 1
+                else '{} files selected'.format(active_files_count)
+            )
+
+        else:
+            if self.application.files.num_user:
+                title_value = '{0} – NO FILE SELECTED'.format(APP_NAME)
+
+            else:
+                title_value = '{0} – Welcome!'.format(APP_NAME)
 
         subtitle_value = '{0} item{1} in {2} file{3}'.format(
             row_count,
             's' if row_count > 1 else '',
-            file_count,
-            's' if file_count > 1 else '',
+            files_count,
+            's' if files_count > 1 else '',
         )
 
         self.headerbar.props.title = title_value
@@ -400,25 +422,56 @@ class BibEdWindow(Gtk.ApplicationWindow):
         assert ldebug('update_title() to {0} and {1}.'.format(
                       title_value, subtitle_value))
 
-    def sync_shown_hidden(self):
-        ''' Hide or disable relevant widgets, determined by context. '''
+    def sync_buttons_states(self, sync_children=True, *args, **kwargs):
+        ''' Hide or disable relevant widgets, determined by context.
 
-        how_many_files = len(self.filtered_files)
+            This method is called either “as-is” (without argument) by
+            application, or with arguments by connected signalsself.
+            In both cases we don't use arguments, and re-determine the
+            context from scratch.
+
+        '''
+
+        # assert lprint_caller_name(levels=5)
+
+        how_many_files = self.application.files.num_user
+
+        widgets_to_change = (
+            # file-related buttons
+            self.btn_file_select,
+            # TODO: insert popover buttons here,
+            #       or forward state to popover.
+
+            # Entry-related buttons.
+            self.btn_add, self.btn_move, self.btn_delete,
+        )
 
         if how_many_files:
-            self.btn_add.show()
-            self.btn_file_close.show()
-            self.cmb_files.show()
-
-            self.btn_file_close_switch_icon(
-                how_many_files > 1 and self.cmb_files.get_active() == 0)
+            for widget in widgets_to_change:
+                widget.show()
 
         else:
-            self.btn_add.hide()
-            self.btn_file_close.hide()
-            self.cmb_files.hide()
+            for widget in widgets_to_change:
+                widget.hide()
+
+        if sync_children:
+            self.files_popover.sync_buttons_states(sync_parent=False)
+
+        # TODO: WHY THIS ?
+        # self.on_treeview_selection_changed()
+
+    def entry_selection_buttons_set_sensitive(self, is_sensitive):
+
+        for button in (self.btn_move, self.btn_delete, ):
+            button.set_sensitive(is_sensitive)
 
     # ———————————————————————————————————————————————————————————— “ON” actions
+
+    def on_treeview_selection_changed(self, *args, **kwargs):
+
+        self.entry_selection_buttons_set_sensitive(
+            bool(self.treeview.get_selected_rows())
+        )
 
     def on_maximize_toggle(self, action, value):
 
@@ -446,11 +499,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
         if gpod('remember_windows_states'):
             memories.main_window_dimensions = self.current_size
 
-        self.cmb_files_renderer.props.max_width_chars = (
-            FILES_COMBO_DEFAULT_WIDTH * RESIZE_SIZE_MULTIPLIER
-        )
-        self.cmb_files.set_size_request(150, -1)
-        self.cmb_files.queue_resize()
+        # self.cmb_files_renderer.props.max_width_chars = (
+        #     current_width * RESIZE_SIZE_MULTIPLIER / COMBO_CHARS_DIVIDER
+        # )
+        # self.cmb_files.set_size_request(
+        #     current_width * RESIZE_SIZE_MULTIPLIER, -1)
+        # self.cmb_files.queue_resize()
 
         self.treeview.set_columns_widths(current_width)
 
@@ -459,7 +513,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         self.do_filter_data_store()
 
-    def on_files_combo_changed(self, combo):
+    def on_selected_files_changed(self, *args):
         ''' Signal: chain the global filter method. '''
 
         # assert lprint_caller_name(levels=5)
@@ -468,9 +522,19 @@ class BibEdWindow(Gtk.ApplicationWindow):
         self.do_filter_data_store()
 
         # TODO: remove call if not needed anymore.
-        self.sync_shown_hidden()
+        self.sync_buttons_states()
+
+        # In case there is a search in progress, focus the field to make
+        # the user notice why she could be seeing nothing (like empty file).
+        if self.get_search_text():
+            flash_field(self.search)
 
     def on_key_pressed(self, widget, event):
+
+        search_result = self.searchbar.handle_event(event)
+
+        if search_result:
+            return True
 
         # get search context
         search_text = self.search.get_text().strip()
@@ -497,25 +561,29 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # if ctrl and keyval_name == 's':
 
         if ctrl and keyval == Gdk.KEY_c:
-            self.treeview.copy_single_key_to_clipboard()
+            self.treeview.copy_entries_keys_formatted_to_clipboard()
 
         if ctrl and keyval == Gdk.KEY_k:
-            self.treeview.copy_raw_key_to_clipboard()
+            self.treeview.copy_entries_keys_raw_to_clipboard()
 
         elif ctrl and keyval == Gdk.KEY_u:
 
             if gpod('url_action_opens_browser'):
-                self.treeview.open_url_in_webbrowser()
+                self.treeview.open_entries_urls_in_browser()
             else:
-                self.treeview.copy_url_to_clipboard()
+                self.treeview.copy_entries_urls_to_clipboard()
 
         elif ctrl_shift and keyval == Gdk.KEY_U:
             # NOTE: the upper case 'U'
 
             if gpod('url_action_opens_browser'):
-                self.treeview.copy_url_to_clipboard()
+                self.treeview.copy_entries_urls_to_clipboard()
             else:
-                self.treeview.open_url_in_webbrowser()
+                self.treeview.open_entries_urls_in_browser()
+
+        elif ctrl_shift and keyval == Gdk.KEY_T:
+
+            self.treeview.switch_tooltips()
 
         elif ctrl and keyval == Gdk.KEY_s:
 
@@ -525,12 +593,12 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
             LOGGER.info('Control-S pressed (no action yet).')
 
-            # given cmb_files, save one or ALL files.
+            # TODO: save selected files.
 
         elif ctrl and keyval == Gdk.KEY_r:
 
             # keep memory, in case file order change during reload.
-            combo_selected = self.get_selected_filename()
+            selected_databases = tuple(self.application.files.selected_databases)
 
             with self.block_signals():
                 # Don't let combo change and update “memories” while we
@@ -539,21 +607,39 @@ class BibEdWindow(Gtk.ApplicationWindow):
                     'Reloaded all open files at user request.')
 
             # restore memory / session
-            self.set_selected_filename(combo_selected)
+            self.set_selected_databases(selected_databases)
 
             self.do_activate()
 
+        elif ctrl_shift and keyval == Gdk.KEY_R:
+            # NOTE: the upper case 'R'
+
+            self.application.reload_css_provider_data()
+
+        elif ctrl and keyval == Gdk.KEY_Page_Down:
+            # switch file next
+            pass
+
+        elif ctrl and keyval == Gdk.KEY_Page_Up:
+            # switch file previous
+            pass
+
         elif ctrl and keyval == Gdk.KEY_f:
-            self.search.grab_focus()
+            self.searchbar.set_search_mode(True)
 
         elif ctrl and keyval == Gdk.KEY_comma:
             self.btn_preferences.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_l:
-            self.cmb_files.grab_focus()
+            self.btn_file_select.emit('clicked')
+
+        elif ctrl and keyval == Gdk.KEY_m:
+            if self.application.files.num_user:
+                self.btn_move.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_n:
-            self.btn_add.emit('clicked')
+            if self.application.files.num_user:
+                self.btn_add.emit('clicked')
 
         elif not ctrl and keyval == Gdk.KEY_Delete:
             self.btn_delete.emit('clicked')
@@ -562,7 +648,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
             self.btn_file_open.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_w:
-            self.btn_file_close.emit('clicked')
+
+            for database in tuple(
+                    self.application.files.selected_user_databases):
+                self.application.close_file(database.filename)
 
         elif search_text and (
             keyval in (Gdk.KEY_Down, Gdk.KEY_Up) or (
@@ -613,7 +702,9 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         elif not ctrl and keyval == Gdk.KEY_Escape:
 
-            # if self.search.has_focus():
+            # TODO: if self.search.has_focus():
+            #       even if no search_text, Just refocus
+            #       the treeview without resetting files.
 
             if search_text:
                 self.search.set_text('')
@@ -624,16 +715,27 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 except Exception:
                     pass
 
-            else:
-                row = self.treeview.get_selected_row()
+                if self.searchbar.get_search_mode():
+                    self.searchbar.set_search_mode(False)
 
-                if row is not None:
+            elif self.searchbar.get_search_mode():
+                self.searchbar.set_search_mode(False)
+
+            else:
+
+                rows = self.treeview.get_selected_rows()
+
+                if rows not in (None, []):
                     self.treeview.unselect_all()
 
                 else:
-                    if len(self.application.files):
-                        if self.cmb_files.get_active() != 0:
-                            self.cmb_files.set_active(0)
+                    application_files = self.application.files
+                    selected_user_databases = tuple(
+                        application_files.selected_user_databases)
+
+                    if len(selected_user_databases) \
+                            != application_files.num_user:
+                        self.files_popover.listbox.select_all()
 
             self.treeview.grab_focus()
 
@@ -644,13 +746,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # Stop propagation of signal, we handled it.
         return True
 
-    def on_search_focus_event(self, search, event):
-
-        if self.search.has_focus():
-            self.search.props.width_chars = SEARCH_WIDTH_EXPANDED
-
-        else:
-            self.search.props.width_chars = SEARCH_WIDTH_NORMAL
+    # ——————————————————————————————————————————————————————————— Files buttons
 
     def on_file_new_clicked(self, button):
         ''' Create a new file. '''
@@ -697,15 +793,20 @@ class BibEdWindow(Gtk.ApplicationWindow):
             # dialog.set_select_multiple(False)
             # self.application.open_file(dialog.get_filename())
             filenames = dialog.get_filenames()
+            databases_to_select = []
 
             # Same problem as in app.do_activate(): when loading more than two
             # files, only the two first fire a on_*changed() signal. Thus we
             # block everything, and compute things manually after load.
             with self.block_signals():
                 for filename in filenames:
-                    self.application.open_file(filename, recompute=False)
+                    databases_to_select.append(
+                        self.application.open_file(filename, recompute=False)
+                    )
 
             self.treeview.main_model.do_recompute_global_ids()
+            self.set_selected_databases(databases_to_select)
+
             self.do_activate()
 
         elif response == Gtk.ResponseType.CANCEL:
@@ -713,33 +814,15 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         dialog.destroy()
 
-    def on_file_close_clicked(self, button):
-        ''' Close current selected file. '''
+    def on_file_select_clicked(self, button, popover):
 
-        how_many_files = len(self.application.files)
-
-        # assert lprint(how_many_files)
-
-        if how_many_files > 1 and self.cmb_files.get_active() == 0:
-
-            store = self.application.files
-
-            # Copy them to let the store update itself
-            # smoothly without missing items during loop.
-            filenames = store.get_open_filenames()
-
-            # assert lprint(filenames)
-
-            for filename in filenames:
-                self.application.close_file(filename, recompute=False)
-
-            # Useless, we closed everything.
-            # self.treeview.do_recompute_global_ids()
+        if popover.is_visible():
+            popover.popdown()
 
         else:
-            self.application.close_file(self.get_selected_filename())
+            popover.popup()
 
-        self.sync_shown_hidden()
+    # ——————————————————————————————————————————————————————————— Entry buttons
 
     def on_entry_add_clicked(self, button):
 
@@ -756,37 +839,129 @@ class BibEdWindow(Gtk.ApplicationWindow):
             entry_edit_dialog = BibedEntryDialog(
                 parent=self, entry=entry)
 
-            entry_edit_dialog.run()
+            response = entry_edit_dialog.run()
 
-            # self.do_filter_data_store()
+            if response:
+                # Update the number of entries if relevant.
+                self.update_title()
+
+                self.do_status_change(
+                    '{entry} added to {database}.'.format(
+                        entry=response, database=os.path.basename(response.database.filename)))
 
             entry_edit_dialog.destroy()
 
         entry_add_dialog.destroy()
 
-    def on_entry_delete_clicked(self, button):
+    def on_entries_move_clicked(self, button):
 
-        selected_entry = self.treeview.get_selected_entry()
+        selected_entries = self.treeview.get_selected_entries()
 
-        if selected_entry is None:
+        if selected_entries is None:
             return
 
-        if gpod('use_trash'):
-            self.app.files.trash_entry(selected_entry)
+        destination, moved_count, unchanged_count = BibedMoveDialog(
+            self, selected_entries, self.application.files).run()
 
-        else:
-            def delete_callback(selected_entry):
-                selected_entry.delete()
-                self.do_filter_data_store()
+        if destination and moved_count > 0:
+            self.do_status_change(
+                '{count} entries moved to {destination}{unchanged}.'.format(
+                    count=len(selected_entries), destination=destination,
+                    unchanged=', {count} already there'.format(unchanged_count)
+                    if unchanged_count else ''))
 
-            message_dialog(
-                self,
-                Gtk.MessageType.WARNING,
-                'Delete entry {entry}'.format(entry=selected_entry),
-                'This action cannot be undone. Are you sure?',
-                delete_callback,
-                selected_entry
+    def on_entries_delete_clicked(self, button):
+
+        use_trash = gpod('use_trash')
+
+        selected_entries = self.treeview.get_selected_entries()
+
+        if selected_entries is None:
+            return
+
+        trashed_entries = []
+
+        # Copy, else “changed during iteration” occurs, but for an
+        # unknown reason it does not produce any error, and gets
+        # unnoticed (and some entries are not processed…).
+        for entry in selected_entries[:]:
+            if entry.is_trashed:
+                trashed_entries.append(entry)
+                selected_entries.remove(entry)
+
+        if selected_entries:
+            if use_trash:
+                self.application.files.trash_entries(selected_entries)
+
+            else:
+                self.ask_and_delete_entries(selected_entries)
+
+            self.do_status_change('{count} entries {what}.'.format(
+                count=len(selected_entries),
+                what='trashed' if use_trash else 'definitively deleted'))
+
+        if trashed_entries:
+            self.ask_and_delete_entries(trashed_entries, trashed=True)
+
+            self.do_status_change(
+                '{count} previously trashed entries '
+                'definitively deleted.'.format(
+                    count=len(trashed_entries)))
+
+    def ask_and_delete_entries(self, selected_entries, trashed=False):
+
+        def delete_callback(selected_entries):
+            databases_to_write = set()
+
+            for entry in selected_entries:
+                databases_to_write.add(entry.database)
+                entry.delete(write=False)
+
+            for database in databases_to_write:
+                database.write()
+
+            self.do_filter_data_store()
+
+        entries_count = len(selected_entries)
+
+        if entries_count > 1:
+            if trashed:
+                title = 'Wipe {count} entries from trash?'.format(
+                    count=entries_count)
+            else:
+                title = 'Delete {count} entries?'.format(count=entries_count)
+
+            entries_list = markup_entries(selected_entries, entries_count)
+
+            secondary_text = (
+                'This will permanently delete the following entries:\n'
+                '{entries_list}\n from your database(s).'.format(
+                    entries_list=entries_list
+                )
             )
+        else:
+            entry = selected_entries[0]
+            title = 'Delete entry?'
+            secondary_text = (
+                'This will permanently delete {entry} from your database.'.format(
+                    entry=entry.short_display
+                )
+            )
+
+        secondary_text += '\n\nThis action cannot be undone. Are you sure?'
+
+        message_dialog(
+            self, Gtk.MessageType.WARNING,
+            title, secondary_text,
+            delete_callback, selected_entries
+        )
+
+    # ——————————————————————————————————————————————————————————— Other buttons
+
+    def on_search_clicked(self, button):
+
+        self.searchbar.set_search_mode(
+            not self.searchbar.get_search_mode())
 
     def on_preferences_clicked(self, button):
 
@@ -802,8 +977,10 @@ class BibEdWindow(Gtk.ApplicationWindow):
         #     LOGGER.info("The OK button was clicked")
 
         self.preferences_dialog.hide()
+        self.preferences_dialog.destroy()
+        self.preferences_dialog = None
 
-    # ——————————————————————————————————————————————————————————————————— Other
+    # ————————————————————————————————————————————————————————————— GET proxies
 
     def get_bib_filter(self):
 
@@ -813,41 +990,54 @@ class BibEdWindow(Gtk.ApplicationWindow):
 
         return filter_bib
 
-    def get_selected_filename(self):
+    def get_selected_filenames(self, with_type=False):
 
-        filename = self.filtered_files[
-            self.cmb_files.get_active_iter()
-        ][FSCols.FILENAME]
+        selected_databases = tuple(self.application.files.selected_databases)
 
-        return filename
+        if with_type:
+            return [
+                (database.filename, database.filetype, )
+                for database in selected_databases
+            ]
 
-    def set_selected_filename(self, filename):
+        return [
+            database.filename
+            for database in selected_databases
+        ]
 
-        for row in self.filtered_files:
-            if row[FSCols.FILENAME] == filename:
-                self.cmb_files.set_active_iter(row.iter)
-                break
+    def set_selected_databases(self, databases_to_select):
+
+        self.application.files.sync_selection(databases_to_select)
+
+        self.files_popover.listbox.update_selected()
 
     def get_search_text(self):
 
         return self.search.get_text().strip()
 
+    # ————————————————————————————————————————————————————————— Signal blocking
+
     def block_signals(self):
         ''' This function can be used as context manager or not. '''
 
-        self.cmb_files.handler_block_by_func(self.on_files_combo_changed)
+        self.files_popover.listbox.handler_block_by_func(
+            self.files_popover.listbox.on_selected_rows_changed)
 
-        return BibebWindowBlockSignalsContextManager(self)
+        return BibedWindowBlockSignalsContextManager(self)
 
     def unblock_signals(self):
-        self.cmb_files.handler_unblock_by_func(self.on_files_combo_changed)
+
+        self.files_popover.listbox.handler_unblock_by_func(
+            self.files_popover.listbox.on_selected_rows_changed)
+
+        pass
 
     # —————————————————————————————————————————————————————————————— DO actions
 
     def do_activate(self):
 
         self.update_title()
-        self.sync_shown_hidden()
+        self.sync_buttons_states()
         self.treeview.do_column_sort()
 
     def do_status_change(self, message):
@@ -860,18 +1050,18 @@ class BibEdWindow(Gtk.ApplicationWindow):
         # assert lprint_caller_name(levels=2)
         # assert lprint_function_name()
 
-        try:
-            filename = self.get_selected_filename()
+        selected_filenames = tuple(
+            x.filename for x in self.application.files.selected_databases
+        )
 
-        except TypeError:
-            filename = None
+        if selected_filenames:
+            # Should we sort them first ?
+            if memories.selected_filenames != selected_filenames:
+                memories.selected_filenames = selected_filenames
 
-        if filename is not None:
-            if memories.combo_filename != filename:
-                memories.combo_filename = filename
         else:
-            if memories.combo_filename is not None:
-                del memories.combo_filename
+            if memories.selected_filenames is not None:
+                del memories.selected_filenames
 
         search_text = self.get_search_text()
 
@@ -883,6 +1073,7 @@ class BibEdWindow(Gtk.ApplicationWindow):
                 del memories.search_text
 
         def refilter():
+            self.matched_files = set()
             self.treeview.set_model(self.application.sorter)
             self.application.filter.refilter()
 
@@ -891,25 +1082,6 @@ class BibEdWindow(Gtk.ApplicationWindow):
             refilter()
 
         else:
-            # TODO: translate 'All'
-            if filename is None or filename == 'All':
-                # No search, no filename; get ALL data, unfiltered.
-                self.treeview.set_model(self.application.data)
-
-            else:
-                refilter()
+            refilter()
 
         self.update_title()
-
-    def btn_file_close_switch_icon(self, multiple=False):
-
-        if multiple:
-            # self.btn_file_close.set_relief(Gtk.ReliefStyle.NORMAL)
-            add_classes(self.btn_file_close, ['close-all'])
-            self.btn_file_close.set_tooltip_markup(
-                'Close <b>ALL</b> open files')
-        else:
-            # self.btn_file_close.set_relief(Gtk.ReliefStyle.NONE)
-            remove_classes(self.btn_file_close, ['close-all'])
-            self.btn_file_close.set_tooltip_markup(
-                'Close <i>currently selected</i> file')

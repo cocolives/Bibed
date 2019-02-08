@@ -3,6 +3,8 @@ import logging
 
 from bibed.foundations import ldebug
 from bibed.constants import (
+    FileTypes,
+    BIBED_ICONS_DIR,
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
     GRID_BORDER_WIDTH,
@@ -11,12 +13,55 @@ from bibed.constants import (
     HELP_POPOVER_LABEL_MARGIN,
 )
 
-from bibed.gui.gtk import Gtk, Gdk
+from bibed.preferences import preferences
+from bibed.gtk import GLib, Gtk, Gdk, Gio
 
 
 LOGGER = logging.getLogger(__name__)
 
 # ——————————————————————————————————————————————————————————————————— Functions
+
+
+def get_icon(name, typee, size=None):
+
+    if size is None:
+        size = '48x48'
+
+    base_path = os.path.join(BIBED_ICONS_DIR, typee, size)
+
+    icon_path = os.path.join(base_path, name + '.png')
+
+    if not os.path.exists(icon_path):
+        icon_path = os.path.join(base_path, 'default.png')
+
+    return icon_path
+
+
+def is_dark_theme():
+
+    '''
+    	gint		textAvg, bgAvg;
+
+
+	textAvg = style->text[GTK_STATE_NORMAL].red / 256 +
+	        style->text[GTK_STATE_NORMAL].green / 256 +
+	        style->text[GTK_STATE_NORMAL].blue / 256;
+
+
+	bgAvg = style->bg[GTK_STATE_NORMAL].red / 256 +
+	        style->bg[GTK_STATE_NORMAL].green / 256 +
+	        style->bg[GTK_STATE_NORMAL].blue / 256;
+
+
+	if (textAvg > bgAvg)
+		darkTheme = TRUE;
+
+        cf. https://lzone.de/blog/Detecting%20a%20Dark%20Theme%20in%20GTK
+
+        We need to detect if automathemely is installed.
+        https://www.linuxuprising.com/2018/08/automatically-switch-to-light-dark-gtk.html
+    '''
+    pass
 
 
 def get_screen_resolution():
@@ -90,7 +135,13 @@ def message_dialog(window, dialog_type, title, secondary_text, ok_callback, *arg
         Gtk.ButtonsType.OK_CANCEL,
         title
     )
-    dialog.format_secondary_text(secondary_text)
+    dialog.format_secondary_markup(secondary_text)
+    dialog.set_default_response(Gtk.ResponseType.OK)
+    add_classes(
+        dialog.get_widget_for_response(Gtk.ResponseType.OK),
+        ['suggested-action'],
+    )
+
     response = dialog.run()
 
     if response == Gtk.ResponseType.OK:
@@ -104,9 +155,36 @@ def find_child_by_name(start_node, widget_name):
     if start_node.get_name() == widget_name:
         return start_node
 
+    if isinstance(start_node, Gtk.Bin):
+        result = find_child_by_name(start_node.get_child(), widget_name)
+
+        if result:
+            return result
+
     if isinstance(start_node, Gtk.Container):
         for child in start_node.get_children():
             result = find_child_by_name(child, widget_name)
+
+            if result:
+                return result
+
+    return None
+
+
+def find_child_by_class(start_node, widget_class):
+
+    if isinstance(start_node, widget_class):
+        return start_node
+
+    if isinstance(start_node, Gtk.Bin):
+        result = find_child_by_class(start_node.get_child(), widget_class)
+
+        if result:
+            return result
+
+    if isinstance(start_node, Gtk.Container):
+        for child in start_node.get_children():
+            result = find_child_by_class(child, widget_class)
 
             if result:
                 return result
@@ -186,6 +264,148 @@ def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
     return label
 
 
+def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, small_size=False, big_size=False, same_size=True, parenthesis=False, missing=False):
+
+    assert filetype is not None
+    assert not (small_size and big_size)
+
+    # Get only the filename, not the extension.
+    basename = os.path.basename(filename).rsplit('.', 1)[0]
+    dirname  = os.path.dirname(filename)
+
+    home_folder = os.path.expanduser('~')
+    working_folder = preferences.working_folder
+
+    if with_folder:
+        if dirname == working_folder:
+            folder = 'Working folder'
+
+        elif dirname.startswith(working_folder):
+            remaining = dirname[len(working_folder):]
+
+            folder = '<i>Working folder</i> {remaining}'.format(
+                remaining=remaining)
+
+        elif dirname.startswith(home_folder):
+            remaining = dirname[len(home_folder):]
+
+            folder = '<i>Home directory</i> {remaining}'.format(
+                remaining=remaining)
+
+        else:
+            folder = dirname
+
+    else:
+        folder = None
+
+    if missing:
+        # Notice the ending space.
+        format_template = '<span color="red" size="{file_size}">missing file</span> '
+
+    else:
+        format_template = ''
+
+    if filetype & FileTypes.USER:
+        format_template += (
+            '<span size="{file_size}"><b>{basename}</b></span>{separator}'
+            + (
+                '<span size="{folder_size}" color="grey">'
+                '{par_left}in {folder}{par_right}</span>'
+                if with_folder else ''
+            )
+        )
+
+        format_kwargs = {
+            'separator': ' ' if same_line else '\n',
+            'basename': GLib.markup_escape_text(basename),
+            'folder': GLib.markup_escape_text(folder),
+        }
+
+    else:
+        # System files, or special entry (like “All”)…
+        # No folder for them, anyway.
+        # Thus, no need for separator.
+        format_template += '{basename}'
+        format_kwargs = {
+            # No need to GLib.markup_escape_text(),
+            # Bibed's filenames are ascii-proof.
+            'basename': basename.title(),
+        }
+
+    if big_size:
+        file_size = 'large'
+        folder_size = 'small'
+
+    elif small_size:
+        file_size = 'small'
+        folder_size = 'xx-small'
+
+    else:
+        file_size = 'medium'
+        folder_size = 'x-small'
+
+    if same_size:
+        folder_size = file_size
+
+    if parenthesis:
+        format_kwargs.update({
+            'par_left': '(',
+            'par_right': ')',
+        })
+
+    else:
+        format_kwargs.update({
+            'par_left': '',
+            'par_right': '',
+        })
+
+    format_kwargs.update({
+        'file_size': file_size,
+        'folder_size': folder_size,
+    })
+
+    return format_template.format(**format_kwargs)
+
+
+def markup_entries(entries, count=None, max=None):
+    '''
+        :param count: then number of entries. Optional argument. In some
+            contexts you already have it. Passing it will save a len() call.
+            Otherwise, the function computes it.
+
+        :param max: the max number of entries to display textually before
+            counting others in the “and NNN other(s)” information. Must be
+            between 2 and 10.
+    '''
+
+    if count is None:
+        count = len(entries)
+
+    if max is None:
+        max = 10
+
+    elif max < 2:
+        max = 2
+
+    if max > 10:
+        max = 10
+
+    if count > max:
+        entries_list = '\n'.join(
+            '  - {}'.format(entry.short_display)
+            for entry in entries[:max]
+        ) + '\nand {other} other(s).'.format(
+            other=count - max
+        )
+    else:
+        entries_list = '\n'.join(
+            '  - {}'.format(entry.short_display)
+            for entry in entries
+        )
+
+    return entries_list
+
+
 def add_classes(widget, classes):
 
     style_context = widget.get_style_context()
@@ -202,14 +422,51 @@ def remove_classes(widget, classes):
         style_context.remove_class(class_name)
 
 
+def flash_field(field, number=None, interval=None):
+
+    if number is None:
+        number = 9
+
+    if number % 2 == 0:
+        # Be sure we don't let the field in error state…
+        number += 1
+
+    if interval is None:
+        interval = 100
+
+    def _flash_field_callback(field, interval, current, number):
+
+        if current % 2 == 0:
+            add_classes(field, ['error'])
+        else:
+            remove_classes(field, ['error'])
+
+        if current < number:
+            GLib.timeout_add(interval,
+                             _flash_field_callback, field,
+                             interval, current + 1, number)
+
+        # stop the interval, we relaunched it already.
+        return False
+
+    GLib.timeout_add(interval,
+                     _flash_field_callback, field,
+                     interval, 0, number)
+
+
 def grid_with_common_params(column_homogeneous=False, row_homogeneous=False):
 
     grid = Gtk.Grid()
     grid.set_border_width(GRID_BORDER_WIDTH)
     grid.set_column_spacing(GRID_COLS_SPACING)
     grid.set_row_spacing(GRID_ROWS_SPACING)
-    # grid.set_column_homogeneous(True)
-    # grid.set_row_homogeneous(True)
+
+    if column_homogeneous:
+        grid.set_column_homogeneous(True)
+
+    if row_homogeneous:
+        grid.set_row_homogeneous(True)
+
     return grid
 
 
@@ -234,7 +491,7 @@ def debug_widget(widget):
     print('\tmargin_end={0}'.format(widget.props.margin_end))
 
 
-def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, debug=False):
+def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, can_focus=None, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA
 
@@ -358,11 +615,21 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
             connect_signal, connect_to,
             *connect_args, **connect_kwargs)
 
+    if can_focus is not None:
+        if __debug__ and debug: mp('can_focus', can_focus)  # NOQA
+        widget.set_can_focus(can_focus)
+
     if no_show_all:
         if __debug__ and debug: mp('SET no_show_all')  # NOQA
         widget.set_no_show_all(True)
 
     return widget
+
+
+def widget_call_method(widgets, method_name, *args, **kwargs):
+
+    for widget in widgets:
+        getattr(widget, method_name)(*args, **kwargs)
 
 
 def build_help_popover(attached_to, help_markup, position, onfocus_list):
@@ -410,18 +677,28 @@ def build_help_popover(attached_to, help_markup, position, onfocus_list):
     return popover
 
 
-def vbox_with_icon_and_label(icon_name, label_text):
+def vbox_with_icon_and_label(name, label_markup, icon_name=None, icon_path=None):
+
+    assert icon_name is not None or icon_path is not None
 
     label_box = Gtk.VBox()
+    label_box.set_name(name)
     label_box.set_border_width(BOXES_BORDER_WIDTH)
 
-    label_box.pack_start(
-        Gtk.Image.new_from_icon_name(
-            icon_name,
-            Gtk.IconSize.DIALOG
-        ), False, False, 0
-    )
-    label_box.pack_start(Gtk.Label(label_text), True, True, 0)
+    if icon_name:
+        gicon = Gio.ThemedIcon(name=icon_name)
+        icon = Gtk.Image.new_from_gicon(gicon, Gtk.IconSize.DIALOG)
+
+    else:
+        icon = Gtk.Image.new_from_file(
+            icon_path
+        )
+
+    label = Gtk.Label()
+    label.set_markup_with_mnemonic(label_markup)
+
+    label_box.pack_start(icon, False, False, 0)
+    label_box.pack_start(label, True, True, 0)
     label_box.set_size_request(100, 100)
     label_box.show_all()
 
@@ -464,32 +741,49 @@ def flat_unclickable_label(label_text, icon_name=None):
     return label
 
 
-def flat_unclickable_button_in_hbox(label_text, icon_name=None):
+def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None, classes=None):
 
-    label_with_icon = widget_properties(
+    hbox = widget_properties(
         Gtk.HBox(),
-        expand=True,
-        halign=Gtk.Align.FILL,
-        valign=Gtk.Align.FILL,
+        expand=False,
+        halign=Gtk.Align.START,
+        valign=Gtk.Align.CENTER,
+        classes=classes,
     )
 
-    label_with_icon.set_border_width(BOXES_BORDER_WIDTH)
+    hbox.set_name(name)
 
-    if icon_name is not None:
-        icon = Gtk.Image.new_from_icon_name(icon_name, Gtk.IconSize.BUTTON)
-        label_with_icon.pack_start(icon, False, False, 0)
+    hbox.set_border_width(BOXES_BORDER_WIDTH)
 
-    label_with_icon.pack_start(widget_properties(
-        Gtk.Label(label_text),
-        classes=['dnd-object'],
+    if icon_name:
+        icon = Gtk.Image.new_from_icon_name(
+            icon_name,
+            Gtk.IconSize.BUTTON
+        )
+        hbox.pack_start(icon, False, False, 0)
+
+    elif icon_path:
+        icon = Gtk.Image.new_from_file(
+            icon_path
+        )
+        hbox.pack_start(icon, False, False, 0)
+
+    label = widget_properties(Gtk.Label(), margin_left=10)
+    label.set_markup_with_mnemonic(label_markup)
+
+    hbox.pack_start(widget_properties(
+        label,
+        expand=False,
+        halign=Gtk.Align.CENTER,
+        valign=Gtk.Align.CENTER,
         # debug=True
     ), False, False, 0)
 
-    label_with_icon.set_size_request(100, 30)
+    hbox.set_size_request(30, 30)
 
-    label_with_icon.show_all()
+    hbox.show_all()
 
-    return label_with_icon
+    return hbox
 
 
 def flat_unclickable_button_in_grid(label_text, icon_name=None):
@@ -514,9 +808,6 @@ def flat_unclickable_button_in_grid(label_text, icon_name=None):
     label_with_icon.show_all()
 
     return label_with_icon
-
-
-flat_unclickable_button = flat_unclickable_button_in_hbox
 
 
 def in_scrolled(widget, width=None, height=None):
@@ -607,11 +898,13 @@ def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state, func_ar
         valign=Gtk.Align.CENTER
     )
 
+    # Set the switch before connecting the
+    # signal, else this triggers the callback(s).
+    switch.set_active(swi_initial_state)
+
     switch.connect(
         'notify::active',
         swi_notify_func, *func_args)
-
-    switch.set_active(swi_initial_state)
 
     return label, switch
 

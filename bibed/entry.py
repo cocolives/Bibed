@@ -14,6 +14,7 @@ from bibed.foundations import (
 )
 
 from bibed.constants import (
+    FileTypes,
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
@@ -24,7 +25,9 @@ from bibed.constants import (
 
 from bibed.preferences import defaults, preferences, gpod
 from bibed.utils import asciize
-from bibed.gui.gtk import GLib
+from bibed.exceptions import FileNotFoundError
+from bibed.gui.helpers import markup_bib_filename
+from bibed.gtk import GLib
 
 
 LOGGER = logging.getLogger(__name__)
@@ -46,6 +49,21 @@ bibtexparser_as_text = bibtexparser.bibdatabase.as_text
 
 
 class BibedEntry:
+    '''
+
+        Free fields from BibLaTeX documentation:
+
+        - list[a–f]
+        - user[a–f]
+        - verb[a–c]
+
+        Bibed uses `verbb` (for “verbatim-bibed”).
+    '''
+
+    VERBB_SEPARATOR    = '|'
+    KEYWORDS_SEPARATOR = ','
+    TRASHED_FROM       = 'trashedFrom'
+    TRASHED_DATE       = 'trashedDate'
 
     @classmethod
     def new_from_type(cls, entry_type):
@@ -98,21 +116,36 @@ class BibedEntry:
 
         # Index in the database file.
         # == index in the bibtexparser entries list.
+        # TODO: remove this field, everywhere.
         self.index = index
 
         # Global ID (across multiple files). This is
         # needed to update the treeview after modifications.
         self.gid = 0
 
+        self._internal_verbb = {
+            key: value
+            for (key, value) in (
+                line.split(':')
+                for line in self._internal_split_tokens(
+                    self.entry.get('verbb', ''),
+                    separator=self.VERBB_SEPARATOR
+                )
+            )
+        }
+
         # Proxy keywords here for faster operations.
-        self._internal_keywords = self._internal_split_keywords(
+        self._internal_keywords = self._internal_split_tokens(
             self.entry.get('keywords', ''))
 
-    def _internal_split_keywords(self, value):
+    def _internal_split_tokens(self, value, separator=None):
+
+        if separator is None:
+            separator = self.KEYWORDS_SEPARATOR
 
         return [
             expression.strip()
-            for expression in value.split(',')
+            for expression in value.split(separator)
             if expression.strip() != ''
         ]
 
@@ -237,11 +270,61 @@ class BibedEntry:
 
     def set_field_keywords(self, value):
 
-        kw = self._internal_split_keywords(value)
+        kw = self._internal_split_tokens(value)
 
         self._internal_keywords = kw + [self.read_status] + [self.quality]
 
         self.entry['keywords'] = ','.join(self._internal_keywords)
+
+    @property
+    def is_trashed(self):
+
+        # assert lprint_function_name()
+
+        return self.TRASHED_FROM in self._internal_verbb
+
+    @property
+    def trashed_informations(self):
+        ''' Return trash-related information. '''
+
+        # assert lprint_function_name()
+
+        try:
+            return (
+                self._internal_verbb[self.TRASHED_FROM],
+                self._internal_verbb[self.TRASHED_DATE],
+            )
+        except KeyError:
+            return None
+
+    def set_trashed(self, is_trashed=True):
+
+        # assert lprint_function_name()
+        # assert lprint(is_trashed)
+
+        if is_trashed:
+            assert not self.is_trashed
+
+            self._internal_verbb[self.TRASHED_FROM] = self.database.filename
+            self._internal_verbb[self.TRASHED_DATE] = datetime.date.today().isoformat()
+
+        else:
+            assert self.is_trashed
+
+            del self._internal_verbb[self.TRASHED_FROM]
+            del self._internal_verbb[self.TRASHED_DATE]
+
+        self._internal_set_verbb()
+
+    def _internal_set_verbb(self):
+        ''' update `verbb` BibLaTeX field with our internal values. '''
+
+        # assert lprint_function_name()
+
+        self.entry['verbb'] = self.VERBB_SEPARATOR.join(
+            ':'.join((key, value, ))
+            for (key, value) in self._internal_verbb.items()
+        )
 
     @property
     def type(self):
@@ -280,6 +363,13 @@ class BibedEntry:
     def tooltip(self):
 
         esc = self.escape_for_tooltip
+        is_trashed = self.is_trashed
+
+        def strike(text):
+            return (
+                '<s>{}</s>'.format(text)
+                if is_trashed else text
+            )
 
         tooltips = []
 
@@ -288,11 +378,11 @@ class BibedEntry:
 
         base_tooltip = (
             '<big><i>{title}</i></big>\n{subtitle}'
-            'by <b>{author}</b>{year}'.format(
-                title=esc(self.title),
-                subtitle='<i>{}</i>\n'.format(esc(subtitle)) if subtitle else '',
+            'by <b>{author}</b>'.format(
+                title=strike(esc(self.title)),
+                subtitle='<i>{}</i>\n'.format(strike(esc(subtitle)))
+                if subtitle else '',
                 author=esc(self.author),
-                year=' ({year})'.format(year=year) if year else '',
             )
         )
 
@@ -300,13 +390,16 @@ class BibedEntry:
             base_tooltip += ', published in <b><i>{journal}</i></b>'.format(
                 journal=esc(self.journal))
 
+        if year:
+            base_tooltip += ' ({year})'.format(year=year)
+
         tooltips.append(base_tooltip)
 
         if self.comment:
             tooltips.append('<b>Comment:</b>{cr}{comment}'.format(
                 cr='\n'
                 if len(self.comment) > COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS
-                else '',
+                else ' ',  # Note the space.
                 comment=esc(self.comment)))
 
         abstract = self.get_field('abstract', default='')
@@ -318,7 +411,7 @@ class BibedEntry:
             tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
                 abstract=esc(abstract)))
 
-        keywords = self._internal_split_keywords(self.keywords)
+        keywords = self._internal_split_tokens(self.keywords)
 
         if keywords:
             if len(keywords) > MAX_KEYWORDS_IN_TOOLTIPS:
@@ -338,11 +431,49 @@ class BibedEntry:
         if url:
             tooltips.append('<b>URL:</b> <a href="{url}">{url}</a>'.format(url=url))
 
-        timestamp = self.get_field('timestamp', default='')
+        if is_trashed:
+            tFrom, tDate = self.trashed_informations
 
-        if timestamp:
-            tooltips.append('Added to database <b>{timestamp}</b>.'.format(
-                timestamp=timestamp))
+            missing = False
+
+            try:
+                tType = self.database.files_store.get_filetype(tFrom)
+
+            except FileNotFoundError:
+                # Most probably a deleted database, but could be also (99%)
+                # that the current method is called while the origin BIB file
+                # is unloaded. This happens notably at application start.
+
+                if os.path.exists(tFrom):
+                    tType = FileTypes.USER
+
+                else:
+                    tType = FileTypes.NOTFOUND
+                    missing = True
+
+            # TODO: what if trashed from QUEUE? FileTypes must be dynamic!
+            tFrom = markup_bib_filename(
+                tFrom, tType, parenthesis=True, missing=missing)
+
+            tooltips.append('Trashed from {tFrom} on {tDate}.'.format(
+                tFrom=tFrom, tDate=tDate))
+
+        else:
+            timestamp = self.get_field('timestamp', default='')
+
+            if timestamp:
+                tooltips.append('Added to {filename} on <b>{timestamp}</b>.'.format(
+                    filename=markup_bib_filename(
+                        self.database.filename,
+                        self.database.filetype),
+                    timestamp=timestamp))
+
+            else:
+                tooltips.append('Stored in {filename}.'.format(
+                    filename=markup_bib_filename(
+                        self.database.filename,
+                        self.database.filetype,
+                        parenthesis=True)))
 
         return '\n\n'.join(tooltips)
 
@@ -356,6 +487,8 @@ class BibedEntry:
 
             if field_value:
                 return field_value
+
+        return ''
 
     @property
     def author(self):
@@ -448,6 +581,40 @@ class BibedEntry:
         # See constants.py
         return ''
 
+    @property
+    def short_display(self):
+        ''' Used in GUI dialogs (thus uses Pango markup). '''
+
+        assert getattr(defaults.types.labels, self.type)
+
+        if self.is_trashed:
+            trashedFrom, trashedDate = self.trashed_informations
+        else:
+            trashedFrom, trashedDate = None, None
+
+        return (
+            '{type} <b><i>{title}</i></b> '
+            'by <b>{author}</b>{journal}{year}{trashed}'.format(
+                type=getattr(defaults.types.labels,
+                             self.type).replace('_', ''),
+
+                title=self.title[:24] + (self.title[24:] and ' […]'),
+                author=self.author,
+
+                journal=' in <i>{}</i>'.format(self.journal)
+                if self.journal else '',
+
+                year=' ({})'.format(self.year)
+                if self.year else '',
+
+                trashed=' <span color="grey">(trashed on {tDate} from <span face="monospace">{tFrom}</span>)</span>'.format(
+                    tFrom=GLib.markup_escape_text(
+                        os.path.basename(trashedFrom)),
+                    tDate=trashedDate
+                ) if self.is_trashed else '',
+            )
+        )
+
     def update_fields(self, **kwargs):
 
         # assert lprint_function_name()
@@ -484,37 +651,12 @@ class BibedEntry:
 
         self.set_timestamp_and_owner()
 
-    def delete(self):
+    def delete(self, write=True):
 
         self.database.delete_entry(self)
-        
-        self.database.write()
 
-    def to_list_store_row(self):
-        ''' Get a BIB entry, and get displayable fields for Gtk List Store. '''
-
-        fields = self.entry
-
-        return [
-            self.gid,  # global_id, computed by app.
-            self.database.filename,
-            self.index,
-            self.tooltip,
-            self.type,
-            self.key,
-            fields.get('file', ''),
-            fields.get('url', ''),
-            fields.get('doi', ''),
-            self.author,
-            fields.get('title', ''),
-            fields.get('subtitle', ''),
-            self.journal,
-            self.year,
-            fields.get('date', ''),
-            self.quality,
-            self.read_status,
-            self.comment,
-        ]
+        if write:
+            self.database.write()
 
 
 class EntryKeyGenerator:

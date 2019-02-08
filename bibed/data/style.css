@@ -17,19 +17,38 @@ padding
 margin
 transition
 
-*/
+http://www.code-couleur.com/dictionnaire/couleur-c.html
 
-GtkButton.close-all {
+*/
+.splash-screen {
+    border-radius: 5px;
+}
+.splash-screen label {
+    padding-right: 20px;
+    font-size: 30px;
+}
+
+button.close-all {
     background-color: black;
     background: black;
 }
 
-GtkButton#close-button {
+button#close-button {
     background-color: green;
     background: green;
 }
 
-GtkLabel.dnd-object {
-    background-color: #333333;
+.dnd-object-deactivated {
+    /* Beurre */
+    background-color: #F0E36B;
     border-radius: 5px;
+    padding: 10px;
+}
+
+.dnd-drop-target {
+    /* Beurre frais */
+    background-color: #FFF48D;
+    font-weight: bolder;
+    border-radius: 5px;
+    padding: 10px;
 }

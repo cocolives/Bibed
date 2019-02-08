@@ -15,9 +15,9 @@ from bibed.sentry import sentry
 from bibed.preferences import defaults, preferences, gpod
 
 from bibed.gui.helpers import (
+    in_scrolled,
     label_with_markup,
     widget_properties,
-    frame_defaults,
     add_classes, remove_classes,
     grid_with_common_params,
     vbox_with_icon_and_label,
@@ -25,47 +25,12 @@ from bibed.gui.helpers import (
     build_entry_field_labelled_entry,
     # debug_widget,
 )
-from bibed.gui.dndflowbox import DnDFlowBox
-from bibed.gui.gtk import Gtk
+from bibed.gui.dndflowbox import dnd_scrolled_flowbox
+from bibed.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
 
 OWNER_NAME_RE = re.compile('^[a-z]([- :,@_a-z0-9]){2,}$', re.IGNORECASE)
-
-
-def dnd_scrolled_flowbox(name=None, title=None, dialog=None):
-
-    if title is None:
-        title = name.title()
-
-    frame = frame_defaults(title)
-
-    scrolled = Gtk.ScrolledWindow()
-
-    scrolled.set_policy(Gtk.PolicyType.NEVER,
-                        Gtk.PolicyType.AUTOMATIC)
-
-    # debug_widget(scrolled)
-
-    flowbox = widget_properties(
-        DnDFlowBox(name=name, dialog=dialog),
-        expand=True,
-    )
-
-    # flowbox.set_valign(Gtk.Align.START)
-    flowbox.set_max_children_per_line(3)
-    flowbox.set_min_children_per_line(2)
-
-    flowbox.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
-    # flowbox.set_activate_on_single_click(False)
-
-    scrolled.add(flowbox)
-    frame.add(scrolled)
-
-    # scrolled.set_size_request(100, 100)
-    flowbox.set_size_request(100, 100)
-
-    return frame, scrolled, flowbox
 
 
 # —————————————————————————————————————————————————————————————————— Classes
@@ -77,10 +42,13 @@ class BibedPreferencesDialog(Gtk.Dialog):
         Gtk.Dialog.__init__(
             self, "{0} Preferences".format(APP_NAME), parent, 0)
 
+        # Needed for CSS reload.
+        self.application = parent.application
+
         self.set_modal(True)
 
         # TODO: get screen resolution to make HiDPI aware.
-        self.set_default_size(500, 300)
+        self.set_default_size(450, 350)
 
         self.set_border_width(BOXES_BORDER_WIDTH)
 
@@ -106,8 +74,6 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.setup_page_accels()
         self.setup_page_creator_editor()
         self.setup_page_interface_customization()
-        # self.setup_page_editor_fields()
-
         self.setup_finish()
 
         self.show_all()
@@ -347,15 +313,69 @@ class BibedPreferencesDialog(Gtk.Dialog):
         if not sentry.usable:
             self.swi_use_sentry.set_sensitive(False)
 
+        # ————————————————————————————————————————————— Use treeview tooltips
+
+        (self.lbl_treeview_show_tooltips,
+         self.swi_treeview_show_tooltips) = build_label_and_switch(
+            '<b>Display tooltips in main view</b>\n'
+            '<span foreground="grey" size="small">'
+            'Show bibliographic entries preview as you hover them with'
+            'your mouse cursor. Use <span face="monospace">Shift-Control-T</span> to toggle this setting while in the main view.</span>',
+            self.on_switch_activated,
+            gpod('treeview_show_tooltips'),
+            func_args=('treeview_show_tooltips', )
+
+        )
+
+        pg.attach_next_to(
+            self.lbl_treeview_show_tooltips,
+            self.lbl_use_sentry,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.swi_treeview_show_tooltips,
+            self.lbl_treeview_show_tooltips,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # ————————————————————————————————————————————— Use treeview background
+
+        (self.lbl_use_treeview_background,
+         self.swi_use_treeview_background) = build_label_and_switch(
+            '<b>Use Bibed backgrounds</b>\n'
+            '<span foreground="grey" size="small">'
+            'Display light background in the main table view. Use '
+            '<span face="monospace">Shift-Control-R</span> to\n'
+            'randomly cycle backgrounds.</span>',
+            self.on_switch_activated,
+            gpod('use_treeview_background'),
+            func_args=('use_treeview_background', )
+
+        )
+
+        pg.attach_next_to(
+            self.lbl_use_treeview_background,
+            self.lbl_treeview_show_tooltips,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.swi_use_treeview_background,
+            self.lbl_use_treeview_background,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
         # ———————————————————————————————————————————————————— End widgets
 
         self.page_general = pg
 
         self.notebook.append_page(
-            self.page_general,
+            in_scrolled(self.page_general),
             vbox_with_icon_and_label(
-                'preferences-system-symbolic',
-                'General'
+                'general',
+                'General',
+                icon_name='preferences-system-symbolic',
             )
         )
 
@@ -471,8 +491,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_accels,
             vbox_with_icon_and_label(
-                'preferences-desktop-keyboard-shortcuts-symbolic',
-                'Accelerators'
+                'accelerators',
+                'Accelerators',
+                icon_name='preferences-desktop-keyboard-shortcuts-symbolic',
             )
         )
 
@@ -630,8 +651,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_creator,
             vbox_with_icon_and_label(
-                'bookmark-new-symbolic',
-                'Creator / Editor'
+                'creator_editor',
+                'Creator / Editor',
+                icon_name='bookmark-new-symbolic',
             )
         )
 
@@ -645,7 +667,10 @@ class BibedPreferencesDialog(Gtk.Dialog):
             pref_other = preferences.types.other
 
             (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
-                name=qualify, title=title, dialog=self)
+                name=qualify, title=title, dialog=self,
+                child_type='type', child_widget='icon'
+                if qualify == 'main' else 'simple',
+                connect_to=self.on_flowbox_type_item_activated)
 
             if qualify == 'main':
                 children = defl_main if pref_main is None else pref_main
@@ -658,7 +683,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
             return (frame, scrolled, dnd_area)
 
-        pic = grid_with_common_params()
+        pic = grid_with_common_params()  # column_homogeneous=True
 
         (self.fr_creator_dnd_main,
          self.sw_creator_dnd_main,
@@ -684,6 +709,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
             valign=Gtk.Align.START)
 
         self.btn_creator_reset = widget_properties(
+            # edit-clear-all-symbolic
+
             Gtk.Button('Reset to defaults'),
             expand=False,
             halign=Gtk.Align.CENTER,
@@ -693,8 +720,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         self.btn_creator_reset.connect('clicked', self.on_creator_reset)
 
-        if preferences.types.main or preferences.types.other:
-            self.btn_creator_reset.set_sensitive(True)
+        self.btn_creator_reset.set_sensitive(
+            bool(preferences.types.main and preferences.types.main != defaults.types.main) or bool(preferences.types.other and preferences.types.other != defaults.types.other)
+        )
 
         # debug_widget(self.lbl_creator)
         pic.attach(
@@ -728,106 +756,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.notebook.append_page(
             self.page_interface_customization,
             vbox_with_icon_and_label(
-                'preferences-desktop-screensaver-symbolic',
-                'Interface customization'
-            )
-        )
-
-    def setup_page_editor_fields(self):
-
-        def build_dnd(qualify, title):
-
-            defl_main  = defaults.types.main
-            defl_other = defaults.types.other
-            pref_main  = preferences.types.main
-            pref_other = preferences.types.other
-
-            (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
-                name=qualify, title=title, dialog=self)
-
-            if qualify == 'main':
-                children = defl_main if pref_main is None else pref_main
-
-            else:
-                children = defl_other if pref_other is None else pref_other
-                # dnd_area.drag_source_set_icon_name(Gtk.STOCK_GO_BACK)
-
-            dnd_area.add_items(children)
-
-            return (frame, scrolled, dnd_area)
-
-        pef = grid_with_common_params()
-
-        (self.fr_creator_dnd_main,
-         self.sw_creator_dnd_main,
-         self.fb_creator_dnd_main) = build_dnd('main', '   Main types   ')
-        (self.fr_creator_dnd_other,
-         self.sw_creator_dnd_other,
-         self.fb_creator_dnd_other) = build_dnd('other', '   Other types   ')
-
-        self.lbl_creator = widget_properties(label_with_markup(
-            '<big>Main and other entry types</big>\n'
-            '<span foreground="grey">'
-            'Drag and drop items from one side to another\n'
-            'to have</span> main <span foreground="grey">'
-            'items displayed first in entry\n'
-            'creator assistant, and</span> other '
-            '<span foreground="grey">accessible\n'
-            'in a folded area of the assistant.\n\n'
-            'Note: they will appear in the exact order\n'
-            'you organize them into.'
-            '</span>'),
-            expand=False,
-            halign=Gtk.Align.START,
-            valign=Gtk.Align.START)
-
-        self.btn_creator_reset = widget_properties(
-            Gtk.Button('Reset to defaults'),
-            expand=False,
-            halign=Gtk.Align.CENTER,
-            valign=Gtk.Align.END,
-            margin_top=GRID_ROWS_SPACING,
-            margin_bottom=GRID_ROWS_SPACING)
-
-        self.btn_creator_reset.connect('clicked', self.on_creator_reset)
-
-        if preferences.types.main or preferences.types.other:
-            self.btn_creator_reset.set_sensitive(True)
-
-        # debug_widget(self.lbl_creator)
-        pef.attach(
-            self.lbl_creator,
-            0, 0, 1, 1
-        )
-
-        pef.attach_next_to(
-            self.btn_creator_reset,
-            self.lbl_creator,
-            Gtk.PositionType.BOTTOM,
-            1, 1
-        )
-
-        pef.attach_next_to(
-            self.fr_creator_dnd_main,
-            self.lbl_creator,
-            Gtk.PositionType.RIGHT,
-            1, 2
-        )
-
-        pef.attach_next_to(
-            self.fr_creator_dnd_other,
-            self.fr_creator_dnd_main,
-            Gtk.PositionType.RIGHT,
-            1, 2
-        )
-
-        self.page_editor_fields = pef
-
-        self.notebook.append_page(
-            self.page_editor_fields,
-            vbox_with_icon_and_label(
-                'document-new-symbolic',
-                'Creator'
+                'interface_customization',
+                'Interface customization',
+                icon_name='preferences-desktop-screensaver-symbolic',
             )
         )
 
@@ -839,6 +770,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.on_bib_add_owner_activated(
             self.swi_bib_add_owner.get_active()
         )
+
+    # ———————————————————————————————————————————————————————————— Gtk & Signal
 
     def run(self):
 
@@ -891,6 +824,15 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         else:
             sentry.disable()
+
+    def on_treeview_show_tooltips_activated(self, is_active):
+
+        self.application.window.treeview.switch_tooltips(is_active)
+
+    def on_use_treeview_background_activated(self, is_active):
+
+        # Reload the whole application CSS, to enable or disable background.
+        self.application.reload_css_provider_data()
 
     def on_bib_add_timestamp_activated(self, is_active):
 
@@ -1001,3 +943,111 @@ class BibedPreferencesDialog(Gtk.Dialog):
         if save:
             preferences.save()
             self.btn_creator_reset.set_sensitive(True)
+
+    def on_flowbox_type_item_activated(self, flowbox, flowchild, *args, **kwargs):
+
+        print('GO', flowbox.get_name(), '→', flowchild.get_child().get_name())
+
+    # ———————————————————————————————————————————————————— Types fields editor
+
+    def setup_page_editor_fields(self):
+
+        def build_dnd(qualify, title):
+
+            defl_main  = defaults.types.main
+            defl_other = defaults.types.other
+            pref_main  = preferences.types.main
+            pref_other = preferences.types.other
+
+            (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
+                name=qualify, title=title, dialog=self,
+                child_type='type', child_widget='icon'
+                if qualify == 'main' else 'simple',
+                connect_to=self.on_flowbox_type_item_activated)
+
+            if qualify == 'main':
+                children = defl_main if pref_main is None else pref_main
+
+            else:
+                children = defl_other if pref_other is None else pref_other
+                # dnd_area.drag_source_set_icon_name(Gtk.STOCK_GO_BACK)
+
+            dnd_area.add_items(children)
+
+            return (frame, scrolled, dnd_area)
+
+        pef = grid_with_common_params()
+
+        (self.fr_creator_dnd_main,
+         self.sw_creator_dnd_main,
+         self.fb_creator_dnd_main) = build_dnd('main', '   Main types   ')
+        (self.fr_creator_dnd_other,
+         self.sw_creator_dnd_other,
+         self.fb_creator_dnd_other) = build_dnd('other', '   Other types   ')
+
+        self.lbl_creator = widget_properties(label_with_markup(
+            '<big>Main and other entry types</big>\n'
+            '<span foreground="grey">'
+            'Drag and drop items from one side to another\n'
+            'to have</span> main <span foreground="grey">'
+            'items displayed first in entry\n'
+            'creator assistant, and</span> other '
+            '<span foreground="grey">accessible\n'
+            'in a folded area of the assistant.\n\n'
+            'Note: they will appear in the exact order\n'
+            'you organize them into.'
+            '</span>'),
+            expand=False,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.START)
+
+        self.btn_creator_reset = widget_properties(
+            Gtk.Button('Reset to defaults'),
+            expand=False,
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.END,
+            margin_top=GRID_ROWS_SPACING,
+            margin_bottom=GRID_ROWS_SPACING)
+
+        self.btn_creator_reset.connect('clicked', self.on_creator_reset)
+
+        if preferences.types.main or preferences.types.other:
+            self.btn_creator_reset.set_sensitive(True)
+
+        # debug_widget(self.lbl_creator)
+        pef.attach(
+            self.lbl_creator,
+            0, 0, 1, 1
+        )
+
+        pef.attach_next_to(
+            self.btn_creator_reset,
+            self.lbl_creator,
+            Gtk.PositionType.BOTTOM,
+            1, 1
+        )
+
+        pef.attach_next_to(
+            self.fr_creator_dnd_main,
+            self.lbl_creator,
+            Gtk.PositionType.RIGHT,
+            1, 2
+        )
+
+        pef.attach_next_to(
+            self.fr_creator_dnd_other,
+            self.fr_creator_dnd_main,
+            Gtk.PositionType.RIGHT,
+            1, 2
+        )
+
+        self.page_editor_fields = pef
+
+        self.notebook.append_page(
+            self.page_editor_fields,
+            vbox_with_icon_and_label(
+                'creator',
+                'Creator',
+                icon_name='document-new-symbolic',
+            )
+        )
