@@ -2,6 +2,7 @@
 import os
 import re
 import logging
+import webbrowser
 import subprocess
 
 from bibed.constants import (
@@ -115,28 +116,35 @@ def make_bibed_user_dir():
             'While creating preferences directory “{}”'.format(bibed_user_dir))
 
 
-def open_with_system_launcher(filename):
+def open_urls_in_web_browser(urls):
 
-    if filename.startswith(':') and filename.lower().endswith(':pdf'):
-        # get rid of older filenames like “:/home/olive/myfile.pdf:PDF”
-        filename = filename[1:-4]
+    for url in urls:
+        webbrowser.open_new_tab(url)
+
+
+def open_with_system_launcher(filenames):
 
     if is_osx():
-        command = ['open', filename]
+        base_command = ['open']
 
     elif is_windows():
-        command = ['start', filename]
+        base_command = ['start']
 
     else:
         # Linux
-        command = ['xdg-open', filename]
+        base_command = ['xdg-open']
 
-    try:
-        # This will raise an exception if any error is encountered.
-        subprocess.check_call(command)
+    for filename in filenames:
+        if filename.startswith(':') and filename.lower().endswith(':pdf'):
+            # get rid of older filenames like “:/home/olive/myfile.pdf:PDF”
+            filename = filename[1:-4]
 
-    except Exception:
-        raise ActionError(' '.join(command))
+        try:
+            # This will raise an exception if any error is encountered.
+            subprocess.check_call(base_command + [filename])
+
+        except Exception:
+            raise ActionError(' '.join(command))
 
 
 def friendly_filename(filename):
