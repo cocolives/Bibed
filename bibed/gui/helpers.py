@@ -4,6 +4,7 @@ import logging
 from bibed.foundations import ldebug
 from bibed.constants import (
     FileTypes,
+    BIBED_ICONS_DIR,
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
     GRID_BORDER_WIDTH,
@@ -19,6 +20,21 @@ from bibed.gtk import GLib, Gtk, Gdk, Gio
 LOGGER = logging.getLogger(__name__)
 
 # ——————————————————————————————————————————————————————————————————— Functions
+
+
+def get_icon(name, typee, size=None):
+
+    if size is None:
+        size = '48x48'
+
+    base_path = os.path.join(BIBED_ICONS_DIR, typee, size)
+
+    icon_path = os.path.join(base_path, name + '.png')
+
+    if not os.path.exists(icon_path):
+        icon_path = os.path.join(base_path, 'default.png')
+
+    return icon_path
 
 
 def is_dark_theme():
@@ -139,9 +155,36 @@ def find_child_by_name(start_node, widget_name):
     if start_node.get_name() == widget_name:
         return start_node
 
+    if isinstance(start_node, Gtk.Bin):
+        result = find_child_by_name(start_node.get_child(), widget_name)
+
+        if result:
+            return result
+
     if isinstance(start_node, Gtk.Container):
         for child in start_node.get_children():
             result = find_child_by_name(child, widget_name)
+
+            if result:
+                return result
+
+    return None
+
+
+def find_child_by_class(start_node, widget_class):
+
+    if isinstance(start_node, widget_class):
+        return start_node
+
+    if isinstance(start_node, Gtk.Bin):
+        result = find_child_by_class(start_node.get_child(), widget_class)
+
+        if result:
+            return result
+
+    if isinstance(start_node, Gtk.Container):
+        for child in start_node.get_children():
+            result = find_child_by_class(child, widget_class)
 
             if result:
                 return result
@@ -652,7 +695,7 @@ def vbox_with_icon_and_label(name, label_markup, icon_name=None, icon_path=None)
         )
 
     label = Gtk.Label()
-    label.set_markup(label_markup)
+    label.set_markup_with_mnemonic(label_markup)
 
     label_box.pack_start(icon, False, False, 0)
     label_box.pack_start(label, True, True, 0)
@@ -726,7 +769,7 @@ def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_pat
         hbox.pack_start(icon, False, False, 0)
 
     label = widget_properties(Gtk.Label(), margin_left=10)
-    label.set_markup(label_markup)
+    label.set_markup_with_mnemonic(label_markup)
 
     hbox.pack_start(widget_properties(
         label,
