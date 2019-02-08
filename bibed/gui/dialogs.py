@@ -45,7 +45,7 @@ class BibedMoveDialog(Gtk.MessageDialog):
         self.files = files
 
         # Used during self operations and returned at the end.
-        self.destination_filename = None
+        self.destination_database = None
         self.unchanged_count = 0
         self.moved_count = 0
 
@@ -84,22 +84,21 @@ class BibedMoveDialog(Gtk.MessageDialog):
             halign=Gtk.Align.CENTER,
         )
 
-        filetype_index = FSCols.FILETYPE
-        filename_index = FSCols.FILENAME
-
         first_button = None
 
-        for row in self.files:
-            if not row[filetype_index] & FileTypes.USER:
-                continue
+        for database in self.files.user_databases:
 
             filename_markup = markup_bib_filename(
-                row[filename_index], row[filetype_index],
+                database.filename, database.filetype,
                 same_line=True, same_size=False, big_size=True)
 
             if first_button is None:
                 first_button = button = \
                     Gtk.RadioButton.new(None)
+
+                # Else, if user just validates, we have no destination,
+                # while in the dialog the first radio IS selected.
+                self.destination_database = database
 
             else:
                 button = Gtk.RadioButton.new_from_widget(first_button)
@@ -111,7 +110,7 @@ class BibedMoveDialog(Gtk.MessageDialog):
 
             button.connect('toggled',
                            self.on_destination_toggled,
-                           row[filename_index])
+                           database)
 
             radios_box.add(button)
 
@@ -128,29 +127,30 @@ class BibedMoveDialog(Gtk.MessageDialog):
         self.destroy()
 
         return (
-            self.destination_filename,
+            self.destination_database,
             self.moved_count,
             self.unchanged_count,
         )
 
     def move_entries(self):
 
-        destination_database = self.files.get_database(
-            filename=self.destination_filename)
-
         databases_to_write = set()
 
         for entry in self.entries:
-            if entry.database == destination_database:
+            if entry.database == self.destination_database:
                 self.unchanged_count += 1
                 continue
 
+            # Source database is about to loose en entry,
+            # It needs a save() after the operation.
             databases_to_write.add(entry.database)
-            destination_database.move_entry(entry, destination_database)
+
+            self.destination_database.move_entry(entry, self.destination_database)
+
             self.moved_count += 1
 
         if self.moved_count:
-            databases_to_write.add(destination_database)
+            databases_to_write.add(self.destination_database)
 
         for database in databases_to_write:
             database.write()
@@ -158,6 +158,6 @@ class BibedMoveDialog(Gtk.MessageDialog):
     def on_destination_toggled(self, button, destination, *args):
 
         if button.get_active():
-            self.destination_filename = destination
+            self.destination_database = destination
 
             LOGGER.debug('Move destination set to “{}”.'.format(destination))
