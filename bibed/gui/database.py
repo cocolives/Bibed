@@ -283,11 +283,16 @@ class BibedDatabasePopover(Gtk.Popover):
         super().popup()
 
         try:
-            self.listbox.get_children()[0].grab_focus()
+            self.listbox.get_selected_rows()[0].grab_focus()
 
         except IndexError:
-            # No children. Don't bother.
-            pass
+
+            try:
+                self.listbox.get_children()[0].grab_focus()
+
+            except IndexError:
+                # No children. Don't bother.
+                pass
 
     def popdown(self, *args):
 
