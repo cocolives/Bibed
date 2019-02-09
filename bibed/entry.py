@@ -632,7 +632,10 @@ class BibedEntry:
 
     def update_store_row(self, fields=None):
 
-        self.database.data_store.update_entry(self, fields)
+        if self.database:
+            # If we have no database, entry is not yet created.
+            # The data store will be updated later by add_entry().
+            self.database.data_store.update_entry(self, fields)
 
     def toggle_quality(self):
 
