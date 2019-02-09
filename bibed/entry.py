@@ -482,7 +482,8 @@ class BibedEntry:
 
         # TODO: use journaltitle / handle aliased fields.
 
-        for field_name in ('journaltitle', 'booktitle', 'journal'):
+        for field_name in ('journaltitle', 'booktitle',
+                           'journal', 'howpublished', ):
             field_value = self.__clean_for_display(field_name)
 
             if field_value:
