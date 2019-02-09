@@ -498,7 +498,8 @@ class BibEdApplication(Gtk.Application):
         # assert lprint(filename, message)
 
         if self.files.reload(filename):
-            self.window.do_status_change(message)
+            if message:
+                self.window.do_status_change(message)
 
     def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
         ''' Close a file and impact changes. '''
