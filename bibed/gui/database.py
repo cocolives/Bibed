@@ -366,7 +366,7 @@ class BibedDatabasePopover(Gtk.Popover):
             halign=Gtk.Align.CENTER,
         )
 
-        label_all.set_markup('Open files')
+        label_all.set_markup('Open databases')
 
         self.btn_close_all = widget_properties(
             Gtk.Button(), expand=False, halign=Gtk.Align.END,
