@@ -167,15 +167,10 @@ class BibedEntryTreeViewMixin:
 
     # ———————————————————————————————————————————————————————— Entry selection
 
-    def get_main_iter_by_gid(self, gid):
-
-        # for row in self.main_model:
-        #     if row[BibAttrs.GLOBAL_ID] == gid:
-        #         return row.iter
-
-        # TODO: make clear while I need to substract 1.
-        #       make all counters equal everywhere.
-        return self.main_model.get_iter(gid - 1)
+    def get_main_model_iter_by_gid(self, gid):
+        ''' '''
+        # TODO: use path instead of GID.
+        return self.main_model.get_iter(gid)
 
     def get_entry_by_path(self, path, with_global_id=False, return_iter=False, only_row=False):
 
@@ -253,12 +248,6 @@ class BibedEntryTreeViewMixin:
 
         entry.toggle_quality()
 
-        self.main_model[
-            # TODO: Shouldn't we use get_real_path_from_path()
-            #       or something like that? a Gtk method.
-            self.get_main_iter_by_gid(entry.gid)
-        ][BibAttrs.QUALITY] = entry.quality
-
         # if gpod('bib_auto_save'):
         self.files.trigger_save(entry.database.filename)
 
@@ -267,10 +256,6 @@ class BibedEntryTreeViewMixin:
         entry = self.get_entry_by_path(path, with_global_id=True)
 
         entry.cycle_read_status()
-
-        self.main_model[
-            self.get_main_iter_by_gid(entry.gid)
-        ][BibAttrs.READ] = entry.read_status
 
         # if gpod('bib_auto_save'):
         self.files.trigger_save(entry.database.filename)

@@ -767,15 +767,17 @@ class BibedDataStore(Gtk.ListStore):
         )
 
     def do_recompute_global_ids(self):
+        ''' Global ID is a data-store stored absolute TreeView ``Path``.
 
+            We recompute it on file load/close operations for store direct
+            indexed access all the time.
+        '''
         # assert lprint_function_name()
 
-        counter = 1
         gid_index = BibAttrs.GLOBAL_ID
 
-        for row in self:
-            row[gid_index] = counter
-            counter += 1
+        for index, row in enumerate(self):
+            row[gid_index] = index
 
     def append(self, entry, filetype=None):
 
@@ -795,29 +797,29 @@ class BibedDataStore(Gtk.ListStore):
             ldebug('Row {} created with entry {}.',
                    row[BibAttrs.GLOBAL_ID], entry.key)
 
-    def update_entry(self, entry):
+    def update_entry(self, entry, fields=None):
 
         # assert lprint_function_name()
 
         assert entry.gid >= 0
 
-        gid_index = BibAttrs.GLOBAL_ID
+        # GID is an absolute TreePath.
+        entry_iter = self.get_iter(entry.gid)
 
-        for row in self:
-            if row[gid_index] == entry.gid:
-                # This is far from perfect, we could just update the row.
-                # But I'm tired and I want a simple way to view results.
-                # TODO: do better on next code review.
+        # This is far from perfect, we could just update the row.
+        # But I'm tired and I want a simple way to view results.
+        # TODO: do better on next code review.
 
-                self.insert_after(row.iter, self.__entry_to_store(entry))
-                self.remove(row.iter)
+        if fields:
+            for key, value in fields.items():
+                self[entry_iter][key] = value
+        else:
+            self.insert_after(entry_iter, self.__entry_to_store(entry))
+            self.remove(entry_iter)
 
-                assert ldebug(
-                    'Row {} updated (entry {}).',
-                    row[gid_index], entry.key
-                )
-
-                break
+        assert ldebug('Row {} updated (entry {}{}).',
+                      entry.gid, entry.key,
+                      ', fields={}'.format(fields) if fields else '')
 
     def delete_entry(self, entry):
 

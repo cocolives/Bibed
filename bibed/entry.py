@@ -14,7 +14,7 @@ from bibed.foundations import (
 )
 
 from bibed.constants import (
-    FileTypes,
+    BibAttrs, FileTypes,
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
@@ -625,6 +625,14 @@ class BibedEntry:
 
         self.set_timestamp_and_owner()
 
+        # TODO: map entry fields to data_store fields?
+        #       for now it's not worth it.
+        self.update_store_row()
+
+    def update_store_row(self, fields=None):
+
+        self.database.data_store.update_entry(self, fields)
+
     def toggle_quality(self):
 
         if self.quality == '':
@@ -634,6 +642,8 @@ class BibedEntry:
             self._internal_remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
 
         self.set_timestamp_and_owner()
+
+        self.update_store_row({BibAttrs.QUALITY: self.quality})
 
     def cycle_read_status(self):
 
@@ -650,6 +660,8 @@ class BibedEntry:
             self._internal_remove_keywords([JABREF_READ_KEYWORDS[1]])
 
         self.set_timestamp_and_owner()
+
+        self.update_store_row({BibAttrs.READ: self.read_status})
 
     def delete(self, write=True):
 
