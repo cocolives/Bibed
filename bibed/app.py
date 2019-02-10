@@ -108,8 +108,8 @@ class BibEdApplication(Gtk.Application):
                 for horizontal_position in ('left', 'right', ):
                     if vertical_position in background_filename \
                             and horizontal_position in background_filename:
-                                background_position = '{} {}'.format(
-                                    horizontal_position, vertical_position)
+                        background_position = '{} {}'.format(
+                            horizontal_position, vertical_position)
 
             if background_position is None:
                 background_position = 'left top'
