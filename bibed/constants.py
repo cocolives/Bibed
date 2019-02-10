@@ -182,7 +182,8 @@ APP_MENU_XML = '''
 # like div:after. Thus we need to prepare the background images with an
 # already set transparency, like transparent PNGs or flattened JPEGs.
 MAIN_TREEVIEW_CSS = '''
-treeview.view:not(:selected) {
+treeview.view:not(:selected),
+treeview.view header button {
     background-color: transparent;
 }
 
