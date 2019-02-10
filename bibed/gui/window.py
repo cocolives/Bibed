@@ -1,6 +1,8 @@
 import os
 import logging
 
+from bibed.exceptions import NoDatabaseForFilenameError
+
 from bibed.foundations import (
     lprint, ldebug,
     lprint_function_name,
@@ -823,6 +825,55 @@ class BibedWindow(Gtk.ApplicationWindow):
             popover.popup()
 
     # ——————————————————————————————————————————————————————————— Entry buttons
+    def autoselect_destination(self):
+
+        get_database = self.application.files.get_database
+        user_databases = tuple(self.application.files.user_databases)
+        selected_user_databases = tuple(
+            self.application.files.selected_user_databases)
+
+        # We start with that.
+        selected_database = None
+
+        # This will eventually help.
+        last_selected_filename = (
+            memories.last_destination
+            if gpod('remember_last_destination')
+            else None
+        )
+
+        if len(user_databases) == 1:
+            if not selected_user_databases:
+                # Only one file, select i before creation
+                # for new entry to appear in it when saved.
+                self.set_selected_databases(user_databases)
+
+            selected_database = user_databases[0]
+
+        else:
+            # There are more than one databases loaded.
+            # Else we could not have gotten here, because
+            # add_entry button is not visible and keyboard
+            # shortcut is inactive.
+            if len(selected_user_databases) == 1:
+                selected_database = selected_user_databases[0]
+
+            elif len(selected_user_databases) > 1:
+                if last_selected_filename:
+                    try:
+                        last_database = get_database(
+                            filename=last_selected_filename)
+
+                    except NoDatabaseForFilenameError:
+                        # Life has changed since last destination
+                        # was remembered. Forget it.
+                        del memories.last_destination
+
+                    else:
+                        if last_database in selected_user_databases:
+                            selected_database = last_database
+
+        return selected_database
 
     def on_entry_add_clicked(self, button):
 
@@ -835,6 +886,8 @@ class BibedWindow(Gtk.ApplicationWindow):
             entry_add_dialog.hide()
 
             entry = BibedEntry.new_from_type(entry_type)
+
+            entry.database = self.autoselect_destination()
 
             entry_edit_dialog = BibedEntryDialog(
                 parent=self, entry=entry)
