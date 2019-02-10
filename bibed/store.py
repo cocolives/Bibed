@@ -2,6 +2,7 @@ import os
 import time
 import logging
 import pyinotify
+from operator import attrgetter
 
 from threading import RLock
 
@@ -168,7 +169,10 @@ class BibedFileStore(Gio.ListStore):
         trash_database = self.get_database(filetype=FileTypes.TRASH)
         databases_to_write = set((trash_database, ))
 
-        for entry in entries:
+        # Move entries starting by the end, else our internal
+        # method fail at some point because indexes are altered.
+        for entry in sorted(entries,
+                key=attrgetter('index'), reverse=True):
             entry.set_trashed()
 
             # Note the database BEFORE the move(), because
@@ -184,7 +188,7 @@ class BibedFileStore(Gio.ListStore):
 
         assert lprint_function_name()
 
-        trash_database = self.get_database(filetype=FileTypes.TRASH)
+        trash_database = self.trash
         databases_to_write = set((trash_database, ))
         databases_to_unload = set()
 
@@ -412,7 +416,7 @@ class BibedFileStore(Gio.ListStore):
 
         # assert lprint('AFTER SYNC', [str(db) for db in self])
         pass
-        
+
     # —————————————————————————————————————————————————————————————— Properties
 
     @property
@@ -747,7 +751,7 @@ class BibedDataStore(Gtk.ListStore):
         return (
             entry.gid,  # global_id, computed by app.
             entry.database.filename,
-            entry.index,  # TODO: remove this field, everywhere.
+            entry.index,
             entry.tooltip,
             entry.type,
             entry.key,
@@ -828,16 +832,16 @@ class BibedDataStore(Gtk.ListStore):
 
         assert entry.gid >= 0
 
-        gid_index = BibAttrs.GLOBAL_ID
+        old_gid = entry.gid
 
-        for row in self:
-            if row[gid_index] == entry.gid:
-                self.remove(row.iter)
+        # GID is absolute path :-)
+        self.remove(self.get_iter(entry.gid))
 
+        # at the cost of this.
         self.do_recompute_global_ids()
 
         assert ldebug('Row {} deleted (was entry {}).',
-                      row[gid_index], entry.key)
+                      old_gid, entry.key)
 
     def clear_data(self, filename, recompute=True):
 

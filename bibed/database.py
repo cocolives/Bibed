@@ -171,7 +171,6 @@ class BibedDatabase(GObject.GObject):
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
 
-        #
         entry.index = new_index
 
         assert self.bibdb.entries.index(entry.entry) == new_index
@@ -181,7 +180,7 @@ class BibedDatabase(GObject.GObject):
         if __debug__:
             LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
 
-    def delete_entry(self, entry):
+    def delete_entry(self, entry, old_index=None):
         ''' Delete an entry from the current database.
 
             This operation will update underlying the Gtk datastore.
@@ -192,9 +191,11 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
         # assert lprint(entry, entry.gid)
 
+        assert entry.index >= 0
         assert entry.gid >= 0
 
-        entry_index = entry.index
+        # old_index is set in case of a move.
+        entry_index = entry.index if old_index is None else old_index
 
         # Here, or at the end?
         self.data_store.delete_entry(entry)
@@ -207,9 +208,18 @@ class BibedDatabase(GObject.GObject):
         # but only the first time you call it. It's a one shot.
         # lprint(self.bibdb.entries_dict.keys())
 
-        # increment indexes of posterior entries
+        # decrement indexes of posterior entries
         for btp_entry in self.bibdb.entries[entry_index:]:
-            self.entries[btp_entry['ID']][1] -= 1
+
+            # In rare cases (multiple deletion) the garbage collector does not
+            # collect deleted keys fast enough. Thus we get() and handle the
+            # situation gracefully.
+            value = self.entries.get(btp_entry['ID'])
+            try:
+                value[1] -= 1
+
+            except TypeError:
+                pass
 
         assert self.check_indexes()
 
@@ -246,11 +256,14 @@ class BibedDatabase(GObject.GObject):
         # This is important, else GUI will still write in source database.
         entry.database = destination_database
 
+        # save it before it gets overwritten by add_entry()
+        old_index = entry.index
+
         # NOTE: this method does not update the data store, because
         #       add*() and delete*() methods already do what's needed.
 
         destination_database.add_entry(entry)
-        source_database.delete_entry(entry)
+        source_database.delete_entry(entry, old_index)
 
         if write:
             destination_database.write()
@@ -339,7 +352,19 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
 
         for index, btp_entry in enumerate(self.bibdb.entries):
-            if self.entries[btp_entry['ID']][1] != index:
+
+            # In rare cases (multiple deletion) the garbage collector does not
+            # collect deleted keys fast enough. Thus we get() and handle the
+            # situation gracefully.
+            value = self.entries.get(btp_entry['ID'])
+
+            try:
+                current_value = value[1]
+
+            except TypeError:
+                continue
+
+            if current_value != index:
                 raise IndexingFailedError('{} is not {} (entry {})'.format(
                     self.entries[btp_entry['ID']][1],
                     index, btp_entry['ID']
