@@ -222,7 +222,11 @@ class BibedEntry:
 
     def __str__(self):
 
-        return 'Entry {}@{}'.format(self.key, self.type)
+        return 'Entry {}@{}{}'.format(
+            self.key, self.type,
+            ' NEW' if self.database is None
+            else ' in {}[{}]'.format(
+                os.path.basename(self.database.filename), self.index))
 
     def set_timestamp_and_owner(self):
 
