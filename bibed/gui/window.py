@@ -166,8 +166,8 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         stack.add_titled(
             self.treeview_sw,
-            'database',
-            'BIB Databases'
+            'library',
+            'Local library'
         )
 
         stack.child_set_property(
@@ -249,7 +249,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_file_select = Gtk.Button()
         self.btn_file_select.set_tooltip_markup('Select databases to display in main view')
         self.btn_file_select.add(flat_unclickable_button_in_hbox(
-            'file_select', 'Databases',
+            'file_select', 'Library',
             icon_name='drive-multidisk-symbolic',
         ))
 
