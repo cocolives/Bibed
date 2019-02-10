@@ -201,7 +201,7 @@ class BibedDatabase(GObject.GObject):
         if __debug__:
             LOGGER.debug('{0}.delete_entry({1}) done.'.format(self, entry))
 
-    def move_entry(self, entry, destination_database):
+    def move_entry(self, entry, destination_database, write=True):
         ''' Move an entry from a database to another.
 
             internally, this inserts the entry into the destination database,
@@ -212,11 +212,11 @@ class BibedDatabase(GObject.GObject):
 
             This operation will update underlying the Gtk datastore.
 
-            .. note:: it's up to the caller to call :method:`write` on the
-                two databases.
-
             :param entry: a :class:`~bibed.entry.BibedEntry` instance.
             :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
+            :param save: boolean, which can be disabled in case of multiple
+                move operations, for the caller to merge write() calls and
+                optimize resources consumption.
         '''
 
         # assert lprint_function_name()
@@ -236,6 +236,10 @@ class BibedDatabase(GObject.GObject):
 
         destination_database.add_entry(entry)
         source_database.delete_entry(entry)
+
+        if write:
+            destination_database.write()
+            source_database.write()
 
         if __debug__:
             LOGGER.debug('{0}.move_entry({1}) to {2} done.'.format(

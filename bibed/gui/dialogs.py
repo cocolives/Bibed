@@ -145,7 +145,10 @@ class BibedMoveDialog(Gtk.MessageDialog):
             # It needs a save() after the operation.
             databases_to_write.add(entry.database)
 
-            self.destination_database.move_entry(entry, self.destination_database)
+            self.destination_database.move_entry(
+                # We do not write at at each move, this will
+                # be done once and for all at end of operation.
+                entry, self.destination_database, write=False)
 
             self.moved_count += 1
 

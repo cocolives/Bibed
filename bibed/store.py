@@ -411,7 +411,8 @@ class BibedFileStore(Gio.ListStore):
             database.selected = bool(database in selected_databases)
 
         # assert lprint('AFTER SYNC', [str(db) for db in self])
-
+        pass
+        
     # —————————————————————————————————————————————————————————————— Properties
 
     @property
