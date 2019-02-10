@@ -113,6 +113,14 @@ class BibedDatabase(GObject.GObject):
 
         return len(self.entries)
 
+    def __eq__(self, other):
+        ''' Overrides the default implementation '''
+
+        if isinstance(other, BibedDatabase):
+            return self.filename == other.filename
+
+        return NotImplemented
+
     def get_entry_by_key(self, key):
 
         # assert lprint_function_name()
