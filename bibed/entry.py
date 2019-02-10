@@ -76,7 +76,8 @@ class BibedEntry:
             # Index to -1 is checked in BibedEntryDialog
             # to ensure the new entry is written only once
             # into database.
-            -1,
+            -1,  # index
+            -1,  # GID
         )
 
     @classmethod
@@ -106,7 +107,7 @@ class BibedEntry:
 
         return result
 
-    def __init__(self, database, entry, index):
+    def __init__(self, database, entry, index, gid=None):
 
         # The raw bibtextparser entry.
         self.entry = entry
@@ -116,12 +117,11 @@ class BibedEntry:
 
         # Index in the database file.
         # == index in the bibtexparser entries list.
-        # TODO: remove this field, everywhere.
         self.index = index
 
         # Global ID (across multiple files). This is
         # needed to update the treeview after modifications.
-        self.gid = 0
+        self.gid = -1 if gid is None else gid
 
         self._internal_verbb = {
             key: value
@@ -626,9 +626,10 @@ class BibedEntry:
 
         self.set_timestamp_and_owner()
 
-        # TODO: map entry fields to data_store fields?
-        #       for now it's not worth it.
-        self.update_store_row()
+        if self.gid >= 0:
+            # TODO: map entry fields to data_store fields?
+            #       for now it's not worth it.
+            self.update_store_row()
 
     def update_store_row(self, fields=None):
 
