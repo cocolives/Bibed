@@ -121,6 +121,10 @@ class BibedDatabase(GObject.GObject):
 
         return NotImplemented
 
+    def __hash__(self):
+        ''' Make class set()-able. '''
+        return hash(self.filename)
+
     def get_entry_by_key(self, key):
 
         # assert lprint_function_name()
