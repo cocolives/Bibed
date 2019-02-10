@@ -167,6 +167,9 @@ class BibedDatabase(GObject.GObject):
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
 
+        #
+        entry.index = new_index
+
         assert self.bibdb.entries.index(entry.entry) == new_index
 
         self.data_store.insert_entry(entry)
@@ -187,7 +190,7 @@ class BibedDatabase(GObject.GObject):
 
         assert entry.gid >= 0
 
-        entry_index = self.entries[entry.key][1]
+        entry_index = entry.index
 
         # Here, or at the end?
         self.data_store.delete_entry(entry)
