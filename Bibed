@@ -32,28 +32,52 @@ programs live.
 import sys
 import time
 import logging
+import logging.handlers
+
+from bibed.foundations import GZipRotator, GZipNamer
+from bibed.constants import BIBED_LOG_FILE
+
 
 LOGGER = logging.getLogger(__name__)
 
 
 def setup_logging(level=logging.INFO):
+
     root = logging.getLogger()
     root.setLevel(level)
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
+
     formatter = logging.Formatter(
         '%(asctime)s [%(levelname)s] %(name)s: %(message)s')
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
+
+    # ch = logging.StreamHandler(sys.stdout)
+    # ch.setLevel(logging.DEBUG)
+    # ch.setFormatter(formatter)
+    # root.addHandler(ch)
+
+    rfh = logging.handlers.RotatingFileHandler(BIBED_LOG_FILE, backupCount=10)
+    rfh.setLevel(logging.DEBUG)
+    rfh.setFormatter(formatter)
+    rfh.rotator = GZipRotator()
+    rfh.namer = GZipNamer()
+
+    # Rotate logs at every application launch.
+    rfh.doRollover()
+
+    mh = logging.handlers.MemoryHandler(32768)
+    mh.setTarget(rfh)
+
+    root.addHandler(mh)
+
+    return (mh, rfh)
 
 
 if __name__ == "__main__":
     time_start = time.time()
 
     if __debug__:
-        setup_logging(logging.DEBUG)
+        logging_handlers = setup_logging(logging.DEBUG)
     else:
-        setup_logging(logging.INFO)
+        logging_handlers = setup_logging(logging.INFO)
 
     logging.getLogger('urllib3').setLevel(logging.CRITICAL)
     logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
@@ -68,6 +92,7 @@ if __name__ == "__main__":
     if gpod('use_sentry'):
         sentry.enable()
 
-    app = BibEdApplication(time_start=time_start)
+    app = BibEdApplication(time_start=time_start,
+                           logging_handlers=logging_handlers)
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)

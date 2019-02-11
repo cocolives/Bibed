@@ -69,6 +69,9 @@ class BibEdApplication(Gtk.Application):
     def __init__(self, *args, **kwargs):
 
         self.time_start = kwargs.pop('time_start')
+        self.logging_handlers = kwargs.pop('logging_handlers')
+
+        LOGGER.info('Starting application.')
 
         super().__init__(*args, application_id=APP_ID,
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
@@ -616,3 +619,6 @@ class BibEdApplication(Gtk.Application):
         LOGGER.info(
             'Terminating application; ran {}.'.format(
                 seconds_to_string(time.time() - self.time_start)))
+
+        for handler in self.logging_handlers:
+            handler.close()
