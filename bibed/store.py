@@ -170,7 +170,8 @@ class BibedFileStore(Gio.ListStore):
         # Move entries starting by the end, else our internal
         # method fail at some point because indexes are altered.
         for entry in sorted(entries,
-                key=attrgetter('index'), reverse=True):
+                            key=attrgetter('index'),
+                            reverse=True):
             entry.set_trashed()
 
             # Note the database BEFORE the move(), because
@@ -849,7 +850,7 @@ class BibedDataStore(Gtk.ListStore):
 
         for row in self:
             if row[column_filename] == filename:
-                    self.remove(row.iter)
+                self.remove(row.iter)
 
         if recompute:
             self.do_recompute_global_ids()

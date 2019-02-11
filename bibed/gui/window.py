@@ -12,8 +12,7 @@ from bibed.ltrace import (  # NOQA
 
 from bibed.constants import (
     APP_NAME,
-,
-    COMBO_CHARS_DIVIDER,
+    SEARCH_WIDTH_EXPANDED,
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
 )
@@ -416,8 +415,8 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.headerbar.props.title = title_value
         self.headerbar.props.subtitle = subtitle_value
 
-        assert ldebug('update_title() to {0} and {1}.'.format(
-                      title_value, subtitle_value))
+        LOGGER.debug('update_title(): {0} and {1}.'.format(
+                     title_value, subtitle_value))
 
     def sync_buttons_states(self, sync_children=True, *args, **kwargs):
         ''' Hide or disable relevant widgets, determined by context.
@@ -964,7 +963,8 @@ class BibedWindow(Gtk.ApplicationWindow):
             # Remove entries starting by the end, else our internal
             # method fail at some point because indexes are altered.
             for entry in sorted(selected_entries,
-                    key=attrgetter('index'), reverse=True):
+                                key=attrgetter('index'),
+                                reverse=True):
                 databases_to_write.add(entry.database)
                 entry.delete(write=False)
 
