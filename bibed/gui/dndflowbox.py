@@ -22,7 +22,7 @@ from bibed.gui.helpers import (
 LOGGER = logging.getLogger(__name__)
 
 
-DROP_TEXT_NAME = 'drop-object-here'  # '[ → ⋅ ← ]'
+DROP_TEXT_CODE = 'drop-object-here'  # '[ → ⋅ ← ]'
 
 
 def get_child_name(child):
@@ -111,7 +111,7 @@ class DnDFlowBox(Gtk.FlowBox):
         labels.update(defaults.fields.labels.copy())
 
         # TODO: translate this.
-        labels[DROP_TEXT_NAME] = 'Drop here!'
+        labels[DROP_TEXT_CODE] = 'Drop here!'
 
         # DROP_ICON_NAME =
         # 'insert-object-symbolic'
@@ -151,7 +151,7 @@ class DnDFlowBox(Gtk.FlowBox):
 
         child = self.build_child_func(child_name)
 
-        if child_name == DROP_TEXT_NAME:
+        if child_name == DROP_TEXT_CODE:
             child = widget_properties(child,
                                       classes=['dnd-drop-target'],
                                       can_focus=False)
@@ -386,9 +386,9 @@ class DnDFlowBox(Gtk.FlowBox):
             # Destination is empty space.
             destination_name = None
 
-        if destination_name != DROP_TEXT_NAME:
+        if destination_name != DROP_TEXT_CODE:
 
-            # target_index = self.get_index_of(DROP_TEXT_NAME)
+            # target_index = self.get_index_of(DROP_TEXT_CODE)
             destination_index = self.get_index_of(destination_name)
 
             self.remove_drop_target()
@@ -397,7 +397,7 @@ class DnDFlowBox(Gtk.FlowBox):
             #       'MOVE TO', destination_name,
             #       destination_index)
 
-            self.add_item(DROP_TEXT_NAME, destination_index)
+            self.add_item(DROP_TEXT_CODE, destination_index)
 
     def on_drag_data_get(self, widget, drag_context, data, info, time):
 
@@ -497,14 +497,14 @@ class DnDFlowBox(Gtk.FlowBox):
         #       'THEN REMOVE',
         #       origin_name)
 
-        self.add_item(DROP_TEXT_NAME, origin_index)
+        self.add_item(DROP_TEXT_CODE, origin_index)
         self.remove_item(origin_name, destroy=False)
 
     def remove_drop_target(self, only_self=False, only_others=False):
         ''' remove the drop target from all drag source in case mouse changed destination container. '''
 
         if only_self:
-            self.remove_item(DROP_TEXT_NAME)
+            self.remove_item(DROP_TEXT_CODE)
             return
 
         # This will get self in the loop.
@@ -516,7 +516,7 @@ class DnDFlowBox(Gtk.FlowBox):
 
         for sibling in siblings:
             try:
-                sibling.remove_item(DROP_TEXT_NAME)
+                sibling.remove_item(DROP_TEXT_CODE)
 
             except AttributeError:
                 pass
