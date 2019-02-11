@@ -1,12 +1,14 @@
 
 import logging
 
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
+    lprint_caller_name,
+    lprint_function_name,
+)
+
 from bibed.constants import (
-    FSCols, FileTypes,
     BOXES_BORDER_WIDTH,
-    GRID_COLS_SPACING,
-    GRID_ROWS_SPACING,
-    GRID_BORDER_WIDTH,
 )
 
 # from bibed.preferences import defaults, preferences, memories, gpod

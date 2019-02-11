@@ -7,7 +7,7 @@ import datetime
 
 import bibtexparser
 
-from bibed.foundations import (
+from bibed.ltrace import (
     lprint, ldebug,
     lprint_caller_name,
     lprint_function_name,
@@ -23,8 +23,8 @@ from bibed.constants import (
     COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
+from bibed.strings import asciize
 from bibed.preferences import defaults, preferences, gpod
-from bibed.utils import asciize
 from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
 from bibed.gtk import GLib

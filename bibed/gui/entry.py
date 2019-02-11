@@ -2,7 +2,7 @@
 import os
 import logging
 
-from bibed.foundations import (
+from bibed.ltrace import (  # NOQA
     ldebug, lprint,
     lprint_caller_name,
     lprint_function_name,
@@ -15,12 +15,12 @@ from bibed.constants import (
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
     GRID_BORDER_WIDTH,
-    # GENERIC_HELP_SYMBOL,
 )
 
 from bibed.preferences import defaults, preferences, memories, gpod
 from bibed.entry import EntryFieldCheckMixin
-from bibed.exceptions import NoDatabaseForFilenameError
+
+from bibed.gtk import Gtk, Gdk, Gio
 
 from bibed.gui.helpers import (
     widget_properties,
@@ -35,7 +35,6 @@ from bibed.gui.helpers import (
     grid_with_common_params,
 )
 
-from bibed.gtk import Gtk, Gdk, Gio
 
 LOGGER = logging.getLogger(__name__)
 

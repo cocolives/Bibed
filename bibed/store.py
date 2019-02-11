@@ -6,17 +6,21 @@ from operator import attrgetter
 
 from threading import RLock
 
-from bibed.foundations import (
+from bibed.exceptions import (
+    AlreadyLoadedException,
+    FileNotFoundError,
+    BibKeyNotFoundError,
+    NoDatabaseForFilenameError,
+)
+
+from bibed.ltrace import (  # NOQA
     ldebug, lprint,
     lprint_caller_name,
     lprint_function_name,
 )
 
 from bibed.constants import (
-    DATA_STORE_LIST_ARGS,
-    FILE_STORE_LIST_ARGS,
     BibAttrs,
-    FSCols,
     FileTypes,
     FILETYPES_COLORS,
     BIBED_SYSTEM_IMPORTED_NAME,
@@ -25,13 +29,7 @@ from bibed.constants import (
 )
 
 from bibed.foundations import touch_file
-from bibed.exceptions import (
-    AlreadyLoadedException,
-    FileNotFoundError,
-    BibKeyNotFoundError,
-    NoDatabaseForFilenameError,
-)
-from bibed.utils import get_bibed_user_dir
+from bibed.user import get_bibed_user_dir
 from bibed.preferences import memories
 from bibed.database import BibedDatabase
 from bibed.entry import BibedEntry

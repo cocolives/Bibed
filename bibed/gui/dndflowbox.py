@@ -1,8 +1,14 @@
 import logging
 
-from bibed.foundations import lprint, lprint_caller_name
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
+    lprint_caller_name,
+    lprint_function_name,
+)
 
 from bibed.preferences import defaults
+
+from bibed.gtk import Gtk, Gdk
 
 from bibed.gui.helpers import (
     flat_unclickable_button_in_hbox,
@@ -11,7 +17,6 @@ from bibed.gui.helpers import (
     frame_defaults,
     get_icon,
 )
-from bibed.gtk import Gtk, Gdk
 
 
 LOGGER = logging.getLogger(__name__)

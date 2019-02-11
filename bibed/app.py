@@ -4,6 +4,12 @@ import logging
 import random
 import time
 
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
+    lprint_caller_name,
+    lprint_function_name,
+)
+
 from bibed.constants import (
     APP_ID,
     APP_NAME,
@@ -19,17 +25,20 @@ from bibed.constants import (
 )
 
 from bibed.foundations import (
-    lprint, lprint_function_name,
     touch_file,
     set_process_title,
+)
+
+from bibed.strings import (
+    to_lower_if_not_none,
     seconds_to_string,
 )
 
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
 
-from bibed.utils import to_lower_if_not_none, friendly_filename
 from bibed.preferences import preferences, memories, gpod
+
 from bibed.store import (
     BibedDataStore,
     BibedFileStore,

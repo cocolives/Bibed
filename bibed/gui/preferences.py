@@ -1,8 +1,5 @@
 
-import re
 import logging
-
-from bibed.foundations import lprint_function_name
 
 from bibed.constants import (
     APP_NAME,
@@ -10,9 +7,12 @@ from bibed.constants import (
     GRID_ROWS_SPACING,
 )
 
-from bibed.utils import get_user_home_directory
+from bibed.user import get_user_home_directory
 from bibed.sentry import sentry
 from bibed.preferences import defaults, preferences, gpod
+from bibed.regex import OWNER_NAME_RE
+
+from bibed.gtk import Gtk
 
 from bibed.gui.helpers import (
     in_scrolled,
@@ -23,14 +23,11 @@ from bibed.gui.helpers import (
     vbox_with_icon_and_label,
     build_label_and_switch,
     build_entry_field_labelled_entry,
-    # debug_widget,
 )
 from bibed.gui.dndflowbox import dnd_scrolled_flowbox
-from bibed.gtk import Gtk
+
 
 LOGGER = logging.getLogger(__name__)
-
-OWNER_NAME_RE = re.compile('^[a-z]([- :,@_a-z0-9]){2,}$', re.IGNORECASE)
 
 
 # —————————————————————————————————————————————————————————————————— Classes

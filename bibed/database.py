@@ -7,21 +7,16 @@ import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
-from bibed.constants import (
-    FileTypes
-)
+from bibed.exceptions import IndexingFailedError
 
-from bibed.exceptions import (
-    # BibedDatabaseException,
-    # BibedDatabaseError,
-    IndexingFailedError,
-)
-
-from bibed.foundations import (
-    lprint, ldebug,
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
     lprint_caller_name,
     lprint_function_name,
 )
+
+from bibed.constants import FileTypes
+from bibed.strings import friendly_filename
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
 from bibed.gtk import GObject

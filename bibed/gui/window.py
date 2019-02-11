@@ -4,36 +4,30 @@ from operator import attrgetter
 
 from bibed.exceptions import NoDatabaseForFilenameError
 
-from bibed.foundations import (
-    lprint, ldebug,
-    lprint_function_name,
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
     lprint_caller_name,
+    lprint_function_name,
 )
 
 from bibed.constants import (
     APP_NAME,
-    # BibAttrs,
-    FSCols,
-    FileTypes,
-    # BIBED_ICONS_DIR,
-    # SEARCH_WIDTH_NORMAL,
-    SEARCH_WIDTH_EXPANDED,
+,
     COMBO_CHARS_DIVIDER,
-    RESIZE_SIZE_MULTIPLIER,
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
 )
 
 from bibed.preferences import memories, gpod
-from bibed.utils import get_user_home_directory, friendly_filename
+from bibed.user import get_user_home_directory
+from bibed.strings import friendly_filename
 from bibed.entry import BibedEntry
+
+from bibed.gtk import Gio, GLib, Gtk, Gdk
 
 from bibed.gui.helpers import (
     flash_field,
-    markup_bib_filename,
     markup_entries,
-    add_classes,
-    remove_classes,
     message_dialog,
     widget_properties,
     label_with_markup,
@@ -46,7 +40,7 @@ from bibed.gui.search import BibedSearchBar
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
 from bibed.gui.dialogs import BibedMoveDialog
-from bibed.gtk import Gio, GLib, Gtk, Gdk, Pango
+
 
 
 LOGGER = logging.getLogger(__name__)
