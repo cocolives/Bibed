@@ -16,6 +16,7 @@ backup_count: 32
 bib_add_owner: false
 bib_add_timestamp: true
 bib_auto_save: true
+bib_backup_count: 10
 bib_update_owner: false
 bib_update_timestamp: false
 docs:

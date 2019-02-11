@@ -301,6 +301,7 @@ class BibedDatabase(GObject.GObject):
 
         dirname = os.path.dirname(self.filename)
         basename = os.path.basename(self.filename)
+        coolname = friendly_filename(basename)
 
         # Using microseconds in backup filename should avoid collisions.
         # Using time will also help for cleaning old backups.
@@ -308,7 +309,7 @@ class BibedDatabase(GObject.GObject):
             dirname,
             # HEADS UP: backup file starts with a dot, it's hidden.
             '.{basename}.save.{datetime}.bib'.format(
-                basename=basename.rsplit('.', 1)[0],
+                basename=coolname,
                 datetime=datetime.datetime.now().isoformat(sep='_')
             )
         )
@@ -320,9 +321,35 @@ class BibedDatabase(GObject.GObject):
         except Exception:
             LOGGER.exception('Problem while backing up file before save.')
 
+        backup_count = gpod('bib_backup_count')
+
+        if backup_count is not None:
+
+            backup_start = '.{basename}.save.'.format(basename=coolname)
+
+            backup_files = []
+
+            for root, dirs, files in os.walk(dirname):
+
+                for walked_file in files:
+                    if walked_file.startswith(backup_start):
+                        backup_files.append(walked_file)
+
+            if len(backup_files) > backup_count:
+
+                for file_to_wipe in sorted(backup_files,
+                                           reverse=True)[backup_count:]:
+                    full_path = os.path.join(dirname, file_to_wipe)
+
+                    os.unlink(full_path)
+
+                    LOGGER.info(
+                        '{0}.backup(): wiped old backup file “{1}”.'.format(
+                            self, full_path))
+
         # TODO: make backups in .bibed_save/ ? (PREFERENCE ON/OFF)
         # TODO: clean old backup files. (PREFERENCE [number])
-        pass
+        LOGGER.debug('{0}.backup() done.'.format(self))
 
     def write(self):
 
