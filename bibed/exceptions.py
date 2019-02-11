@@ -1,4 +1,6 @@
 
+# ———————————————————————————————————————————————————————————————— Base classes
+
 
 class BibedException(Exception):
     pass
@@ -9,6 +11,10 @@ class BibedError(BibedException):
 
 
 # ———————————————————————————————————————————————————————————— utils exceptions
+
+
+class BibedStringException(BibedException):
+    pass
 
 
 class ActionError(BibedError):
