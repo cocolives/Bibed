@@ -729,7 +729,7 @@ class BibedDataStore(Gtk.ListStore):
     def __init__(self, *args, **kwargs):
 
         super().__init__(
-            *DATA_STORE_LIST_ARGS
+            *BibAttrs.as_store_args
         )
 
         self.files_store = kwargs.pop('files_store', None)
