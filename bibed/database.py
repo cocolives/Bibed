@@ -172,8 +172,7 @@ class BibedDatabase(GObject.GObject):
 
         self.data_store.insert_entry(entry)
 
-        if __debug__:
-            LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
+        LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
 
     def delete_entry(self, entry, old_index=None):
         ''' Delete an entry from the current database.
@@ -218,8 +217,7 @@ class BibedDatabase(GObject.GObject):
 
         assert self.check_indexes()
 
-        if __debug__:
-            LOGGER.debug('{0}.delete_entry({1}) done.'.format(self, entry))
+        LOGGER.debug('{0}.delete_entry({1}) done.'.format(self, entry))
 
     def move_entry(self, entry, destination_database, write=True):
         ''' Move an entry from a database to another.
@@ -264,9 +262,8 @@ class BibedDatabase(GObject.GObject):
             destination_database.write()
             source_database.write()
 
-        if __debug__:
-            LOGGER.debug('{0}.move_entry({1}) to {2} done.'.format(
-                source_database, entry, destination_database))
+        LOGGER.debug('{0}.move_entry({1}) to {2} done (add+delete).'.format(
+                     source_database, entry, destination_database))
 
     def update_entry_key(self, entry):
 
@@ -291,8 +288,7 @@ class BibedDatabase(GObject.GObject):
         del self.bibdb.entries[old_index]
         self.bibdb.entries.insert(old_index, entry.entry)
 
-        if __debug__:
-            LOGGER.debug('{0}.update_entry_key({1}) done.'.format(self, entry))
+        LOGGER.debug('{0}.update_entry_key({1}) done.'.format(self, entry))
 
     def backup(self):
 

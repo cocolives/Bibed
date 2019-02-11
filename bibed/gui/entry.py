@@ -900,10 +900,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             popover.popdown()
             return
 
-        assert ldebug(
-            'Renaming key from {0} to {1}.',
-            self.entry.key, new_key
-        )
+        LOGGER.debug('Renaming key from {0} to {1}.'.format(
+                     self.entry.key, new_key))
 
         # TODO: why does get_parent() fails here ?
         #       See TODO/comment in __init__().
@@ -1154,12 +1152,12 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     def on_field_changed(self, entry, field_name):
 
-        assert ldebug('Field {} eventually changed.', field_name)
+        LOGGER.debug('Field {} eventually changed.'.format(field_name))
 
         if not self.__check_field_wrapper(field_name, entry):
             return
 
-        assert ldebug('Field {} changed and OK, marking it.', field_name)
+        LOGGER.debug('Field {} changed and OK, marking it.'.format(field_name))
 
         # Multiple updates to same widget will be
         # recorded only once, thanks to the set.
@@ -1246,22 +1244,24 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         # assert lprint_function_name()
 
         if not self.changed_fields:
-            assert ldebug(
-                '{}: did not change, avoiding save().'.format(entry.key))
+            LOGGER.debug('{}: did not change, avoiding save().'.format(
+                         entry.key))
             return
 
         if not self.can_save:
-            assert ldebug('{}: cannot save yet.'.format(entry))
+            LOGGER.debug('{}: cannot save yet.'.format(entry))
 
             if fix_errors:
-                assert ldebug('{}: auto fixing errors ({}) to ensure save().'.format(entry, ', '.join(self.error_fields)))
+                LOGGER.debug('{}: auto fixing errors ({}) to '
+                             'ensure save().'.format(
+                                 entry, ', '.join(self.error_fields)))
 
                 # Push everything pushable to the
                 # entry, then fix fields in place.
                 self.fix_all_error_fields()
 
             else:
-                assert ldebug('{}: aborting save().'.format(entry))
+                LOGGER.debug('{}: aborting save().'.format(entry))
                 return
 
         if gpod('ensure_biblatex_checks'):

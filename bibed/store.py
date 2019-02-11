@@ -273,7 +273,8 @@ class BibedFileStore(Gio.ListStore):
             # This would be too bad. But having one lock per file is too much.
             return
 
-        assert ldebug('Programming reload of {0} when idle.', event.pathname)
+        LOGGER.debug('Programming reload of {0} when idle.'.format(
+                     event.pathname))
 
         GLib.idle_add(self.on_file_modify_callback, event)
 
@@ -534,8 +535,7 @@ class BibedFileStore(Gio.ListStore):
         # Without this, window title fails to update properly.
         self.append(database)
 
-        if __debug__:
-            LOGGER.debug('Loaded file “{}”.'.format(filename))
+        LOGGER.debug('Loaded database “{}”.'.format(filename))
 
         if not filetype & FileTypes.SYSTEM:
             memories.add_open_file(filename)
@@ -604,7 +604,7 @@ class BibedFileStore(Gio.ListStore):
         self.remove(index_to_remove)
 
         if __debug__:
-            LOGGER.debug('Closed “{}”.'.format(filename))
+            LOGGER.debug('Closed database “{}”.'.format(filename))
 
         if impact_data_store:
             self.clear_data(filename, recompute=recompute)
@@ -688,7 +688,7 @@ class BibedFileStore(Gio.ListStore):
         # Useless, everything runs too fast.
         # self.clear_save_callback()
 
-        assert ldebug('Programming save of {0} when idle.', filename)
+        LOGGER.debug('Programming save of {0} when idle.'.format(filename))
 
         self.save_trigger_source = GLib.idle_add(
             self.save_trigger_callback, filename)
@@ -707,7 +707,7 @@ class BibedFileStore(Gio.ListStore):
 
     def clear_save_callback(self):
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
         if self.save_trigger_source:
             # Remove the in-progress save()
@@ -737,6 +737,9 @@ class BibedDataStore(Gtk.ListStore):
         assert self.files_store is not None
 
         self.files_store.data_store = self
+
+    def __str__(self):
+        return 'BibedDataStore'
 
     def __entry_to_store(self, entry, filetype=None):
         ''' Convert a BIB entry, to fields for a Gtk.ListStore. '''
@@ -783,6 +786,9 @@ class BibedDataStore(Gtk.ListStore):
         for index, row in enumerate(self):
             row[gid_index] = index
 
+        LOGGER.debug('{0}.do_recompute_global_ids() with {1} rows.'.format(
+                     self, len(self)))
+
     def append(self, entry, filetype=None):
 
         return super().append(self.__entry_to_store(entry, filetype))
@@ -795,11 +801,10 @@ class BibedDataStore(Gtk.ListStore):
 
         self.do_recompute_global_ids()
 
-        if __debug__:
-            row = self[iter]
+        row = self[iter]
 
-            ldebug('Row {} created with entry {}.',
-                   row[BibAttrs.GLOBAL_ID], entry.key)
+        LOGGER.debug('Row {} created with entry {}.'.format(
+                     row[BibAttrs.GLOBAL_ID], entry.key))
 
     def update_entry(self, entry, fields=None):
 
@@ -821,9 +826,9 @@ class BibedDataStore(Gtk.ListStore):
             self.insert_after(entry_iter, self.__entry_to_store(entry))
             self.remove(entry_iter)
 
-        assert ldebug('Row {} updated (entry {}{}).',
-                      entry.gid, entry.key,
-                      ', fields={}'.format(fields) if fields else '')
+        LOGGER.debug('Row {} updated (entry {}{}).'.format(
+                     entry.gid, entry.key,
+                     ', fields={}'.format(fields) if fields else ''))
 
     def delete_entry(self, entry):
 
@@ -839,8 +844,8 @@ class BibedDataStore(Gtk.ListStore):
         # at the cost of this.
         self.do_recompute_global_ids()
 
-        assert ldebug('Row {} deleted (was entry {}).',
-                      old_gid, entry.key)
+        LOGGER.debug('Row {} deleted (was entry {}).'.format(
+                     old_gid, entry.key))
 
     def clear_data(self, filename, recompute=True):
 
@@ -854,3 +859,5 @@ class BibedDataStore(Gtk.ListStore):
 
         if recompute:
             self.do_recompute_global_ids()
+
+        LOGGER.debug('Cleared data for {}.'.format(filename))

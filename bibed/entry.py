@@ -625,6 +625,8 @@ class BibedEntry:
         # assert lprint_function_name()
         # assert lprint(kwargs)
 
+        LOGGER.debug('{0}.update_fields({1})'.format(self, kwargs))
+
         for field_name, field_value in kwargs.items():
             self[field_name] = field_value
 
@@ -638,9 +640,11 @@ class BibedEntry:
     def update_store_row(self, fields=None):
 
         if self.database:
+            LOGGER.debug('{0}.update_store_row({1})'.format(self, fields))
             # If we have no database, entry is not yet created.
             # The data store will be updated later by add_entry().
             self.database.data_store.update_entry(self, fields)
+
 
     def toggle_quality(self):
 
