@@ -49,11 +49,15 @@ def start_splash():
     window.show()
     window.present()
 
-    # Need to call Gtk.main to draw all widgets.
-    # See app.BibEdApplication.do_command_line() too.
-    # 20190212: both are needed for splash to show.
-    while Gtk.events_pending():
-        Gtk.main_iteration()
+    # Need to call Gtk.main to draw all widgets. Need to block on events too,
+    # else main window appears before splash shows up. Sometimes splash never
+    # shows up, sometimes it does. 35 events is the base number of events
+    # needed for splash to be up on screen, with CSS loaded and applied.
+    # NOTE: the “while Gtk.events_pending(): Gtk.main_iteration()” loop
+    # is not sufficient. Waiting 40 events is too much, this makes app
+    # loading freeze if the use doesn't click anywhere.
+    for i in range(35):
+        Gtk.main_iteration_do(True)
 
     window.set_auto_startup_notification(True)
 

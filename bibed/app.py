@@ -429,12 +429,6 @@ class BibEdApplication(Gtk.Application):
         if 'test' in options:
             LOGGER.info("Test argument received: %s" % options['test'])
 
-        # Need to call Gtk.main to draw all widgets in
-        # splash screen. See splash.start_splash() too.
-        # 20190212: both are needed for splash to show.
-        while Gtk.events_pending():
-            Gtk.main_iteration()
-
         self.activate()
         return 0
 
