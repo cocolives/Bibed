@@ -25,7 +25,7 @@ class BibedSplashWindow(Gtk.Window):
         self.inbox = Gtk.Box()
 
         self.icon = Gtk.Image.new_from_file(
-            os.path.join(BIBED_DATA_DIR, 'images', '128x128', 'logo.png')
+            os.path.join(BIBED_DATA_DIR, 'images', 'scalable', 'logo.svg')
         )
 
         self.lbl = Gtk.Label()
