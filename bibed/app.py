@@ -1,7 +1,6 @@
 
 import os
 import logging
-import random
 import time
 
 from bibed.ltrace import (  # NOQA
@@ -15,13 +14,9 @@ from bibed.constants import (
     APP_NAME,
     APP_VERSION,
     APP_MENU_XML,
-    BIBED_DATA_DIR,
-    BIBED_ICONS_DIR,
-    BIBED_BACKGROUNDS_DIR,
     BibAttrs,
     SEARCH_SPECIALS,
     BIBTEXPARSER_VERSION,
-    MAIN_TREEVIEW_CSS,
 )
 
 from bibed.foundations import (
@@ -45,6 +40,7 @@ from bibed.store import (
     AlreadyLoadedException,
 )
 
+from bibed.gui.css import GtkCssAwareMixin
 from bibed.gui.window import BibedWindow
 
 
@@ -63,7 +59,7 @@ GLib.idle_add(set_process_title, APP_NAME)
 GLib.set_application_name(APP_NAME)
 
 
-class BibEdApplication(Gtk.Application):
+class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def __init__(self, *args, **kwargs):
 
@@ -95,91 +91,14 @@ class BibEdApplication(Gtk.Application):
 
     # ——————————————————————————————————————————————————————————— setup methods
 
-    @property
-    def css_data(self):
-
-        with open(os.path.join(BIBED_DATA_DIR, 'style.css')) as css_file:
-            self.__css_data_string = css_file.read()
-
-        if gpod('use_treeview_background'):
-            background_filename = self.get_random_background()
-            background_position = None
-            background_size = None
-
-            if '-contain' in background_filename:
-                background_size = 'contain'
-
-            elif '-cover' in background_filename:
-                background_size = 'cover'
-
-            if background_size is None:
-                background_size = 'cover'
-
-            for vertical_position in ('top', 'bottom', ):
-                for horizontal_position in ('left', 'right', ):
-                    if vertical_position in background_filename \
-                            and horizontal_position in background_filename:
-                        background_position = '{} {}'.format(
-                            horizontal_position, vertical_position)
-
-            if background_position is None:
-                background_position = 'left top'
-
-            css_data_string = self.__css_data_string[:] + MAIN_TREEVIEW_CSS
-
-            css_data_string = css_data_string.replace(
-                '{background_filename}', background_filename)
-            css_data_string = css_data_string.replace(
-                '{background_position}', background_position)
-            css_data_string = css_data_string.replace(
-                '{background_size}', background_size)
-
-            return css_data_string
-
-        return self.__css_data_string
-
-    def get_random_background(self):
-
-        for root, dirs, files in os.walk(BIBED_BACKGROUNDS_DIR):
-            return os.path.join(BIBED_BACKGROUNDS_DIR, random.choice(files))
-
-    def setup_resources_and_css(self):
-
-        self.set_resource_base_path(BIBED_DATA_DIR)
-
-        default_screen = Gdk.Screen.get_default()
-
-        # could also be .icon_theme_get_default()
-        self.icon_theme = Gtk.IconTheme.get_for_screen(default_screen)
-        self.icon_theme.add_resource_path(os.path.join(BIBED_ICONS_DIR))
-
-        # Get an icon path.
-        # icon_info = icon_theme.lookup_icon("my-icon-name", 48, 0)
-        # print icon_info.get_filename()
-
-        self.css_provider = Gtk.CssProvider()
-
-        self.reload_css_provider_data()
-
-        self.style_context = Gtk.StyleContext()
-        self.style_context.add_provider_for_screen(
-            default_screen,
-            self.css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_USER)
-
-    def reload_css_provider_data(self):
-
-        # This will fill the CSS string with a random background on the fly.
-        self.css_provider.load_from_data(bytes(self.css_data.encode('utf-8')))
-
     def setup_actions(self):
 
-        action = Gio.SimpleAction.new("about", None)
-        action.connect("activate", self.on_about)
+        action = Gio.SimpleAction.new('about', None)
+        action.connect('activate', self.on_about)
         self.add_action(action)
 
-        action = Gio.SimpleAction.new("quit", None)
-        action.connect("activate", self.on_quit)
+        action = Gio.SimpleAction.new('quit', None)
+        action.connect('activate', self.on_quit)
         self.add_action(action)
 
         # TODO: take back window keypresses here.
@@ -304,6 +223,7 @@ class BibEdApplication(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
+        # Comes from GtkCssAwareMixin.
         self.setup_resources_and_css()
 
         self.setup_actions()
