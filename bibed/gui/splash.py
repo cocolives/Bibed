@@ -1,6 +1,5 @@
 
 import os
-from threading import Thread
 
 from bibed.constants import BIBED_DATA_DIR
 from bibed.gui.helpers import add_classes
@@ -16,6 +15,7 @@ class BibedSplashWindow(Gtk.Window):
         # Set position and decoration
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
+        self.set_keep_above(True)
         self.set_default_size(300, 150)
 
         add_classes(self, ['splash-screen'])
@@ -25,7 +25,7 @@ class BibedSplashWindow(Gtk.Window):
         self.inbox = Gtk.Box()
 
         self.icon = Gtk.Image.new_from_file(
-            os.path.join(BIBED_DATA_DIR, 'images', 'logo.png')
+            os.path.join(BIBED_DATA_DIR, 'images', '128x128', 'logo.png')
         )
 
         self.lbl = Gtk.Label()

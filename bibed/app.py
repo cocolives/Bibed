@@ -45,7 +45,6 @@ from bibed.store import (
     AlreadyLoadedException,
 )
 
-from bibed.gui.splash import start_splash
 from bibed.gui.window import BibedWindow
 
 
@@ -68,9 +67,7 @@ class BibEdApplication(Gtk.Application):
 
     def __init__(self, *args, **kwargs):
 
-        self.splash = start_splash()
-
-        # self.splash = kwargs.pop('splash')
+        self.splash = kwargs.pop('splash')
         self.time_start = kwargs.pop('time_start')
         self.logging_handlers = kwargs.pop('logging_handlers')
 
@@ -95,7 +92,6 @@ class BibEdApplication(Gtk.Application):
         self.window = None
 
         self.setup_data_store()
-
 
     # ——————————————————————————————————————————————————————————— setup methods
 

@@ -85,14 +85,18 @@ if __name__ == "__main__":
 
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
+    from bibed.gtk import Gtk  # NOQA
+    from bibed.gui.splash import start_splash
     from bibed.app import BibEdApplication
     from bibed.preferences import gpod
     from bibed.sentry import sentry
 
+    splash = start_splash()
+
     if gpod('use_sentry'):
         sentry.enable()
 
-    app = BibEdApplication(time_start=time_start,
+    app = BibEdApplication(time_start=time_start, splash=splash,
                            logging_handlers=logging_handlers)
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)
