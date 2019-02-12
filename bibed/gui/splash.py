@@ -3,7 +3,7 @@ import os
 from threading import Thread
 
 from bibed.constants import BIBED_DATA_DIR
-from bibed.gui.helpers import widget_properties
+from bibed.gui.helpers import add_classes
 from bibed.gtk import Gtk
 
 
@@ -15,16 +15,14 @@ class BibedSplashWindow(Gtk.Window):
 
         # Set position and decoration
         self.set_position(Gtk.WindowPosition.CENTER)
-        # self.set_decorated(False)
-        self.set_default_size(300, 200)
+        self.set_decorated(False)
+        self.set_default_size(300, 150)
 
-        # Add box and label
-        self.box = widget_properties(
-            Gtk.Box(),
-            classes=['splash-screen'],
-        )
+        add_classes(self, ['splash-screen'])
 
-        self.add(self.box)
+        self.button = Gtk.Button()
+
+        self.inbox = Gtk.Box()
 
         self.icon = Gtk.Image.new_from_file(
             os.path.join(BIBED_DATA_DIR, 'images', 'logo.png')
@@ -33,33 +31,30 @@ class BibedSplashWindow(Gtk.Window):
         self.lbl = Gtk.Label()
         self.lbl.set_markup('<big>Bibed\nLoading…</big>')
 
-        self.box.pack_start(self.icon, False, False, 0)
-        self.box.pack_start(self.lbl, True, True, 0)
+        self.inbox.pack_start(self.icon, False, False, 0)
+        self.inbox.pack_start(self.lbl, True, True, 0)
+
+        self.button.add(self.inbox)
+
+        self.add(self.button)
 
 
-class BibedSplash(Thread):
+def start_splash():
 
-    def __init__(self):
-        super().__init__()
+    window = BibedSplashWindow()
 
-        # Create a popup window
-        self.window = BibedSplashWindow()
+    window.set_auto_startup_notification(False)
 
-    def run(self):
-        # Show the splash screen without causing startup notification
-        # https://developer.gnome.org/gtk3/stable/GtkWindow.html#gtk-window-set-auto-startup-notification
-        self.window.set_auto_startup_notification(False)
-        self.window.show_all()
-        self.window.set_auto_startup_notification(True)
+    window.show_all()
+    window.show()
+    window.present()
 
-        self.window.show()
-        self.window.present()
+    # Need to call Gtk.main to draw all widgets.
+    # See app.BibEdApplication.do_command_line() too.
+    # 20190212: both are needed for splash to show.
+    while Gtk.events_pending():
+        Gtk.main_iteration()
 
-        # Need to call Gtk.main to draw all widgets
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+    window.set_auto_startup_notification(True)
 
-    def destroy(self):
-        while Gtk.events_pending():
-            Gtk.main_iteration()
-        self.window.destroy()
+    return window

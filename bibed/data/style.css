@@ -21,11 +21,17 @@ http://www.code-couleur.com/dictionnaire/couleur-c.html
 
 */
 .splash-screen {
-    border-radius: 5px;
+    background-color: transparent;
 }
+
+.splash-screen button {
+    border-radius: 10px;
+}
+
 .splash-screen label {
-    padding-right: 20px;
-    font-size: 30px;
+    padding-right: 10px;
+    font-size: 20px;
+    color: black;
 }
 
 button.close-all {

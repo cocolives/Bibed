@@ -45,7 +45,7 @@ from bibed.store import (
     AlreadyLoadedException,
 )
 
-from bibed.gui.splash import BibedSplash
+from bibed.gui.splash import start_splash
 from bibed.gui.window import BibedWindow
 
 
@@ -68,6 +68,9 @@ class BibEdApplication(Gtk.Application):
 
     def __init__(self, *args, **kwargs):
 
+        self.splash = start_splash()
+
+        # self.splash = kwargs.pop('splash')
         self.time_start = kwargs.pop('time_start')
         self.logging_handlers = kwargs.pop('logging_handlers')
 
@@ -90,9 +93,9 @@ class BibEdApplication(Gtk.Application):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
-        self.splash = None
 
         self.setup_data_store()
+
 
     # ——————————————————————————————————————————————————————————— setup methods
 
@@ -217,11 +220,6 @@ class BibEdApplication(Gtk.Application):
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.data_filter_method)
 
-    def launch_splash(self):
-
-        self.splash = BibedSplash()
-        self.splash.start()
-
     def close_splash(self):
 
         self.splash.destroy()
@@ -311,9 +309,6 @@ class BibEdApplication(Gtk.Application):
         Gtk.Application.do_startup(self)
 
         self.setup_resources_and_css()
-
-        # TODO: splash doesn't work.
-        # self.launch_splash()
 
         self.setup_actions()
         self.setup_app_menu()
@@ -422,7 +417,7 @@ class BibEdApplication(Gtk.Application):
             self.window.search.grab_focus()
 
         # TODO: splash doesn't work.
-        # self.close_splash()
+        self.close_splash()
 
         LOGGER.info('Startup time (including session restore): {}'.format(
             seconds_to_string(time.time() - self.time_start)))
@@ -437,6 +432,12 @@ class BibEdApplication(Gtk.Application):
 
         if 'test' in options:
             LOGGER.info("Test argument received: %s" % options['test'])
+
+        # Need to call Gtk.main to draw all widgets in
+        # splash screen. See splash.start_splash() too.
+        # 20190212: both are needed for splash to show.
+        while Gtk.events_pending():
+            Gtk.main_iteration()
 
         self.activate()
         return 0
