@@ -119,7 +119,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                     btn.set_sensitive(False)
 
                 if type_doc:
-                        btn.set_tooltip_markup(type_doc)
+                    btn.set_tooltip_markup(type_doc)
 
                 grid.attach(
                     btn,
