@@ -250,10 +250,22 @@ def stack_switch_next(stack, reverse=False):
                 make_next_visible = True
 
 
-def label_with_markup(text, name=None, xalign=None, yalign=None, debug=None):
+def label_with_markup(text, name=None, xalign=None, yalign=None, justify=None, ellipsize=None, line_wrap=False, debug=None):
 
     label = Gtk.Label(name=name)
-    label.set_markup(text)
+    label.set_markup_with_mnemonic(text)
+
+    if ellipsize is not None:
+        if __debug__ and debug: mp('ellipsize', ellipsize)  # NOQA
+        label.set_ellipsize(ellipsize)
+
+    if justify is not None:
+        if __debug__ and debug: mp('justify', justify)  # NOQA
+        label.set_justify(justify)
+
+    if line_wrap is not None:
+        if __debug__ and debug: mp('line_wrap', line_wrap)  # NOQA
+        label.set_line_wrap(line_wrap)
 
     if xalign is not None:
         if __debug__ and debug: mp('xalign', xalign)  # NOQA
