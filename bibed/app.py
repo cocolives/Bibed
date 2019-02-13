@@ -244,6 +244,9 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         databases_to_select = []
         filenames_to_select = []
 
+        LOGGER.debug('Startup time (GTK setup): {}'.format(
+            seconds_to_string(time.time() - self.time_start)))
+
         # We only allow a single window and raise any existing ones
         if not self.window:
             Notify.init(APP_NAME)
@@ -251,11 +254,17 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             # Windows are associated with the application
             # when the last one is closed the application shuts down
             self.window = BibedWindow(title='Main Window', application=self)
-            self.window.show_all()
+
+            # As soon as the main window is here, keep the splash above it.
+            self.splash.set_transient_for(self.window)
 
             if preferences.remember_open_files:
 
                 if memories.open_files:
+
+                    self.splash.set_status(
+                        'Loading {} file(s) and restoring previous session…'.format(
+                            len(memories.open_files)))
 
                     # 1: search_text needs to be loaded first, else it gets
                     # wiped when file_combo is updated with re-loaded files.
@@ -284,6 +293,9 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
                         # are not fired. Don't know if it's a Gtk or pgi bug.
 
                         for filename in memories.open_files.copy():
+
+                            self.splash.spin()
+
                             try:
                                 database = self.open_file(filename,
                                                           select=False)
@@ -310,6 +322,9 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
                     if filename == system_database.filename:
                         databases_to_select.append(system_database)
 
+        self.splash.spin()
+        self.window.show_all()
+
         if databases_to_select:
             self.window.set_selected_databases(databases_to_select)
 
@@ -335,7 +350,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         # TODO: splash doesn't work.
         self.close_splash()
 
-        LOGGER.info('Startup time (including session restore): {}'.format(
+        LOGGER.debug('Startup time (including session restore): {}'.format(
             seconds_to_string(time.time() - self.time_start)))
 
         self.window.present()
@@ -348,6 +363,8 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
         if 'test' in options:
             LOGGER.info("Test argument received: %s" % options['test'])
+
+        self.splash.spin()
 
         self.activate()
         return 0

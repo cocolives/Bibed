@@ -87,6 +87,7 @@ if __name__ == "__main__":
 
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
+    from bibed.strings import seconds_to_string
     from bibed.gtk import Gtk  # NOQA
     from bibed.gui.splash import start_splash
     from bibed.app import BibEdApplication
@@ -96,9 +97,21 @@ if __name__ == "__main__":
     splash = start_splash()
 
     if gpod('use_sentry'):
+        splash.set_status('Connecting issue collector to {}…'.format(gpod('sentry_url')))
+
+        splash.spin()
+
         sentry.enable()
+
+        splash.spin()
+
+        LOGGER.debug('Sentry startup time: {}'.format(
+            seconds_to_string(time.time() - time_start)))
 
     app = BibEdApplication(time_start=time_start, splash=splash,
                            logging_handlers=logging_handlers)
+
+    splash.spin()
+
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)
