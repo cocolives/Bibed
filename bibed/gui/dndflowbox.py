@@ -11,11 +11,11 @@ from bibed.preferences import defaults
 from bibed.gtk import Gtk, Gdk
 
 from bibed.gui.helpers import (
+    bibed_icon_name,
     flat_unclickable_button_in_hbox,
     vbox_with_icon_and_label,
     widget_properties,
     frame_defaults,
-    get_icon,
 )
 
 
@@ -127,21 +127,15 @@ class DnDFlowBox(Gtk.FlowBox):
 
     def build_child_flat(self, child_name):
 
-        # if icon is None:
-        #     # Could also be 'orientation-portrait-symbolic'
-        #     icon_name = 'document-edit-symbolic'
-
         return flat_unclickable_button_in_hbox(
             child_name, self.get_label(child_name),
-            icon_name=child_name)
-        # icon_path=get_icon(child_name, self.child_type, '24x24'))
+            icon_name=bibed_icon_name(self.child_type, child_name))
 
     def build_child_with_icon(self, child_name):
 
         return vbox_with_icon_and_label(
             child_name, self.get_label(child_name),
-            icon_name=child_name)
-        # icon_path=get_icon(child_name, self.child_type, '48x48'))
+            icon_name=bibed_icon_name(self.child_type, child_name))
 
     # ——————————————————————————————————————————————————————— FlowBox overrides
 

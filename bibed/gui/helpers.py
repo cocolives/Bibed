@@ -24,19 +24,9 @@ LOGGER = logging.getLogger(__name__)
 # ——————————————————————————————————————————————————————————————————— Functions
 
 
-def get_icon(name, typee, size=None):
+def bibed_icon_name(icon_category, icon_name):
 
-    if size is None:
-        size = '48x48'
-
-    base_path = os.path.join(BIBED_ICONS_DIR, typee, size)
-
-    icon_path = os.path.join(base_path, name + '.png')
-
-    if not os.path.exists(icon_path):
-        icon_path = os.path.join(base_path, 'default.png')
-
-    return icon_path
+    return 'bibed-{}-{}'.format(icon_category, icon_name)
 
 
 def is_dark_theme():
@@ -691,9 +681,12 @@ def build_help_popover(attached_to, help_markup, position, onfocus_list):
     return popover
 
 
-def vbox_with_icon_and_label(name, label_markup, icon_name=None, icon_path=None):
+def vbox_with_icon_and_label(name, label_markup, icon_name=None, icon_path=None, icon_size=None):
 
     assert icon_name is not None or icon_path is not None
+
+    if icon_size is None:
+        icon_size = Gtk.IconSize.DIALOG
 
     label_box = Gtk.VBox()
     label_box.set_name(name)
@@ -701,7 +694,7 @@ def vbox_with_icon_and_label(name, label_markup, icon_name=None, icon_path=None)
 
     if icon_name:
         gicon = Gio.ThemedIcon(name=icon_name)
-        icon = Gtk.Image.new_from_gicon(gicon, Gtk.IconSize.DIALOG)
+        icon = Gtk.Image.new_from_gicon(gicon, icon_size)
 
     else:
         icon = Gtk.Image.new_from_file(
@@ -755,7 +748,7 @@ def flat_unclickable_label(label_text, icon_name=None):
     return label
 
 
-def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None, classes=None):
+def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None, icon_size=None, classes=None):
 
     hbox = widget_properties(
         Gtk.HBox(),
@@ -769,18 +762,19 @@ def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_pat
 
     hbox.set_border_width(BOXES_BORDER_WIDTH)
 
+    if icon_size is None:
+        icon_size = Gtk.IconSize.BUTTON
+
     if icon_name:
-        icon = Gtk.Image.new_from_icon_name(
-            icon_name,
-            Gtk.IconSize.BUTTON
-        )
-        hbox.pack_start(icon, False, False, 0)
+        gicon = Gio.ThemedIcon(name=icon_name)
+        icon = Gtk.Image.new_from_gicon(gicon, icon_size)
 
     elif icon_path:
         icon = Gtk.Image.new_from_file(
             icon_path
         )
-        hbox.pack_start(icon, False, False, 0)
+
+    hbox.pack_start(icon, False, False, 0)
 
     label = widget_properties(Gtk.Label(), margin_left=10)
     label.set_markup_with_mnemonic(label_markup)

@@ -15,9 +15,9 @@ from bibed.constants import (
 from bibed.preferences import defaults, preferences
 
 from bibed.gui.helpers import (
+    bibed_icon_name,
     widget_properties,
     label_with_markup,
-    get_icon,
     find_child_by_class,
     vbox_with_icon_and_label,
     flat_unclickable_button_in_hbox,
@@ -35,6 +35,7 @@ LOGGER = logging.getLogger(__name__)
 class BibedEntryTypeDialog(Gtk.Dialog):
 
     def __init__(self, parent, add_new=False):
+
         super().__init__('Choose new entry type', parent, 0)
 
         self.set_modal(True)
@@ -72,9 +73,10 @@ class BibedEntryTypeDialog(Gtk.Dialog):
         def build_types_grid(qualify, children, btn_markup, size, size_multiplier, button_generator, icon_size, button_halign, button_margin):
 
             grid = Gtk.Grid()
-            grid.set_border_width(BOXES_BORDER_WIDTH)
-            grid.set_column_spacing(GRID_COLS_SPACING / 2)
-            grid.set_row_spacing(GRID_ROWS_SPACING / 2)
+            grid.set_border_width(BOXES_BORDER_WIDTH / 2)
+
+            grid.set_column_spacing(GRID_COLS_SPACING / 4)
+            grid.set_row_spacing(GRID_ROWS_SPACING / 4)
 
             types_labels = defaults.types.labels
 
@@ -108,7 +110,8 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                         size=size, label=getattr(types_labels, child_name),
                         help=GENERIC_HELP_SYMBOL
                         if type_doc else ''),
-                    icon_path=get_icon(child_name, 'type', icon_size)))
+                    icon_name=bibed_icon_name('type', child_name),
+                    icon_size=icon_size))
                 btn.set_relief(Gtk.ReliefStyle.NONE)
 
                 find_child_by_class(btn, Gtk.Label).set_mnemonic_widget(btn)
@@ -178,18 +181,20 @@ class BibedEntryTypeDialog(Gtk.Dialog):
             label_tmpl_main,
             font_size, size_mult_main,
             vbox_with_icon_and_label,
-            '48x48',
+            Gtk.IconSize.from_name('BIBED_BIG'),  # Gtk.IconSize.DIALOG,
             button_halign=Gtk.Align.CENTER,
-            button_margin=BOXES_BORDER_WIDTH * size_multiplier
+            button_margin=0,
+            # button_margin=BOXES_BORDER_WIDTH * size_multiplier
         )
         self.grid_types_other = build_types_grid(
             'other', types_other,
             label_tmpl_other,
             font_size, size_mult_other,
             flat_unclickable_button_in_hbox,
-            '24x24',
+            Gtk.IconSize.from_name('BIBED_SMALL'),  # Gtk.IconSize.BUTTON,
             button_halign=Gtk.Align.START,
-            button_margin=BOXES_BORDER_WIDTH / size_multiplier
+            button_margin=0,
+            # button_margin=BOXES_BORDER_WIDTH / size_multiplier
         )
 
         stack_switcher = widget_properties(
@@ -197,7 +202,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.CENTER,
             valign=Gtk.Align.CENTER,
-            margin=GRID_BORDER_WIDTH,
+            margin=GRID_BORDER_WIDTH / 4,
         )
 
         stack_switcher.set_stack(stack)

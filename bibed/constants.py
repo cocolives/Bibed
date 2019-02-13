@@ -200,26 +200,26 @@ GENERIC_HELP_SYMBOL = (
 
 READ_STATUS_PIXBUFS = {
     'read': None,
-    '': 'entry-unread',
-    'skimmed': 'entry-skimmed',
+    '': 'bibed-property-unread',
+    'skimmed': 'bibed-property-skimmed',
 }
 
 QUALITY_STATUS_PIXBUFS = {
     '': None,
-    'qualityAssured': 'entry-quality',
+    'qualityAssured': 'bibed-property-quality',
 }
 
 COMMENT_PIXBUFS = {
     False: None,
-    True: 'entry-comment',
+    True: 'bibed-property-comment',
 }
 
 URL_PIXBUFS = {
     False: None,
-    True: 'entry-url',
+    True: 'bibed-property-url',
 }
 
 FILE_PIXBUFS = {
     False: None,
-    True: 'entry-pdf',
+    True: 'bibed-property-pdf',
 }
