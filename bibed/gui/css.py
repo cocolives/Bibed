@@ -22,7 +22,12 @@ class GtkCssAwareMixin:
 
         self.__css_filename = os.path.join(BIBED_DATA_DIR, 'style.css')
 
-        self.set_resource_base_path(BIBED_DATA_DIR)
+        try:
+            self.set_resource_base_path(BIBED_DATA_DIR)
+
+        except AttributeError:
+            # This works only for Gtk.Application*
+            pass
 
         default_screen = Gdk.Screen.get_default()
 
@@ -30,6 +35,10 @@ class GtkCssAwareMixin:
         self.icon_theme = Gtk.IconTheme.get_for_screen(default_screen)
 
         self.icon_theme.add_resource_path(BIBED_DATA_DIR)
+        self.icon_theme.add_resource_path(BIBED_ICONS_DIR)
+
+        self.icon_theme.set_search_path(
+            [BIBED_ICONS_DIR] + self.icon_theme.get_search_path())
 
         # Get an icon path.
         # icon_info = icon_theme.lookup_icon("my-icon-name", 48, 0)

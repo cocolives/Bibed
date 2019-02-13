@@ -462,8 +462,10 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
         about_dialog.set_program_name(APP_NAME)
         about_dialog.set_version(APP_VERSION)
-        about_dialog.set_logo_icon_name('gnome-contacts.png')
-        # os.path.join(BIBED_ICONS_DIR, 'gnome-contacts.png'))
+
+        # logo = self.icon_theme.load_icon('logo', 128, 0)
+        # about_dialog.set_logo(logo)
+        about_dialog.set_logo_icon_name('bibed-logo')
 
         about_dialog.set_copyright('(c) Collectif Cocoliv.es')
 

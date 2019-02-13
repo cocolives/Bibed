@@ -133,13 +133,15 @@ class DnDFlowBox(Gtk.FlowBox):
 
         return flat_unclickable_button_in_hbox(
             child_name, self.get_label(child_name),
-            icon_path=get_icon(child_name, self.child_type, '24x24'))
+            icon_name=child_name)
+        # icon_path=get_icon(child_name, self.child_type, '24x24'))
 
     def build_child_with_icon(self, child_name):
 
         return vbox_with_icon_and_label(
             child_name, self.get_label(child_name),
-            icon_path=get_icon(child_name, self.child_type, '48x48'))
+            icon_name=child_name)
+        # icon_path=get_icon(child_name, self.child_type, '48x48'))
 
     # ——————————————————————————————————————————————————————— FlowBox overrides
 

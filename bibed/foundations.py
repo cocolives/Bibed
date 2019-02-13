@@ -124,12 +124,6 @@ def touch_file(filename):
         LOGGER.debug('touch_file(): created “{}”.'.format(filename))
 
 
-def get_bibed_icon(name):
-    ''' return the full pathname of a Bibed icon. '''
-
-    return os.path.join(BIBED_ICONS_DIR, name)
-
-
 # ————————————————————————————————————————————————————————————————————— Classes
 
 class GZipNamer:

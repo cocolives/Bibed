@@ -26,7 +26,7 @@ from bibed.utils import (
 from bibed.entry import BibedEntry
 
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gtk import Gtk, Pango, GdkPixbuf
+from bibed.gtk import Gtk, Gio, Pango
 
 
 class BibedEntryTreeViewMixin:
@@ -47,9 +47,9 @@ class BibedEntryTreeViewMixin:
         ):
             temp_dict = {}
 
-            for status, icon in constant_dict.items():
-                if icon:
-                    temp_dict[status] = GdkPixbuf.Pixbuf.new_from_file(icon)
+            for status, icon_name in constant_dict.items():
+                if icon_name:
+                    temp_dict[status] = Gio.ThemedIcon.new(icon_name)
                 else:
                     temp_dict[status] = None
 
@@ -141,29 +141,29 @@ class BibedEntryTreeViewMixin:
     # ————————————————————————————————————————————————————————— Pixbufs columns
 
     def get_read_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.read_status_pixbufs[
-                    model.get_value(iter, BibAttrs.READ)])
+        cell.set_property(
+            'gicon', self.read_status_pixbufs[
+                model.get_value(iter, BibAttrs.READ)])
 
     def get_quality_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.quality_status_pixbufs[
-                    model.get_value(iter, BibAttrs.QUALITY)])
+        cell.set_property(
+            'gicon', self.quality_status_pixbufs[
+                model.get_value(iter, BibAttrs.QUALITY)])
 
     def get_comment_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.comment_pixbufs[
-                    model.get_value(iter, BibAttrs.COMMENT) != ''])
+        cell.set_property(
+            'gicon', self.comment_pixbufs[
+                model.get_value(iter, BibAttrs.COMMENT) != ''])
 
     def get_url_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.url_pixbufs[
-                    model.get_value(iter, BibAttrs.URL) != ''])
+        cell.set_property(
+            'gicon', self.url_pixbufs[
+                model.get_value(iter, BibAttrs.URL) != ''])
 
     def get_file_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.file_pixbufs[
-                    model.get_value(iter, BibAttrs.FILE) != ''])
+        cell.set_property(
+            'gicon', self.file_pixbufs[
+                model.get_value(iter, BibAttrs.FILE) != ''])
 
     # ———————————————————————————————————————————————————————— Entry selection
 

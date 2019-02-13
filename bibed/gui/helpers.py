@@ -1,9 +1,11 @@
 import os
 import logging
 
-from bibed.foundations import ldebug
+from bibed.ltrace import ldebug
+
 from bibed.constants import (
     FileTypes,
+    BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
@@ -984,3 +986,6 @@ def build_entry_field_textview(fields_docs, field_name, entry):
         textview.set_tooltip_markup(field_help)
 
     return scrolled, textview
+
+
+# ————————————————————————————————————————————————————————————————————— Classes

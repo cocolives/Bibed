@@ -7,7 +7,6 @@ from bibed.user import (
 
 from bibed.foundations import (
     Anything,
-    get_bibed_icon,
 
     # import other CONSTANTS from sub-levels for higher levels.
     BIBED_DATA_DIR,
@@ -201,26 +200,26 @@ GENERIC_HELP_SYMBOL = (
 
 READ_STATUS_PIXBUFS = {
     'read': None,
-    '': get_bibed_icon('16x16/book.png'),
-    'skimmed': get_bibed_icon('16x16/book-open.png'),
+    '': 'entry-unread',
+    'skimmed': 'entry-skimmed',
 }
 
 QUALITY_STATUS_PIXBUFS = {
     '': None,
-    'qualityAssured': get_bibed_icon('16x16/ranked.png'),
+    'qualityAssured': 'entry-quality',
 }
 
 COMMENT_PIXBUFS = {
     False: None,
-    True: get_bibed_icon('16x16/comment.png'),
+    True: 'entry-comment',
 }
 
 URL_PIXBUFS = {
     False: None,
-    True: get_bibed_icon('16x16/url.png'),
+    True: 'entry-url',
 }
 
 FILE_PIXBUFS = {
     False: None,
-    True: get_bibed_icon('16x16/pdf.png'),
+    True: 'entry-pdf',
 }
