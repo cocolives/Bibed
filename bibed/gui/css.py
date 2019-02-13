@@ -20,6 +20,10 @@ class GtkCssAwareMixin:
     def setup_resources_and_css(self):
         ''' Must called as soon as possible, anyhere in the window/application initialization phase. '''
 
+        if not Gtk.IconSize.from_name('BIBED_BIG'):
+            Gtk.IconSize.register('BIBED_BIG', 96, 96)
+            Gtk.IconSize.register('BIBED_SMALL', 32, 32)
+
         self.__css_filename = os.path.join(BIBED_DATA_DIR, 'style.css')
 
         try:
@@ -37,8 +41,7 @@ class GtkCssAwareMixin:
         self.icon_theme.add_resource_path(BIBED_DATA_DIR)
         self.icon_theme.add_resource_path(BIBED_ICONS_DIR)
 
-        self.icon_theme.set_search_path(
-            [BIBED_ICONS_DIR] + self.icon_theme.get_search_path())
+        self.icon_theme.prepend_search_path(BIBED_ICONS_DIR)
 
         # Get an icon path.
         # icon_info = icon_theme.lookup_icon("my-icon-name", 48, 0)
