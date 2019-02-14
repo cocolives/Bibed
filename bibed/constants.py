@@ -52,6 +52,7 @@ BibAttrs = Anything((
     ('QUALITY', str, ),  # quality
     ('READ', str, ),  # read status
     ('COMMENT', str, ),  # comment (text field)
+    ('KEYWORDS', str, ),  # keywords (for search/filter only)
     ('FILETYPE', int, ),  # file type
     ('COLOR', str, ),  # foreground color
 ))

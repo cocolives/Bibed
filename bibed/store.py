@@ -769,6 +769,7 @@ class BibedDataStore(Gtk.ListStore):
             entry.quality,
             entry.read_status,
             entry.comment,
+            ','.join(entry.keywords),  # flatten for search / filter.
             filetype,
             FILETYPES_COLORS[filetype],
         )
