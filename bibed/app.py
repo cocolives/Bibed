@@ -207,6 +207,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             to_lower_if_not_none(row[BibAttrs.JOURNAL]),
             to_lower_if_not_none(row[BibAttrs.SUBTITLE]),
             to_lower_if_not_none(row[BibAttrs.COMMENT]),
+            to_lower_if_not_none(row[BibAttrs.KEYWORDS]),
             # NO abstract yet in data_store.
             # to_lower_if_not_none(model[iter][BibAttrs.ABSTRACT])
         ]
