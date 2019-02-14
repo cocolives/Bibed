@@ -81,6 +81,21 @@ class BibedEntry:
         )
 
     @classmethod
+    def new_from_entry(cls, entry_to_dupe):
+
+        new_entry = cls(entry_to_dupe.database,
+                        entry_to_dupe.entry.copy(),
+                        -1, -1)
+
+        # It's a new entry. Wipe key, else the old could get overwritten.
+        del new_entry.entry['ID']
+
+        LOGGER.info('Entry {0} duplicated into {1}'.format(
+            entry_to_dupe, new_entry))
+
+        return new_entry
+
+    @classmethod
     def single_bibkey_pattern_check(cls, pattern):
 
         if '@@key@@' in pattern:
