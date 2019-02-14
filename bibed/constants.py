@@ -15,7 +15,7 @@ from bibed.foundations import (
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
-APP_VERSION = '0.9.9.2-develop'
+APP_VERSION = '0.9.9.3-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
 BIBED_LOG_FILE = os.path.join(BIBED_LOG_DIR, 'bibed.log')
