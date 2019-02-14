@@ -1,12 +1,14 @@
 
 import logging
 
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
+    lprint_caller_name,
+    lprint_function_name,
+)
+
 from bibed.constants import (
-    FSCols, FileTypes,
     BOXES_BORDER_WIDTH,
-    GRID_COLS_SPACING,
-    GRID_ROWS_SPACING,
-    GRID_BORDER_WIDTH,
 )
 
 # from bibed.preferences import defaults, preferences, memories, gpod
@@ -145,7 +147,10 @@ class BibedMoveDialog(Gtk.MessageDialog):
             # It needs a save() after the operation.
             databases_to_write.add(entry.database)
 
-            self.destination_database.move_entry(entry, self.destination_database)
+            self.destination_database.move_entry(
+                # We do not write at at each move, this will
+                # be done once and for all at end of operation.
+                entry, self.destination_database, write=False)
 
             self.moved_count += 1
 

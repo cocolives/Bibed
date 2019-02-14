@@ -1,15 +1,24 @@
 import os
 import bibtexparser
-from collections import defaultdict
 
+from bibed.user import (
+    BIBED_LOG_DIR,
+)
+
+from bibed.foundations import (
+    Anything,
+
+    # import other CONSTANTS from sub-levels for higher levels.
+    BIBED_DATA_DIR,
+    BIBED_ICONS_DIR,
+)
+
+APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
 APP_VERSION = '1.0-develop'
-APP_ID = 'es.cocoliv.bibed'
-BIBED_DATA_DIR = os.path.join(os.path.realpath(
-    os.path.abspath(os.path.dirname(__file__))), 'data')
-BIBED_ICONS_DIR = os.path.join(BIBED_DATA_DIR, 'icons')
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
+BIBED_LOG_FILE = os.path.join(BIBED_LOG_DIR, 'bibed.log')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
 BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
@@ -24,81 +33,29 @@ BIBTEXPARSER_VERSION = bibtexparser.__version__
 MINIMUM_BIB_KEY_LENGTH = 8
 
 
-def icon(name):
-    return os.path.join(BIBED_ICONS_DIR, name)
-
-
-class Anything:
-    ''' An object that can have any attribute. '''
-    def __init__(self, args_list=None):
-        '''
-            :param args_list: an iterable of strings, of which any will be
-                set as attribute of self with incremental integer value.
-                This is useful to build named enums.
-        '''
-        if args_list:
-            for index, arg in enumerate(args_list):
-                setattr(self, arg, index)
-
-
-# Sync this with DATA_STORE_LIST_ARGS and entry:BibedEntry.to_list_store_row()
 BibAttrs = Anything((
-    'GLOBAL_ID',
-    'FILENAME',
-    'ID',
-    'TOOLTIP',
-    'TYPE',
-    'KEY',
-    'FILE',
-    'URL',
-    'DOI',
-    'AUTHOR',
-    'TITLE',
-    'SUBTITLE',
-    'JOURNAL',
-    'YEAR',
-    'DATE',
-    'QUALITY',
-    'READ',
-    'COMMENT',
-    'FILETYPE',
-    'COLOR',
+    ('GLOBAL_ID', int, ),  # global ID / counter across all files
+    ('FILENAME', str, ),  # store origin (filename / ID)
+    ('ID', int, ),  # id / counter in current file
+    ('TOOLTIP', str, ),  # Row tooltip (for treeview)
+    ('TYPE', str, ),  # BIB entry type (article, book…)
+    ('KEY', str, ),  # BIB sort key
+    ('FILE', str, ),  # file (PDF)
+    ('URL', str, ),  # URL
+    ('DOI', str, ),  # DOI
+    ('AUTHOR', str, ),  # author
+    ('TITLE', str, ),  # title
+    ('SUBTITLE', str, ),  # subtitle
+    ('JOURNAL', str, ),  # journal (or booktitle, howpublished… see entry.py)
+    ('YEAR', int, ),  # year
+    ('DATE', str, ),  # date
+    ('QUALITY', str, ),  # quality
+    ('READ', str, ),  # read status
+    ('COMMENT', str, ),  # comment (text field)
+    ('FILETYPE', int, ),  # file type
+    ('COLOR', str, ),  # foreground color
 ))
 
-
-DATA_STORE_LIST_ARGS = (
-    int,  # global ID / counter across all files
-    str,  # store origin (filename / ID)
-    int,  # id / counter in current file
-    str,  # Row tooltip (for treeview)
-    str,  # BIB entry type
-    str,  # BIB key
-    str,  # file (PDF)
-    str,  # URL
-    str,  # DOI
-    str,  # author
-    str,  # title
-    str,  # subtitle
-    str,  # journal
-    int,  # year
-    str,  # date
-    str,  # quality
-    str,  # read status
-    str,  # comment (text field)
-    int,  # file type
-    str,  # foreground color
-)
-
-# Sync this with FILE_STORE_LIST_ARGS and store:BibedFileStore()
-FSCols = Anything((
-    'FILENAME',
-    'FILETYPE',
-))
-
-FILE_STORE_LIST_ARGS = (
-    str,  # filename
-    int,  # filetype (see FileTypes)
-)
 
 FileTypes = Anything()
 FileTypes.SPECIAL   = 0xff00000
@@ -146,11 +103,6 @@ JABREF_READ_KEYWORDS = [
     'read',
 ]
 
-PREFERENCES_FILENAME = 'bibed.yaml'
-MEMORIES_FILENAME    = 'memories.yaml'
-BIBED_APP_DIR_WIN32  = 'Bibed'
-BIBED_APP_DIR_POSIX  = '.config/bibed'
-
 # ———————————————————————————————————————————————————————————— GUI constants
 
 APP_MENU_XML = '''
@@ -182,7 +134,8 @@ APP_MENU_XML = '''
 # like div:after. Thus we need to prepare the background images with an
 # already set transparency, like transparent PNGs or flattened JPEGs.
 MAIN_TREEVIEW_CSS = '''
-treeview.view:not(:selected) {
+treeview.view:not(:selected),
+treeview.view header button {
     background-color: transparent;
 }
 
@@ -247,26 +200,26 @@ GENERIC_HELP_SYMBOL = (
 
 READ_STATUS_PIXBUFS = {
     'read': None,
-    '': icon('16x16/book.png'),
-    'skimmed': icon('16x16/book-open.png'),
+    '': 'bibed-property-unread',
+    'skimmed': 'bibed-property-skimmed',
 }
 
 QUALITY_STATUS_PIXBUFS = {
     '': None,
-    'qualityAssured': icon('16x16/ranked.png'),
+    'qualityAssured': 'bibed-property-quality',
 }
 
 COMMENT_PIXBUFS = {
     False: None,
-    True: icon('16x16/comment.png'),
+    True: 'bibed-property-comment',
 }
 
 URL_PIXBUFS = {
     False: None,
-    True: icon('16x16/url.png'),
+    True: 'bibed-property-url',
 }
 
 FILE_PIXBUFS = {
     False: None,
-    True: icon('16x16/pdf.png'),
+    True: 'bibed-property-pdf',
 }

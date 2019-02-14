@@ -1,36 +1,32 @@
 import os
 import logging
+from operator import attrgetter
 
-from bibed.foundations import (
-    lprint, ldebug,
-    lprint_function_name,
+from bibed.exceptions import NoDatabaseForFilenameError
+
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
     lprint_caller_name,
+    lprint_function_name,
 )
 
 from bibed.constants import (
     APP_NAME,
-    # BibAttrs,
-    FSCols,
-    FileTypes,
-    # BIBED_ICONS_DIR,
-    # SEARCH_WIDTH_NORMAL,
     SEARCH_WIDTH_EXPANDED,
-    COMBO_CHARS_DIVIDER,
-    RESIZE_SIZE_MULTIPLIER,
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
 )
 
 from bibed.preferences import memories, gpod
-from bibed.utils import get_user_home_directory, friendly_filename
+from bibed.user import get_user_home_directory
+from bibed.strings import friendly_filename
 from bibed.entry import BibedEntry
+
+from bibed.gtk import Gio, GLib, Gtk, Gdk
 
 from bibed.gui.helpers import (
     flash_field,
-    markup_bib_filename,
     markup_entries,
-    add_classes,
-    remove_classes,
     message_dialog,
     widget_properties,
     label_with_markup,
@@ -43,7 +39,7 @@ from bibed.gui.search import BibedSearchBar
 from bibed.gui.entry_type import BibedEntryTypeDialog
 from bibed.gui.entry import BibedEntryDialog
 from bibed.gui.dialogs import BibedMoveDialog
-from bibed.gtk import Gio, GLib, Gtk, Gdk, Pango
+
 
 
 LOGGER = logging.getLogger(__name__)
@@ -163,8 +159,8 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         stack.add_titled(
             self.treeview_sw,
-            'database',
-            'BIB Databases'
+            'library',
+            'Local library'
         )
 
         stack.child_set_property(
@@ -246,7 +242,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_file_select = Gtk.Button()
         self.btn_file_select.set_tooltip_markup('Select databases to display in main view')
         self.btn_file_select.add(flat_unclickable_button_in_hbox(
-            'file_select', 'Databases',
+            'file_select', 'Library',
             icon_name='drive-multidisk-symbolic',
         ))
 
@@ -419,8 +415,8 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.headerbar.props.title = title_value
         self.headerbar.props.subtitle = subtitle_value
 
-        assert ldebug('update_title() to {0} and {1}.'.format(
-                      title_value, subtitle_value))
+        LOGGER.debug('update_title(): {0} and {1}.'.format(
+                     title_value, subtitle_value))
 
     def sync_buttons_states(self, sync_children=True, *args, **kwargs):
         ''' Hide or disable relevant widgets, determined by context.
@@ -823,6 +819,55 @@ class BibedWindow(Gtk.ApplicationWindow):
             popover.popup()
 
     # ——————————————————————————————————————————————————————————— Entry buttons
+    def autoselect_destination(self):
+
+        get_database = self.application.files.get_database
+        user_databases = tuple(self.application.files.user_databases)
+        selected_user_databases = tuple(
+            self.application.files.selected_user_databases)
+
+        # We start with that.
+        selected_database = None
+
+        # This will eventually help.
+        last_selected_filename = (
+            memories.last_destination
+            if gpod('remember_last_destination')
+            else None
+        )
+
+        if len(user_databases) == 1:
+            if not selected_user_databases:
+                # Only one file, select i before creation
+                # for new entry to appear in it when saved.
+                self.set_selected_databases(user_databases)
+
+            selected_database = user_databases[0]
+
+        else:
+            # There are more than one databases loaded.
+            # Else we could not have gotten here, because
+            # add_entry button is not visible and keyboard
+            # shortcut is inactive.
+            if len(selected_user_databases) == 1:
+                selected_database = selected_user_databases[0]
+
+            elif len(selected_user_databases) > 1:
+                if last_selected_filename:
+                    try:
+                        last_database = get_database(
+                            filename=last_selected_filename)
+
+                    except NoDatabaseForFilenameError:
+                        # Life has changed since last destination
+                        # was remembered. Forget it.
+                        del memories.last_destination
+
+                    else:
+                        if last_database in selected_user_databases:
+                            selected_database = last_database
+
+        return selected_database
 
     def on_entry_add_clicked(self, button):
 
@@ -835,6 +880,8 @@ class BibedWindow(Gtk.ApplicationWindow):
             entry_add_dialog.hide()
 
             entry = BibedEntry.new_from_type(entry_type)
+
+            entry.database = self.autoselect_destination()
 
             entry_edit_dialog = BibedEntryDialog(
                 parent=self, entry=entry)
@@ -913,7 +960,11 @@ class BibedWindow(Gtk.ApplicationWindow):
         def delete_callback(selected_entries):
             databases_to_write = set()
 
-            for entry in selected_entries:
+            # Remove entries starting by the end, else our internal
+            # method fail at some point because indexes are altered.
+            for entry in sorted(selected_entries,
+                                key=attrgetter('index'),
+                                reverse=True):
                 databases_to_write.add(entry.database)
                 entry.delete(write=False)
 

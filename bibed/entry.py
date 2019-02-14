@@ -7,14 +7,14 @@ import datetime
 
 import bibtexparser
 
-from bibed.foundations import (
+from bibed.ltrace import (
     lprint, ldebug,
     lprint_caller_name,
     lprint_function_name,
 )
 
 from bibed.constants import (
-    FileTypes,
+    BibAttrs, FileTypes,
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
@@ -23,8 +23,8 @@ from bibed.constants import (
     COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
+from bibed.strings import asciize
 from bibed.preferences import defaults, preferences, gpod
-from bibed.utils import asciize
 from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
 from bibed.gtk import GLib
@@ -76,7 +76,8 @@ class BibedEntry:
             # Index to -1 is checked in BibedEntryDialog
             # to ensure the new entry is written only once
             # into database.
-            -1,
+            -1,  # index
+            -1,  # GID
         )
 
     @classmethod
@@ -106,7 +107,7 @@ class BibedEntry:
 
         return result
 
-    def __init__(self, database, entry, index):
+    def __init__(self, database, entry, index, gid=None):
 
         # The raw bibtextparser entry.
         self.entry = entry
@@ -116,12 +117,11 @@ class BibedEntry:
 
         # Index in the database file.
         # == index in the bibtexparser entries list.
-        # TODO: remove this field, everywhere.
         self.index = index
 
         # Global ID (across multiple files). This is
         # needed to update the treeview after modifications.
-        self.gid = 0
+        self.gid = -1 if gid is None else gid
 
         self._internal_verbb = {
             key: value
@@ -222,7 +222,11 @@ class BibedEntry:
 
     def __str__(self):
 
-        return 'Entry {}@{}'.format(self.key, self.type)
+        return 'Entry {}@{}{}'.format(
+            self.key, self.type,
+            ' NEW' if self.database is None
+            else ' in {}[{}]'.format(
+                os.path.basename(self.database.filename), self.index))
 
     def set_timestamp_and_owner(self):
 
@@ -482,7 +486,8 @@ class BibedEntry:
 
         # TODO: use journaltitle / handle aliased fields.
 
-        for field_name in ('journaltitle', 'booktitle', 'journal'):
+        for field_name in ('journaltitle', 'booktitle',
+                           'journal', 'howpublished', ):
             field_value = self.__clean_for_display(field_name)
 
             if field_value:
@@ -620,10 +625,26 @@ class BibedEntry:
         # assert lprint_function_name()
         # assert lprint(kwargs)
 
+        LOGGER.debug('{0}.update_fields({1})'.format(self, kwargs))
+
         for field_name, field_value in kwargs.items():
             self[field_name] = field_value
 
         self.set_timestamp_and_owner()
+
+        if self.gid >= 0:
+            # TODO: map entry fields to data_store fields?
+            #       for now it's not worth it.
+            self.update_store_row()
+
+    def update_store_row(self, fields=None):
+
+        if self.database:
+            LOGGER.debug('{0}.update_store_row({1})'.format(self, fields))
+            # If we have no database, entry is not yet created.
+            # The data store will be updated later by add_entry().
+            self.database.data_store.update_entry(self, fields)
+
 
     def toggle_quality(self):
 
@@ -634,6 +655,8 @@ class BibedEntry:
             self._internal_remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
 
         self.set_timestamp_and_owner()
+
+        self.update_store_row({BibAttrs.QUALITY: self.quality})
 
     def cycle_read_status(self):
 
@@ -650,6 +673,8 @@ class BibedEntry:
             self._internal_remove_keywords([JABREF_READ_KEYWORDS[1]])
 
         self.set_timestamp_and_owner()
+
+        self.update_store_row({BibAttrs.READ: self.read_status})
 
     def delete(self, write=True):
 

@@ -26,7 +26,7 @@ from bibed.utils import (
 from bibed.entry import BibedEntry
 
 from bibed.gui.entry import BibedEntryDialog
-from bibed.gtk import Gtk, Pango, GdkPixbuf
+from bibed.gtk import Gtk, Gio, Pango
 
 
 class BibedEntryTreeViewMixin:
@@ -47,9 +47,9 @@ class BibedEntryTreeViewMixin:
         ):
             temp_dict = {}
 
-            for status, icon in constant_dict.items():
-                if icon:
-                    temp_dict[status] = GdkPixbuf.Pixbuf.new_from_file(icon)
+            for status, icon_name in constant_dict.items():
+                if icon_name:
+                    temp_dict[status] = Gio.ThemedIcon.new(icon_name)
                 else:
                     temp_dict[status] = None
 
@@ -141,41 +141,36 @@ class BibedEntryTreeViewMixin:
     # ————————————————————————————————————————————————————————— Pixbufs columns
 
     def get_read_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.read_status_pixbufs[
-                    model.get_value(iter, BibAttrs.READ)])
+        cell.set_property(
+            'gicon', self.read_status_pixbufs[
+                model.get_value(iter, BibAttrs.READ)])
 
     def get_quality_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.quality_status_pixbufs[
-                    model.get_value(iter, BibAttrs.QUALITY)])
+        cell.set_property(
+            'gicon', self.quality_status_pixbufs[
+                model.get_value(iter, BibAttrs.QUALITY)])
 
     def get_comment_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.comment_pixbufs[
-                    model.get_value(iter, BibAttrs.COMMENT) != ''])
+        cell.set_property(
+            'gicon', self.comment_pixbufs[
+                model.get_value(iter, BibAttrs.COMMENT) != ''])
 
     def get_url_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.url_pixbufs[
-                    model.get_value(iter, BibAttrs.URL) != ''])
+        cell.set_property(
+            'gicon', self.url_pixbufs[
+                model.get_value(iter, BibAttrs.URL) != ''])
 
     def get_file_cell_column(self, col, cell, model, iter, user_data):
-            cell.set_property(
-                'pixbuf', self.file_pixbufs[
-                    model.get_value(iter, BibAttrs.FILE) != ''])
+        cell.set_property(
+            'gicon', self.file_pixbufs[
+                model.get_value(iter, BibAttrs.FILE) != ''])
 
     # ———————————————————————————————————————————————————————— Entry selection
 
-    def get_main_iter_by_gid(self, gid):
-
-        # for row in self.main_model:
-        #     if row[BibAttrs.GLOBAL_ID] == gid:
-        #         return row.iter
-
-        # TODO: make clear while I need to substract 1.
-        #       make all counters equal everywhere.
-        return self.main_model.get_iter(gid - 1)
+    def get_main_model_iter_by_gid(self, gid):
+        ''' '''
+        # TODO: use path instead of GID.
+        return self.main_model.get_iter(gid)
 
     def get_entry_by_path(self, path, with_global_id=False, return_iter=False, only_row=False):
 
@@ -253,12 +248,6 @@ class BibedEntryTreeViewMixin:
 
         entry.toggle_quality()
 
-        self.main_model[
-            # TODO: Shouldn't we use get_real_path_from_path()
-            #       or something like that? a Gtk method.
-            self.get_main_iter_by_gid(entry.gid)
-        ][BibAttrs.QUALITY] = entry.quality
-
         # if gpod('bib_auto_save'):
         self.files.trigger_save(entry.database.filename)
 
@@ -267,10 +256,6 @@ class BibedEntryTreeViewMixin:
         entry = self.get_entry_by_path(path, with_global_id=True)
 
         entry.cycle_read_status()
-
-        self.main_model[
-            self.get_main_iter_by_gid(entry.gid)
-        ][BibAttrs.READ] = entry.read_status
 
         # if gpod('bib_auto_save'):
         self.files.trigger_save(entry.database.filename)

@@ -7,21 +7,16 @@ import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
-from bibed.constants import (
-    FileTypes
-)
+from bibed.exceptions import IndexingFailedError
 
-from bibed.exceptions import (
-    # BibedDatabaseException,
-    # BibedDatabaseError,
-    IndexingFailedError,
-)
-
-from bibed.foundations import (
-    lprint, ldebug,
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
     lprint_caller_name,
     lprint_function_name,
 )
+
+from bibed.constants import FileTypes
+from bibed.strings import friendly_filename
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
 from bibed.gtk import GObject
@@ -113,6 +108,18 @@ class BibedDatabase(GObject.GObject):
 
         return len(self.entries)
 
+    def __eq__(self, other):
+        ''' Overrides the default implementation '''
+
+        if isinstance(other, BibedDatabase):
+            return self.filename == other.filename
+
+        return NotImplemented
+
+    def __hash__(self):
+        ''' Make class set()-able. '''
+        return hash(self.filename)
+
     def get_entry_by_key(self, key):
 
         # assert lprint_function_name()
@@ -159,14 +166,15 @@ class BibedDatabase(GObject.GObject):
         # Idem in bibtexparser database.
         self.bibdb.entries.append(entry.entry)
 
+        entry.index = new_index
+
         assert self.bibdb.entries.index(entry.entry) == new_index
 
         self.data_store.insert_entry(entry)
 
-        if __debug__:
-            LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
+        LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
 
-    def delete_entry(self, entry):
+    def delete_entry(self, entry, old_index=None):
         ''' Delete an entry from the current database.
 
             This operation will update underlying the Gtk datastore.
@@ -177,9 +185,11 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
         # assert lprint(entry, entry.gid)
 
+        assert entry.index >= 0
         assert entry.gid >= 0
 
-        entry_index = self.entries[entry.key][1]
+        # old_index is set in case of a move.
+        entry_index = entry.index if old_index is None else old_index
 
         # Here, or at the end?
         self.data_store.delete_entry(entry)
@@ -192,16 +202,24 @@ class BibedDatabase(GObject.GObject):
         # but only the first time you call it. It's a one shot.
         # lprint(self.bibdb.entries_dict.keys())
 
-        # increment indexes of posterior entries
+        # decrement indexes of posterior entries
         for btp_entry in self.bibdb.entries[entry_index:]:
-            self.entries[btp_entry['ID']][1] -= 1
+
+            # In rare cases (multiple deletion) the garbage collector does not
+            # collect deleted keys fast enough. Thus we get() and handle the
+            # situation gracefully.
+            value = self.entries.get(btp_entry['ID'])
+            try:
+                value[1] -= 1
+
+            except TypeError:
+                pass
 
         assert self.check_indexes()
 
-        if __debug__:
-            LOGGER.debug('{0}.delete_entry({1}) done.'.format(self, entry))
+        LOGGER.debug('{0}.delete_entry({1}) done.'.format(self, entry))
 
-    def move_entry(self, entry, destination_database):
+    def move_entry(self, entry, destination_database, write=True):
         ''' Move an entry from a database to another.
 
             internally, this inserts the entry into the destination database,
@@ -212,11 +230,11 @@ class BibedDatabase(GObject.GObject):
 
             This operation will update underlying the Gtk datastore.
 
-            .. note:: it's up to the caller to call :method:`write` on the
-                two databases.
-
             :param entry: a :class:`~bibed.entry.BibedEntry` instance.
             :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
+            :param save: boolean, which can be disabled in case of multiple
+                move operations, for the caller to merge write() calls and
+                optimize resources consumption.
         '''
 
         # assert lprint_function_name()
@@ -231,15 +249,21 @@ class BibedDatabase(GObject.GObject):
         # This is important, else GUI will still write in source database.
         entry.database = destination_database
 
+        # save it before it gets overwritten by add_entry()
+        old_index = entry.index
+
         # NOTE: this method does not update the data store, because
         #       add*() and delete*() methods already do what's needed.
 
         destination_database.add_entry(entry)
-        source_database.delete_entry(entry)
+        source_database.delete_entry(entry, old_index)
 
-        if __debug__:
-            LOGGER.debug('{0}.move_entry({1}) to {2} done.'.format(
-                source_database, entry, destination_database))
+        if write:
+            destination_database.write()
+            source_database.write()
+
+        LOGGER.debug('{0}.move_entry({1}) to {2} done (add+delete).'.format(
+                     source_database, entry, destination_database))
 
     def update_entry_key(self, entry):
 
@@ -264,8 +288,7 @@ class BibedDatabase(GObject.GObject):
         del self.bibdb.entries[old_index]
         self.bibdb.entries.insert(old_index, entry.entry)
 
-        if __debug__:
-            LOGGER.debug('{0}.update_entry_key({1}) done.'.format(self, entry))
+        LOGGER.debug('{0}.update_entry_key({1}) done.'.format(self, entry))
 
     def backup(self):
 
@@ -274,6 +297,7 @@ class BibedDatabase(GObject.GObject):
 
         dirname = os.path.dirname(self.filename)
         basename = os.path.basename(self.filename)
+        coolname = friendly_filename(basename)
 
         # Using microseconds in backup filename should avoid collisions.
         # Using time will also help for cleaning old backups.
@@ -281,7 +305,7 @@ class BibedDatabase(GObject.GObject):
             dirname,
             # HEADS UP: backup file starts with a dot, it's hidden.
             '.{basename}.save.{datetime}.bib'.format(
-                basename=basename.rsplit('.', 1)[0],
+                basename=coolname,
                 datetime=datetime.datetime.now().isoformat(sep='_')
             )
         )
@@ -293,9 +317,35 @@ class BibedDatabase(GObject.GObject):
         except Exception:
             LOGGER.exception('Problem while backing up file before save.')
 
+        backup_count = gpod('bib_backup_count')
+
+        if backup_count is not None:
+
+            backup_start = '.{basename}.save.'.format(basename=coolname)
+
+            backup_files = []
+
+            for root, dirs, files in os.walk(dirname):
+
+                for walked_file in files:
+                    if walked_file.startswith(backup_start):
+                        backup_files.append(walked_file)
+
+            if len(backup_files) > backup_count:
+
+                for file_to_wipe in sorted(backup_files,
+                                           reverse=True)[backup_count:]:
+                    full_path = os.path.join(dirname, file_to_wipe)
+
+                    os.unlink(full_path)
+
+                    LOGGER.info(
+                        '{0}.backup(): wiped old backup file “{1}”.'.format(
+                            self, full_path))
+
         # TODO: make backups in .bibed_save/ ? (PREFERENCE ON/OFF)
         # TODO: clean old backup files. (PREFERENCE [number])
-        pass
+        LOGGER.debug('{0}.backup() done.'.format(self))
 
     def write(self):
 
@@ -320,7 +370,19 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
 
         for index, btp_entry in enumerate(self.bibdb.entries):
-            if self.entries[btp_entry['ID']][1] != index:
+
+            # In rare cases (multiple deletion) the garbage collector does not
+            # collect deleted keys fast enough. Thus we get() and handle the
+            # situation gracefully.
+            value = self.entries.get(btp_entry['ID'])
+
+            try:
+                current_value = value[1]
+
+            except TypeError:
+                continue
+
+            if current_value != index:
                 raise IndexingFailedError('{} is not {} (entry {})'.format(
                     self.entries[btp_entry['ID']][1],
                     index, btp_entry['ID']

@@ -32,28 +32,54 @@ programs live.
 import sys
 import time
 import logging
+import logging.handlers
+
+from bibed.foundations import GZipRotator, GZipNamer
+from bibed.constants import BIBED_LOG_FILE
+
 
 LOGGER = logging.getLogger(__name__)
 
 
 def setup_logging(level=logging.INFO):
+
     root = logging.getLogger()
     root.setLevel(level)
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
+
     formatter = logging.Formatter(
         '%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(level)
     ch.setFormatter(formatter)
     root.addHandler(ch)
+
+    rfh = logging.handlers.RotatingFileHandler(BIBED_LOG_FILE, backupCount=10)
+    # File log is always full debug level
+    # in case we need it to assist users.
+    rfh.setLevel(logging.DEBUG)
+    rfh.setFormatter(formatter)
+    rfh.rotator = GZipRotator()
+    rfh.namer = GZipNamer()
+
+    # Rotate logs at every application launch.
+    rfh.doRollover()
+
+    mh = logging.handlers.MemoryHandler(32768)
+    mh.setTarget(rfh)
+
+    root.addHandler(mh)
+
+    return (mh, rfh)
 
 
 if __name__ == "__main__":
     time_start = time.time()
 
     if __debug__:
-        setup_logging(logging.DEBUG)
+        logging_handlers = setup_logging(logging.DEBUG)
     else:
-        setup_logging(logging.INFO)
+        logging_handlers = setup_logging(logging.INFO)
 
     logging.getLogger('urllib3').setLevel(logging.CRITICAL)
     logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
@@ -61,13 +87,31 @@ if __name__ == "__main__":
 
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
+    from bibed.strings import seconds_to_string
+    from bibed.gtk import Gtk  # NOQA
+    from bibed.gui.splash import start_splash
     from bibed.app import BibEdApplication
     from bibed.preferences import gpod
     from bibed.sentry import sentry
 
+    splash = start_splash()
+
     if gpod('use_sentry'):
+        splash.set_status('Connecting issue collector to {}…'.format(gpod('sentry_url')))
+
+        splash.spin()
+
         sentry.enable()
 
-    app = BibEdApplication(time_start=time_start)
+        splash.spin()
+
+        LOGGER.debug('Sentry startup time: {}'.format(
+            seconds_to_string(time.time() - time_start)))
+
+    app = BibEdApplication(time_start=time_start, splash=splash,
+                           logging_handlers=logging_handlers)
+
+    splash.spin()
+
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)

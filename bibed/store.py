@@ -2,20 +2,25 @@ import os
 import time
 import logging
 import pyinotify
+from operator import attrgetter
 
 from threading import RLock
 
-from bibed.foundations import (
+from bibed.exceptions import (
+    AlreadyLoadedException,
+    FileNotFoundError,
+    BibKeyNotFoundError,
+    NoDatabaseForFilenameError,
+)
+
+from bibed.ltrace import (  # NOQA
     ldebug, lprint,
     lprint_caller_name,
     lprint_function_name,
 )
 
 from bibed.constants import (
-    DATA_STORE_LIST_ARGS,
-    FILE_STORE_LIST_ARGS,
     BibAttrs,
-    FSCols,
     FileTypes,
     FILETYPES_COLORS,
     BIBED_SYSTEM_IMPORTED_NAME,
@@ -24,13 +29,7 @@ from bibed.constants import (
 )
 
 from bibed.foundations import touch_file
-from bibed.exceptions import (
-    AlreadyLoadedException,
-    FileNotFoundError,
-    BibKeyNotFoundError,
-    NoDatabaseForFilenameError,
-)
-from bibed.utils import get_bibed_user_dir
+from bibed.user import get_bibed_user_dir
 from bibed.preferences import memories
 from bibed.database import BibedDatabase
 from bibed.entry import BibedEntry
@@ -168,7 +167,11 @@ class BibedFileStore(Gio.ListStore):
         trash_database = self.get_database(filetype=FileTypes.TRASH)
         databases_to_write = set((trash_database, ))
 
-        for entry in entries:
+        # Move entries starting by the end, else our internal
+        # method fail at some point because indexes are altered.
+        for entry in sorted(entries,
+                            key=attrgetter('index'),
+                            reverse=True):
             entry.set_trashed()
 
             # Note the database BEFORE the move(), because
@@ -184,7 +187,7 @@ class BibedFileStore(Gio.ListStore):
 
         assert lprint_function_name()
 
-        trash_database = self.get_database(filetype=FileTypes.TRASH)
+        trash_database = self.trash
         databases_to_write = set((trash_database, ))
         databases_to_unload = set()
 
@@ -270,7 +273,8 @@ class BibedFileStore(Gio.ListStore):
             # This would be too bad. But having one lock per file is too much.
             return
 
-        assert ldebug('Programming reload of {0} when idle.', event.pathname)
+        LOGGER.debug('Programming reload of {0} when idle.'.format(
+                     event.pathname))
 
         GLib.idle_add(self.on_file_modify_callback, event)
 
@@ -411,6 +415,7 @@ class BibedFileStore(Gio.ListStore):
             database.selected = bool(database in selected_databases)
 
         # assert lprint('AFTER SYNC', [str(db) for db in self])
+        pass
 
     # —————————————————————————————————————————————————————————————— Properties
 
@@ -530,8 +535,7 @@ class BibedFileStore(Gio.ListStore):
         # Without this, window title fails to update properly.
         self.append(database)
 
-        if __debug__:
-            LOGGER.debug('Loaded file “{}”.'.format(filename))
+        LOGGER.debug('Loaded database “{}”.'.format(filename))
 
         if not filetype & FileTypes.SYSTEM:
             memories.add_open_file(filename)
@@ -600,7 +604,7 @@ class BibedFileStore(Gio.ListStore):
         self.remove(index_to_remove)
 
         if __debug__:
-            LOGGER.debug('Closed “{}”.'.format(filename))
+            LOGGER.debug('Closed database “{}”.'.format(filename))
 
         if impact_data_store:
             self.clear_data(filename, recompute=recompute)
@@ -684,7 +688,7 @@ class BibedFileStore(Gio.ListStore):
         # Useless, everything runs too fast.
         # self.clear_save_callback()
 
-        assert ldebug('Programming save of {0} when idle.', filename)
+        LOGGER.debug('Programming save of {0} when idle.'.format(filename))
 
         self.save_trigger_source = GLib.idle_add(
             self.save_trigger_callback, filename)
@@ -703,7 +707,7 @@ class BibedFileStore(Gio.ListStore):
 
     def clear_save_callback(self):
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
         if self.save_trigger_source:
             # Remove the in-progress save()
@@ -725,7 +729,7 @@ class BibedDataStore(Gtk.ListStore):
     def __init__(self, *args, **kwargs):
 
         super().__init__(
-            *DATA_STORE_LIST_ARGS
+            *BibAttrs.as_store_args
         )
 
         self.files_store = kwargs.pop('files_store', None)
@@ -733,6 +737,9 @@ class BibedDataStore(Gtk.ListStore):
         assert self.files_store is not None
 
         self.files_store.data_store = self
+
+    def __str__(self):
+        return 'BibedDataStore'
 
     def __entry_to_store(self, entry, filetype=None):
         ''' Convert a BIB entry, to fields for a Gtk.ListStore. '''
@@ -746,7 +753,7 @@ class BibedDataStore(Gtk.ListStore):
         return (
             entry.gid,  # global_id, computed by app.
             entry.database.filename,
-            entry.index,  # TODO: remove this field, everywhere.
+            entry.index,
             entry.tooltip,
             entry.type,
             entry.key,
@@ -767,15 +774,20 @@ class BibedDataStore(Gtk.ListStore):
         )
 
     def do_recompute_global_ids(self):
+        ''' Global ID is a data-store stored absolute TreeView ``Path``.
 
+            We recompute it on file load/close operations for store direct
+            indexed access all the time.
+        '''
         # assert lprint_function_name()
 
-        counter = 1
         gid_index = BibAttrs.GLOBAL_ID
 
-        for row in self:
-            row[gid_index] = counter
-            counter += 1
+        for index, row in enumerate(self):
+            row[gid_index] = index
+
+        LOGGER.debug('{0}.do_recompute_global_ids() with {1} rows.'.format(
+                     self, len(self)))
 
     def append(self, entry, filetype=None):
 
@@ -789,35 +801,34 @@ class BibedDataStore(Gtk.ListStore):
 
         self.do_recompute_global_ids()
 
-        if __debug__:
-            row = self[iter]
+        row = self[iter]
 
-            ldebug('Row {} created with entry {}.',
-                   row[BibAttrs.GLOBAL_ID], entry.key)
+        LOGGER.debug('Row {} created with entry {}.'.format(
+                     row[BibAttrs.GLOBAL_ID], entry.key))
 
-    def update_entry(self, entry):
+    def update_entry(self, entry, fields=None):
 
         # assert lprint_function_name()
 
         assert entry.gid >= 0
 
-        gid_index = BibAttrs.GLOBAL_ID
+        # GID is an absolute TreePath.
+        entry_iter = self.get_iter(entry.gid)
 
-        for row in self:
-            if row[gid_index] == entry.gid:
-                # This is far from perfect, we could just update the row.
-                # But I'm tired and I want a simple way to view results.
-                # TODO: do better on next code review.
+        # This is far from perfect, we could just update the row.
+        # But I'm tired and I want a simple way to view results.
+        # TODO: do better on next code review.
 
-                self.insert_after(row.iter, self.__entry_to_store(entry))
-                self.remove(row.iter)
+        if fields:
+            for key, value in fields.items():
+                self[entry_iter][key] = value
+        else:
+            self.insert_after(entry_iter, self.__entry_to_store(entry))
+            self.remove(entry_iter)
 
-                assert ldebug(
-                    'Row {} updated (entry {}).',
-                    row[gid_index], entry.key
-                )
-
-                break
+        LOGGER.debug('Row {} updated (entry {}{}).'.format(
+                     entry.gid, entry.key,
+                     ', fields={}'.format(fields) if fields else ''))
 
     def delete_entry(self, entry):
 
@@ -825,16 +836,16 @@ class BibedDataStore(Gtk.ListStore):
 
         assert entry.gid >= 0
 
-        gid_index = BibAttrs.GLOBAL_ID
+        old_gid = entry.gid
 
-        for row in self:
-            if row[gid_index] == entry.gid:
-                self.remove(row.iter)
+        # GID is absolute path :-)
+        self.remove(self.get_iter(entry.gid))
 
+        # at the cost of this.
         self.do_recompute_global_ids()
 
-        assert ldebug('Row {} deleted (was entry {}).',
-                      row[gid_index], entry.key)
+        LOGGER.debug('Row {} deleted (was entry {}).'.format(
+                     old_gid, entry.key))
 
     def clear_data(self, filename, recompute=True):
 
@@ -844,7 +855,9 @@ class BibedDataStore(Gtk.ListStore):
 
         for row in self:
             if row[column_filename] == filename:
-                    self.remove(row.iter)
+                self.remove(row.iter)
 
         if recompute:
             self.do_recompute_global_ids()
+
+        LOGGER.debug('Cleared data for {}.'.format(filename))

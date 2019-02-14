@@ -1,42 +1,46 @@
 
 import os
 import logging
-import random
 import time
+
+from bibed.ltrace import (  # NOQA
+    ldebug, lprint,
+    lprint_caller_name,
+    lprint_function_name,
+)
 
 from bibed.constants import (
     APP_ID,
     APP_NAME,
     APP_VERSION,
     APP_MENU_XML,
-    BIBED_DATA_DIR,
-    BIBED_ICONS_DIR,
-    BIBED_BACKGROUNDS_DIR,
     BibAttrs,
     SEARCH_SPECIALS,
     BIBTEXPARSER_VERSION,
-    MAIN_TREEVIEW_CSS,
 )
 
 from bibed.foundations import (
-    lprint, lprint_function_name,
     touch_file,
     set_process_title,
+)
+
+from bibed.strings import (
+    to_lower_if_not_none,
     seconds_to_string,
 )
 
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
 
-from bibed.utils import to_lower_if_not_none, friendly_filename
 from bibed.preferences import preferences, memories, gpod
+
 from bibed.store import (
     BibedDataStore,
     BibedFileStore,
     AlreadyLoadedException,
 )
 
-from bibed.gui.splash import BibedSplash
+from bibed.gui.css import GtkCssAwareMixin
 from bibed.gui.window import BibedWindow
 
 
@@ -55,11 +59,15 @@ GLib.idle_add(set_process_title, APP_NAME)
 GLib.set_application_name(APP_NAME)
 
 
-class BibEdApplication(Gtk.Application):
+class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def __init__(self, *args, **kwargs):
 
+        self.splash = kwargs.pop('splash')
         self.time_start = kwargs.pop('time_start')
+        self.logging_handlers = kwargs.pop('logging_handlers')
+
+        LOGGER.info('Starting application.')
 
         super().__init__(*args, application_id=APP_ID,
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
@@ -78,97 +86,19 @@ class BibEdApplication(Gtk.Application):
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
         self.window = None
-        self.splash = None
 
         self.setup_data_store()
 
     # ——————————————————————————————————————————————————————————— setup methods
 
-    @property
-    def css_data(self):
-
-        with open(os.path.join(BIBED_DATA_DIR, 'style.css')) as css_file:
-            self.__css_data_string = css_file.read()
-
-        if gpod('use_treeview_background'):
-            background_filename = self.get_random_background()
-            background_position = None
-            background_size = None
-
-            if '-contain' in background_filename:
-                background_size = 'contain'
-
-            elif '-cover' in background_filename:
-                background_size = 'cover'
-
-            if background_size is None:
-                background_size = 'cover'
-
-            for vertical_position in ('top', 'bottom', ):
-                for horizontal_position in ('left', 'right', ):
-                    if vertical_position in background_filename \
-                            and horizontal_position in background_filename:
-                                background_position = '{} {}'.format(
-                                    horizontal_position, vertical_position)
-
-            if background_position is None:
-                background_position = 'left top'
-
-            css_data_string = self.__css_data_string[:] + MAIN_TREEVIEW_CSS
-
-            css_data_string = css_data_string.replace(
-                '{background_filename}', background_filename)
-            css_data_string = css_data_string.replace(
-                '{background_position}', background_position)
-            css_data_string = css_data_string.replace(
-                '{background_size}', background_size)
-
-            return css_data_string
-
-        return self.__css_data_string
-
-    def get_random_background(self):
-
-        for root, dirs, files in os.walk(BIBED_BACKGROUNDS_DIR):
-            return os.path.join(BIBED_BACKGROUNDS_DIR, random.choice(files))
-
-    def setup_resources_and_css(self):
-
-        self.set_resource_base_path(BIBED_DATA_DIR)
-
-        default_screen = Gdk.Screen.get_default()
-
-        # could also be .icon_theme_get_default()
-        self.icon_theme = Gtk.IconTheme.get_for_screen(default_screen)
-        self.icon_theme.add_resource_path(os.path.join(BIBED_ICONS_DIR))
-
-        # Get an icon path.
-        # icon_info = icon_theme.lookup_icon("my-icon-name", 48, 0)
-        # print icon_info.get_filename()
-
-        self.css_provider = Gtk.CssProvider()
-
-        self.reload_css_provider_data()
-
-        self.style_context = Gtk.StyleContext()
-        self.style_context.add_provider_for_screen(
-            default_screen,
-            self.css_provider,
-            Gtk.STYLE_PROVIDER_PRIORITY_USER)
-
-    def reload_css_provider_data(self):
-
-        # This will fill the CSS string with a random background on the fly.
-        self.css_provider.load_from_data(bytes(self.css_data.encode('utf-8')))
-
     def setup_actions(self):
 
-        action = Gio.SimpleAction.new("about", None)
-        action.connect("activate", self.on_about)
+        action = Gio.SimpleAction.new('about', None)
+        action.connect('activate', self.on_about)
         self.add_action(action)
 
-        action = Gio.SimpleAction.new("quit", None)
-        action.connect("activate", self.on_quit)
+        action = Gio.SimpleAction.new('quit', None)
+        action.connect('activate', self.on_quit)
         self.add_action(action)
 
         # TODO: take back window keypresses here.
@@ -204,11 +134,6 @@ class BibEdApplication(Gtk.Application):
         # self.filter = Gtk.TreeModelFilter(self.data)
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.data_filter_method)
-
-    def launch_splash(self):
-
-        self.splash = BibedSplash()
-        self.splash.start()
 
     def close_splash(self):
 
@@ -298,10 +223,8 @@ class BibEdApplication(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
 
+        # Comes from GtkCssAwareMixin.
         self.setup_resources_and_css()
-
-        # TODO: splash doesn't work.
-        # self.launch_splash()
 
         self.setup_actions()
         self.setup_app_menu()
@@ -321,6 +244,9 @@ class BibEdApplication(Gtk.Application):
         databases_to_select = []
         filenames_to_select = []
 
+        LOGGER.debug('Startup time (GTK setup): {}'.format(
+            seconds_to_string(time.time() - self.time_start)))
+
         # We only allow a single window and raise any existing ones
         if not self.window:
             Notify.init(APP_NAME)
@@ -328,11 +254,17 @@ class BibEdApplication(Gtk.Application):
             # Windows are associated with the application
             # when the last one is closed the application shuts down
             self.window = BibedWindow(title='Main Window', application=self)
-            self.window.show_all()
+
+            # As soon as the main window is here, keep the splash above it.
+            self.splash.set_transient_for(self.window)
 
             if preferences.remember_open_files:
 
                 if memories.open_files:
+
+                    self.splash.set_status(
+                        'Loading {} file(s) and restoring previous session…'.format(
+                            len(memories.open_files)))
 
                     # 1: search_text needs to be loaded first, else it gets
                     # wiped when file_combo is updated with re-loaded files.
@@ -361,6 +293,9 @@ class BibEdApplication(Gtk.Application):
                         # are not fired. Don't know if it's a Gtk or pgi bug.
 
                         for filename in memories.open_files.copy():
+
+                            self.splash.spin()
+
                             try:
                                 database = self.open_file(filename,
                                                           select=False)
@@ -387,6 +322,9 @@ class BibEdApplication(Gtk.Application):
                     if filename == system_database.filename:
                         databases_to_select.append(system_database)
 
+        self.splash.spin()
+        self.window.show_all()
+
         if databases_to_select:
             self.window.set_selected_databases(databases_to_select)
 
@@ -410,9 +348,9 @@ class BibEdApplication(Gtk.Application):
             self.window.search.grab_focus()
 
         # TODO: splash doesn't work.
-        # self.close_splash()
+        self.close_splash()
 
-        LOGGER.info('Startup time (including session restore): {}'.format(
+        LOGGER.debug('Startup time (including session restore): {}'.format(
             seconds_to_string(time.time() - self.time_start)))
 
         self.window.present()
@@ -425,6 +363,8 @@ class BibEdApplication(Gtk.Application):
 
         if 'test' in options:
             LOGGER.info("Test argument received: %s" % options['test'])
+
+        self.splash.spin()
 
         self.activate()
         return 0
@@ -498,7 +438,8 @@ class BibEdApplication(Gtk.Application):
         # assert lprint(filename, message)
 
         if self.files.reload(filename):
-            self.window.do_status_change(message)
+            if message:
+                self.window.do_status_change(message)
 
     def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
         ''' Close a file and impact changes. '''
@@ -521,8 +462,10 @@ class BibEdApplication(Gtk.Application):
 
         about_dialog.set_program_name(APP_NAME)
         about_dialog.set_version(APP_VERSION)
-        about_dialog.set_logo_icon_name('gnome-contacts.png')
-        # os.path.join(BIBED_ICONS_DIR, 'gnome-contacts.png'))
+
+        # logo = self.icon_theme.load_icon('logo', 128, 0)
+        # about_dialog.set_logo(logo)
+        about_dialog.set_logo_icon_name('bibed-logo')
 
         about_dialog.set_copyright('(c) Collectif Cocoliv.es')
 
@@ -606,3 +549,6 @@ class BibEdApplication(Gtk.Application):
         LOGGER.info(
             'Terminating application; ran {}.'.format(
                 seconds_to_string(time.time() - self.time_start)))
+
+        for handler in self.logging_handlers:
+            handler.close()
