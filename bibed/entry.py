@@ -270,7 +270,8 @@ class BibedEntry:
             return bibtexparser_as_text(self.entry[name])
 
         if name == 'keywords':
-            return self.keywords
+            # Return for edition in a Gtk.TextBuffer.
+            return ', '.join(self.keywords)
 
         return bibtexparser_as_text(self.entry.get(name, default))
 
@@ -293,6 +294,7 @@ class BibedEntry:
 
         self._internal_keywords = kw + [self.read_status] + [self.quality]
 
+        # Flatten for bibtexparser
         self.entry['keywords'] = ','.join(self._internal_keywords)
 
     @property
@@ -430,7 +432,7 @@ class BibedEntry:
             tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
                 abstract=esc(abstract)))
 
-        keywords = self._internal_split_tokens(self.keywords)
+        keywords = self.keywords
 
         if keywords:
             if len(keywords) > MAX_KEYWORDS_IN_TOOLTIPS:
@@ -573,7 +575,7 @@ class BibedEntry:
             except ValueError:
                 pass
 
-        return ', '.join(keywords)
+        return keywords
 
     @property
     def quality(self):
