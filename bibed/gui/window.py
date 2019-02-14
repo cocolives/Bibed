@@ -1,4 +1,3 @@
-import os
 import logging
 from operator import attrgetter
 
@@ -24,11 +23,14 @@ from bibed.entry import BibedEntry
 
 from bibed.gtk import Gio, GLib, Gtk, Gdk
 
+from bibed.gui.stack import BibedStack
 from bibed.gui.helpers import (
     flash_field,
     markup_entries,
     message_dialog,
     widget_properties,
+    widgets_show,
+    widgets_hide,
     label_with_markup,
     flat_unclickable_button_in_hbox,
 )
@@ -106,7 +108,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.application = kwargs['application']
 
         self.setup_treeview()
-        self.setup_network()
+        self.setup_booked()
 
         self.setup_searchbar()
         self.setup_stack()
@@ -118,19 +120,8 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def setup_icon(self):
 
-        # icon_filename = os.path.join(
-        #     BIBED_ICONS_DIR, 'gnome-contacts.png')
-        # LOGGER.debug('loading Window icon from {}'.format(icon_filename))
-
-        self.set_icon_name('gnome-contacts')
-        self.set_default_icon_name('gnome-contacts')
-        # self.set_icon_from_file(icon_filename)
-        # self.set_default_icon_from_file(icon_filename)
-
-        # pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        # self.set_default_icon_list([pixbuf])
-        # self.set_icon_list([pixbuf])
-        pass
+        self.set_icon_name('bibed-logo')
+        self.set_default_icon_name('bibed-logo')
 
     def setup_searchbar(self):
 
@@ -147,7 +138,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def setup_stack(self):
 
-        stack = Gtk.Stack()
+        stack = BibedStack(self)
 
         stack.set_transition_type(
             Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -158,23 +149,24 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         stack.add_titled(
             self.treeview_sw,
-            'library',
-            'Local library'
+            'bibed',
+            'bibliography assistant'
         )
 
         stack.child_set_property(
             self.treeview_sw, 'icon-name',
-            'accessories-dictionary-symbolic')
+            'drive-multidisk-symbolic')
 
         stack.add_titled(
-            self.lbl_network,
-            'network',
-            '{app} network'.format(app=APP_NAME)
+            self.lbl_booked,
+            'booked',
+            'Upcoming feature'.format(app=APP_NAME)
         )
 
         stack.child_set_property(
-            self.lbl_network, 'icon-name',
-            'network-workgroup-symbolic')
+            self.lbl_booked, 'icon-name',
+            'accessories-dictionary-symbolic')
+        #
         # 'utilities-system-monitor-symbolic'
 
         self.stack_switcher = stack_switcher
@@ -255,7 +247,9 @@ class BibedWindow(Gtk.ApplicationWindow):
         # bbox_file.add(self.btn_file_select)
         hb.pack_start(self.btn_file_select)
 
-        bbox_entry = widget_properties(
+        # —————————————————————————————————— Buttons that act on one entry only
+
+        bbox_entry_one = widget_properties(
             Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
             classes=['linked'],
         )
@@ -267,7 +261,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_add.add(image)
         self.btn_add.connect('clicked', self.on_entry_add_clicked)
 
-        bbox_entry.add(self.btn_add)
+        bbox_entry_one.add(self.btn_add)
 
         self.btn_dupe = Gtk.Button()
         self.btn_dupe.set_tooltip_markup('Duplicate a bibliography entry into a new one')
@@ -276,9 +270,16 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_dupe.add(image)
         self.btn_dupe.connect('clicked', self.on_entry_duplicate_clicked)
 
-        bbox_entry.add(self.btn_dupe)
+        bbox_entry_one.add(self.btn_dupe)
 
-        bbox_entry.add(Gtk.VSeparator())
+        hb.pack_start(bbox_entry_one)
+
+        # ————————————————————————————— Buttons that act on one or MORE entries
+
+        bbox_entry_multi = widget_properties(
+            Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
+            classes=['linked'],
+        )
 
         self.btn_move = Gtk.Button()
         self.btn_move.set_tooltip_markup('Move selected entries to another database')
@@ -287,7 +288,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_move.add(image)
         self.btn_move.connect('clicked', self.on_entries_move_clicked)
 
-        bbox_entry.add(self.btn_move)
+        bbox_entry_multi.add(self.btn_move)
 
         self.btn_delete = Gtk.Button()  # edit-delete-symbolic
         self.btn_delete.set_tooltip_markup('Trash or delete selected entries')
@@ -296,9 +297,9 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_delete.add(image)
         self.btn_delete.connect('clicked', self.on_entries_delete_clicked)
 
-        bbox_entry.add(self.btn_delete)
+        bbox_entry_multi.add(self.btn_delete)
 
-        hb.pack_start(bbox_entry)
+        hb.pack_start(bbox_entry_multi)
 
         # ————————————————————————————— Right side, from end to start
 
@@ -325,11 +326,11 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.headerbar = hb
 
-    def setup_network(self):
+    def setup_booked(self):
 
-        self.lbl_network = widget_properties(
+        self.lbl_booked = widget_properties(
             label_with_markup(
-                '<big>Bibed Network</big>\n\n'
+                '<big>Something will be here</big>\n\n'
                 'Upcoming feature. Please wait.\n'
                 '(You have no choice, anyway :-D)\n'
                 'Come discuss it: '
@@ -440,9 +441,12 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         # assert lprint_caller_name(levels=5)
 
-        how_many_files = self.application.files.num_user
-
-        widgets_to_change = (
+        bibed_widgets_base = (
+            self.btn_file_new,
+            self.btn_file_open,
+            self.btn_search,
+        )
+        bibed_widgets_conditional = (
             # file-related buttons
             self.btn_file_select,
             # TODO: insert popover buttons here,
@@ -452,20 +456,23 @@ class BibedWindow(Gtk.ApplicationWindow):
             self.btn_add, self.btn_dupe, self.btn_move, self.btn_delete,
         )
 
-        if how_many_files:
-            for widget in widgets_to_change:
-                widget.show()
+        if self.stack.is_child_visible('bibed'):
+
+            widgets_show(bibed_widgets_base)
+
+            how_many_files = self.application.files.num_user
+
+            if how_many_files:
+                widgets_show(bibed_widgets_conditional)
+
+            else:
+                widgets_hide(bibed_widgets_conditional)
+
+            if sync_children:
+                self.files_popover.sync_buttons_states(sync_parent=False)
 
         else:
-            for widget in widgets_to_change:
-                widget.hide()
-
-        if sync_children:
-            self.files_popover.sync_buttons_states(sync_parent=False)
-
-        # TODO: WHY THIS ?
-        # self.on_treeview_selection_changed()
-        pass
+            widgets_hide(bibed_widgets_base + bibed_widgets_conditional)
 
     def entry_selection_buttons_set_sensitive(self):
 
