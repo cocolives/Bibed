@@ -352,10 +352,6 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
                         # of the current method.
                         self.session.databases_to_select.append(database)
 
-                for i in range(10):
-                    # self.splash.spin()
-                    time.sleep(0.25)
-
     def session_finish(self):
 
         if sorted(self.session.filenames_to_select) != sorted(
