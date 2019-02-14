@@ -1007,6 +1007,26 @@ class BibedWindow(Gtk.ApplicationWindow):
             delete_callback, selected_entries
         )
 
+    def entry_edit(self, entry, message_base=None):
+
+        entry_edit_dialog = BibedEntryDialog(parent=self, entry=entry)
+
+        response = entry_edit_dialog.run()
+
+        if response:
+            # Update the number of entries if relevant.
+            self.update_title()
+
+            if message_base is None:
+                message_base = '{entry} modified in {database}.'
+
+            message = message_base.format(
+                entry=response, database=friendly_filename(response.database.filename))
+
+            self.do_status_change(message)
+
+        entry_edit_dialog.destroy()
+
     # ——————————————————————————————————————————————————————————— Other buttons
 
     def on_search_clicked(self, button):
