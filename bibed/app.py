@@ -504,9 +504,9 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
         about_dialog.set_comments(comments)
 
-        about_dialog.set_website('https://cocoliv.es/library/bibed')
+        about_dialog.set_website('https://bibed.cocoliv.es/')
         about_dialog.set_website_label('Site web de Bibed')
-        about_dialog.set_license_type(Gtk.License.GPL_3_0)
+        about_dialog.set_license_type(Gtk.License.GPL_3_0_ONLY)
 
         about_dialog.set_authors([
             'Olivier Cortès <olive@cocoliv.es>',
@@ -517,12 +517,17 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         ])
         about_dialog.set_artists([
             'Corinne Carnevali <coco@cocoliv.es>',
+            'Timothée Cortès <tim@cocoliv.es>',
         ])
         about_dialog.set_translator_credits(
             'Olivier Cortès <olive@cocoliv.es>'
         )
 
-        # add_credit_section(section_name, people)
+        about_dialog.add_credit_section('Supporters', [
+            'Timothée Cortès <tim@cocoliv.es>',
+            'Anaïs Cortès <ana@cocoliv.es>',
+            'Louise Cortès Carnevali <lou@cocoliv.es>',
+        ])
         # https://lazka.github.io/pgi-docs/Gtk-3.0/classes/AboutDialog.html#Gtk.AboutDialog.add_credit_section
 
         about_dialog.present()
