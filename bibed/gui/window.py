@@ -41,7 +41,6 @@ from bibed.gui.entry import BibedEntryDialog
 from bibed.gui.dialogs import BibedMoveDialog
 
 
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -270,6 +269,17 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         bbox_entry.add(self.btn_add)
 
+        self.btn_dupe = Gtk.Button()
+        self.btn_dupe.set_tooltip_markup('Duplicate a bibliography entry into a new one')
+        icon = Gio.ThemedIcon(name='edit-copy-symbolic')
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_dupe.add(image)
+        self.btn_dupe.connect('clicked', self.on_entry_duplicate_clicked)
+
+        bbox_entry.add(self.btn_dupe)
+
+        bbox_entry.add(Gtk.VSeparator())
+
         self.btn_move = Gtk.Button()
         self.btn_move.set_tooltip_markup('Move selected entries to another database')
         icon = Gio.ThemedIcon(name='go-next-symbolic')
@@ -439,7 +449,7 @@ class BibedWindow(Gtk.ApplicationWindow):
             #       or forward state to popover.
 
             # Entry-related buttons.
-            self.btn_add, self.btn_move, self.btn_delete,
+            self.btn_add, self.btn_dupe, self.btn_move, self.btn_delete,
         )
 
         if how_many_files:
@@ -455,19 +465,47 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         # TODO: WHY THIS ?
         # self.on_treeview_selection_changed()
+        pass
 
-    def entry_selection_buttons_set_sensitive(self, is_sensitive):
+    def entry_selection_buttons_set_sensitive(self):
 
-        for button in (self.btn_move, self.btn_delete, ):
-            button.set_sensitive(is_sensitive)
+        btns_none_on = tuple()
+        btns_none_off = (self.btn_dupe, self.btn_move, self.btn_delete, )
+
+        btns_one_on = (self.btn_dupe, self.btn_move, self.btn_delete, )
+        btns_one_off = tuple()
+
+        btns_multi_on = (self.btn_move, self.btn_delete, )
+        btns_multi_off = (self.btn_dupe, )
+
+        def set_sensitive(btns_on, btns_off):
+
+            for button in btns_on:
+                button.set_sensitive(True)
+
+            for button in btns_off:
+                button.set_sensitive(False)
+
+        try:
+            selected_count = len(self.treeview.get_selected_rows())
+
+        except TypeError:
+            selected_count = 0
+
+        if selected_count > 1:
+            set_sensitive(btns_multi_on, btns_multi_off)
+
+        elif selected_count == 1:
+            set_sensitive(btns_one_on, btns_one_off)
+
+        else:
+            set_sensitive(btns_none_on, btns_none_off)
 
     # ———————————————————————————————————————————————————————————— “ON” actions
 
     def on_treeview_selection_changed(self, *args, **kwargs):
 
-        self.entry_selection_buttons_set_sensitive(
-            bool(self.treeview.get_selected_rows())
-        )
+        self.entry_selection_buttons_set_sensitive()
 
     def on_maximize_toggle(self, action, value):
 
@@ -636,6 +674,10 @@ class BibedWindow(Gtk.ApplicationWindow):
         elif ctrl and keyval == Gdk.KEY_n:
             if self.application.files.num_user:
                 self.btn_add.emit('clicked')
+
+        elif ctrl and keyval == Gdk.KEY_d:
+            if len(self.treeview.get_selected_rows()) == 1:
+                self.btn_dupe.emit('clicked')
 
         elif not ctrl and keyval == Gdk.KEY_Delete:
             self.btn_delete.emit('clicked')
@@ -819,6 +861,7 @@ class BibedWindow(Gtk.ApplicationWindow):
             popover.popup()
 
     # ——————————————————————————————————————————————————————————— Entry buttons
+
     def autoselect_destination(self):
 
         get_database = self.application.files.get_database
@@ -883,22 +926,18 @@ class BibedWindow(Gtk.ApplicationWindow):
 
             entry.database = self.autoselect_destination()
 
-            entry_edit_dialog = BibedEntryDialog(
-                parent=self, entry=entry)
+            return self.entry_edit(
+                entry, message_base='{entry} added to {database}.')
 
-            response = entry_edit_dialog.run()
+    def on_entry_duplicate_clicked(self, button):
 
-            if response:
-                # Update the number of entries if relevant.
-                self.update_title()
+        # Actions can be triggered only if one entry selected.
+        selected_entry = self.treeview.get_selected_entries()[0]
 
-                self.do_status_change(
-                    '{entry} added to {database}.'.format(
-                        entry=response, database=os.path.basename(response.database.filename)))
+        dupe_entry = BibedEntry.new_from_entry(selected_entry)
 
-            entry_edit_dialog.destroy()
-
-        entry_add_dialog.destroy()
+        return self.entry_edit(
+            dupe_entry, message_base='{entry} added to {database}.')
 
     def on_entries_move_clicked(self, button):
 
@@ -1006,6 +1045,26 @@ class BibedWindow(Gtk.ApplicationWindow):
             title, secondary_text,
             delete_callback, selected_entries
         )
+
+    def entry_edit(self, entry, message_base=None):
+
+        entry_edit_dialog = BibedEntryDialog(parent=self, entry=entry)
+
+        response = entry_edit_dialog.run()
+
+        if response:
+            # Update the number of entries if relevant.
+            self.update_title()
+
+            if message_base is None:
+                message_base = '{entry} modified in {database}.'
+
+            message = message_base.format(
+                entry=response, database=friendly_filename(response.database.filename))
+
+            self.do_status_change(message)
+
+        entry_edit_dialog.destroy()
 
     # ——————————————————————————————————————————————————————————— Other buttons
 

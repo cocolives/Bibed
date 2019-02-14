@@ -277,20 +277,7 @@ class BibedEntryTreeViewMixin:
 
         assert(isinstance(entry, BibedEntry))
 
-        entry_edit_dialog = BibedEntryDialog(
-            parent=self.window, entry=entry)
-
-        response = entry_edit_dialog.run()
-
-        if response:
-            # Update the number of entries if relevant.
-            self.window.update_title()
-
-            self.do_status_change(
-                '{entry} modified in {database}.'.format(
-                    entry=response, database=os.path.basename(response.database.filename)))
-
-        entry_edit_dialog.destroy()
+        return self.window.entry_edit(entry)
 
     # —————————————————————————————————————————————————————————— “Copy” actions
 
