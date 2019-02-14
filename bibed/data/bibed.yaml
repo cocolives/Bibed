@@ -1094,8 +1094,11 @@ fields:
       - comment
       - keywords
     set:
+      optional: []
       required:
       - entryset
+      stacked:
+      - comment
     software:
       optional:
       - subtitle
@@ -1631,7 +1634,17 @@ types:
       but related to the <span weight="bold" face="monospace">@collection</span>
       entry type. The standard styles will treat this entry type as an alias
       for <span weight="bold" face="monospace">@incollection</span>.
-    suppperiodical: Supplemental material in a <span weight="bold" face="monospace">@periodical</span>. This type is similar to @suppbook but related to the <span weight="bold" face="monospace">@periodical</span> entry type. The role of this entry type may be more obvious if you bear in mind that the <span weight="bold" face="monospace">@article</span> type could also be called <span weight="bold" face="monospace">@inperiodical</span>. This type may be useful when referring to items such as regular columns, obituaries, letters to the editor, etc. which only have a generic title. Style guides may require such items to be formatted differently from articles in the strict sense of the word. The standard styles will treat this entry type as an alias for <span weight="bold" face="monospace">@article</span>.
+    suppperiodical: Supplemental material in a <span weight="bold" face="monospace">@periodical</span>.
+      This type is similar to @suppbook but related to the <span weight="bold"
+      face="monospace">@periodical</span> entry type. The role of this entry
+      type may be more obvious if you bear in mind that the <span weight="bold"
+      face="monospace">@article</span> type could also be called <span weight="bold"
+      face="monospace">@inperiodical</span>. This type may be useful when
+      referring to items such as regular columns, obituaries, letters to the
+      editor, etc. which only have a generic title. Style guides may require
+      such items to be formatted differently from articles in the strict sense
+      of the word. The standard styles will treat this entry type as an alias
+      for <span weight="bold" face="monospace">@article</span>.
     thesis: A thesis written for an educational institution to satisfy the
       requirements for a degree. Use the <span face="monospace">type</span>
       field to specify the type of thesis.
