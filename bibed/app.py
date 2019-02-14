@@ -22,12 +22,15 @@ from bibed.constants import (
 from bibed.foundations import (
     touch_file,
     set_process_title,
+    Anything,
 )
 
 from bibed.strings import (
     to_lower_if_not_none,
     seconds_to_string,
 )
+
+from bibed.parallel import run_and_wait_on
 
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
@@ -135,11 +138,6 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.data_filter_method)
 
-    def close_splash(self):
-
-        self.splash.destroy()
-        self.splash = None
-
     # ——————————————————————————————————————————————————————— data store filter
 
     def data_filter_method(self, model, iter, data):
@@ -239,11 +237,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def do_activate(self):
 
-        # For GUI-setup-order related reasons,
-        # we need to delay some things.
-        search_grab_focus = False
-        databases_to_select = []
-        filenames_to_select = []
+        self.session_prepare()
 
         LOGGER.debug('Startup time (GTK setup): {}'.format(
             seconds_to_string(time.time() - self.time_start)))
@@ -259,96 +253,11 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             # As soon as the main window is here, keep the splash above it.
             self.splash.set_transient_for(self.window)
 
-            if preferences.remember_open_files:
+            if preferences.remember_open_files and memories.open_files:
+                run_and_wait_on(self.session_restore)
 
-                if memories.open_files:
+        self.session_finish()
 
-                    self.splash.set_status(
-                        'Loading {} file(s) and restoring previous session…'.format(
-                            len(memories.open_files)))
-
-                    # 1: search_text needs to be loaded first, else it gets
-                    # wiped when file_combo is updated with re-loaded files.
-                    # 2: don't load it if there are no open_files.
-                    # 3: dont call do_filter_data_store(), it will be called
-                    # by on_files_combo_changed() when files are added.
-                    if memories.search_text is not None:
-                        self.window.search.set_text(memories.search_text)
-                        search_grab_focus = True
-
-                    # Idem, same problem.
-                    if memories.selected_filenames is not None:
-                        filenames_to_select = memories.selected_filenames
-
-                    else:
-                        filenames_to_select = memories.open_files.copy()
-
-                    # Then, load all previously opened files.
-                    # Get a copy to avoid the set being changed while we load,
-                    # because in some corner cases the live “re-ordering”
-                    # makes a file loaded two times.
-
-                    with self.window.block_signals():
-                        # We need to block signals and let win.do_activate()
-                        # Update everything, else some on_*_changed() signals
-                        # are not fired. Don't know if it's a Gtk or pgi bug.
-
-                        for filename in memories.open_files.copy():
-
-                            self.splash.spin()
-
-                            try:
-                                database = self.open_file(filename,
-                                                          select=False)
-
-                            except (IOError, OSError):
-                                # TODO: move this into store ?
-                                memories.remove_open_file(filename)
-
-                            else:
-                                if filename in filenames_to_select:
-                                    # we have to convert filenames to databases
-                                    # because all of this seems to happen too
-                                    # fast for store to be ready to return
-                                    # .get_database() results before the end
-                                    # of the current method.
-                                    databases_to_select.append(database)
-
-        if sorted(filenames_to_select) != sorted([x.filename for x in databases_to_select]):
-            # Most probably a system file was selected before closing.
-            # Try to get it again.
-
-            for filename in filenames_to_select:
-                for system_database in self.files.system_databases:
-                    if filename == system_database.filename:
-                        databases_to_select.append(system_database)
-
-        self.splash.spin()
-        self.window.show_all()
-
-        if databases_to_select:
-            self.window.set_selected_databases(databases_to_select)
-
-            # Selecting a system database is the only case that doesn't
-            # trigger a full window / treeview update. Fake it.
-            if len(tuple(self.files.selected_system_databases)):
-                self.window.on_selected_files_changed()
-        else:
-            if not self.files.num_user:
-                # No database. Trigger a treeview filter
-                # anyway to hide the system entries if any.
-                self.window.on_selected_files_changed()
-                self.window.do_activate()
-
-            else:
-                self.window.files_popover.listbox.select_all()
-                # self.window.do_activate()
-
-        if search_grab_focus:
-            self.window.searchbar.set_search_mode(True)
-            self.window.search.grab_focus()
-
-        # TODO: splash doesn't work.
         self.close_splash()
 
         LOGGER.debug('Startup time (including session restore): {}'.format(
@@ -365,8 +274,6 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         if 'test' in options:
             LOGGER.info("Test argument received: %s" % options['test'])
 
-        self.splash.spin()
-
         self.activate()
         return 0
 
@@ -379,8 +286,116 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             LOGGER.warning('Interrupted, terminating properly…')
             self.on_quit(None, None)
 
+    # ———————————————————————————————————————————————————————— Session & splash
+
+    def close_splash(self):
+
+        self.splash.destroy()
+        self.splash = None
+
+    def session_prepare(self):
+
+        # Needed for the thread to prepare things for the main loop.
+        self.session = Anything()
+        self.session.search_grab_focus = False
+        self.session.databases_to_select = []
+        self.session.filenames_to_select = []
+
+    def session_restore(self):
+
+        self.splash.set_status(
+            'Loading {} file(s) and restoring previous session…'.format(
+                len(memories.open_files)))
+
+        # 1: search_text needs to be loaded first, else it gets
+        # wiped when file_combo is updated with re-loaded files.
+        # 2: don't load it if there are no open_files.
+        # 3: dont call do_filter_data_store(), it will be called
+        # by on_files_combo_changed() when files are added.
+        if memories.search_text is not None:
+            self.window.search.set_text(memories.search_text)
+            self.session.search_grab_focus = True
+
+        # Idem, same problem.
+        if memories.selected_filenames is not None:
+            self.session.filenames_to_select = memories.selected_filenames
+
+        else:
+            self.session.filenames_to_select = memories.open_files.copy()
+
+        # Then, load all previously opened files.
+        # Get a copy to avoid the set being changed while we load,
+        # because in some corner cases the live “re-ordering”
+        # makes a file loaded two times.
+
+        with self.window.block_signals():
+            # We need to block signals and let win.do_activate()
+            # Update everything, else some on_*_changed() signals
+            # are not fired. Don't know if it's a Gtk or pgi bug.
+
+            for filename in memories.open_files.copy():
+
+                try:
+                    database = self.open_file(filename,
+                                              select=False)
+
+                except (IOError, OSError):
+                    # TODO: move this into store ?
+                    memories.remove_open_file(filename)
+
+                else:
+                    if filename in self.session.filenames_to_select:
+                        # we have to convert filenames to databases
+                        # because all of this seems to happen too
+                        # fast for store to be ready to return
+                        # .get_database() results before the end
+                        # of the current method.
+                        self.session.databases_to_select.append(database)
+
+                for i in range(10):
+                    # self.splash.spin()
+                    time.sleep(0.25)
+
+    def session_finish(self):
+
+        if sorted(self.session.filenames_to_select) != sorted(
+                [x.filename for x in self.session.databases_to_select]):
+            # Most probably a system file was selected before closing.
+            # Try to get it again.
+
+            for filename in self.session.filenames_to_select:
+                for system_database in self.files.system_databases:
+                    if filename == system_database.filename:
+                        self.session.databases_to_select.append(system_database)
+
+        self.window.show_all()
+
+        if self.session.databases_to_select:
+            self.window.set_selected_databases(self.session.databases_to_select)
+
+            # Selecting a system database is the only case that doesn't
+            # trigger a full window / treeview update. Fake it.
+            if len(tuple(self.files.selected_system_databases)):
+                self.window.on_selected_files_changed()
+        else:
+            if not self.files.num_user:
+                # No database. Trigger a treeview filter
+                # anyway to hide the system entries if any.
+                self.window.on_selected_files_changed()
+                self.window.do_activate()
+
+            else:
+                self.window.files_popover.listbox.select_all()
+                # self.window.do_activate()
+
+        if self.session.search_grab_focus:
+            self.window.searchbar.set_search_mode(True)
+            self.window.search.grab_focus()
+
+        # not necessary anymore.
+        del self.session
+
     # ———————————————————————————————————————————— higher level file operations
-    # TODO: move them to main window?
 
     def create_file(self, filename):
         ''' Create a new BIB file, then open it in the application. '''

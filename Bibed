@@ -35,6 +35,7 @@ import logging
 import logging.handlers
 
 from bibed.foundations import GZipRotator, GZipNamer
+from bibed.parallel import run_and_wait_on
 from bibed.constants import BIBED_LOG_FILE
 
 
@@ -99,19 +100,13 @@ if __name__ == "__main__":
     if gpod('use_sentry'):
         splash.set_status('Connecting issue collector to {}…'.format(gpod('sentry_url')))
 
-        splash.spin()
-
-        sentry.enable()
-
-        splash.spin()
+        run_and_wait_on(sentry.enable)
 
         LOGGER.debug('Sentry startup time: {}'.format(
             seconds_to_string(time.time() - time_start)))
 
     app = BibEdApplication(time_start=time_start, splash=splash,
                            logging_handlers=logging_handlers)
-
-    splash.spin()
 
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)
