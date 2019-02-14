@@ -32,6 +32,7 @@ http://www.code-couleur.com/dictionnaire/couleur-c.html
     padding-right: 10px;
     font-size: 20px;
     color: black;
+    /* DEBUG: border: 1px solid #cdc7c2;*/
 }
 
 button.close-all {
