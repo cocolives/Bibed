@@ -114,8 +114,6 @@ class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
             'Whatever. Nevermind.'
         )
 
-        print('SUB TO', sub_texts[self.cycle % len(sub_texts)])
-
         self.subtitle.set_markup(sub_texts[self.cycle % len(sub_texts)])
         self.cycle += 1
 
