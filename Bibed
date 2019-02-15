@@ -35,7 +35,6 @@ import logging
 import logging.handlers
 
 from bibed.foundations import GZipRotator, GZipNamer
-from bibed.parallel import run_and_wait_on
 from bibed.constants import BIBED_LOG_FILE
 
 
@@ -74,7 +73,7 @@ def setup_logging(level=logging.INFO):
     return (mh, rfh)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     time_start = time.time()
 
     if __debug__:
@@ -86,8 +85,12 @@ if __name__ == "__main__":
     logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
     logging.getLogger('bibtexparser').setLevel(logging.CRITICAL)
 
+    import bibed.locale
+    bibed.locale.init()
+
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
+    from bibed.parallel import run_and_wait_on
     from bibed.strings import seconds_to_string
     from bibed.gtk import Gtk  # NOQA
     from bibed.gui.splash import start_splash
