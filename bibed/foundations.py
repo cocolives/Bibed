@@ -124,6 +124,27 @@ def touch_file(filename):
         LOGGER.debug('touch_file(): created “{}”.'.format(filename))
 
 
+def xdg_get_system_data_dirs():
+    ''' http://standards.freedesktop.org/basedir-spec/latest/ '''
+
+    if is_windows():
+        from gi.repository import GLib
+        dirs = []
+
+        for dir_ in GLib.get_system_data_dirs():
+            # TODO: glib2fsn(dir_)
+            dirs.append(dir_)
+
+        return dirs
+
+    data_dirs = os.getenv('XDG_DATA_DIRS')
+
+    if data_dirs:
+        return list(map(os.path.abspath, data_dirs.split(':')))
+
+    else:
+        return ('/usr/local/share/', '/usr/share/')
+
 # ————————————————————————————————————————————————————————————————————— Classes
 
 class GZipNamer:
