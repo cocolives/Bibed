@@ -2,7 +2,9 @@ import os
 import bibtexparser
 
 from bibed.user import (
+    # import other CONSTANTS from sub-levels for higher levels.
     BIBED_LOG_DIR,
+    BIBED_LOG_FILE,
 )
 
 from bibed.foundations import (
@@ -17,8 +19,6 @@ APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
 APP_VERSION = '0.9.9.4-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
-
-BIBED_LOG_FILE = os.path.join(BIBED_LOG_DIR, 'bibed.log')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
 BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'

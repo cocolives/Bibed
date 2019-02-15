@@ -35,7 +35,7 @@ import logging
 import logging.handlers
 
 from bibed.foundations import GZipRotator, GZipNamer
-from bibed.constants import BIBED_LOG_FILE
+from bibed.user import BIBED_LOG_FILE
 
 
 LOGGER = logging.getLogger(__name__)
