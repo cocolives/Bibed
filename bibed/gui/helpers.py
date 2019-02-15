@@ -495,6 +495,20 @@ def debug_widget(widget):
     print('\tmargin_end={0}'.format(widget.props.margin_end))
 
 
+def widgets_show(widgets):
+    ''' Show a list of widgets. '''
+
+    for widget in widgets:
+        widget.show()
+
+
+def widgets_hide(widgets):
+    ''' Hide a list of widgets. '''
+
+    for widget in widgets:
+        widget.hide()
+
+
 def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, can_focus=None, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA

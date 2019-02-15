@@ -1,12 +1,18 @@
 
-from bibed.gtk import Gtk, Gdk
+from bibed.gtk import GLib, Gtk, Gdk
 from bibed.constants import (
+    APP_NAME,
     GRID_BORDER_WIDTH,
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
 )
+from bibed.locale import _
 from bibed.gui.css import GtkCssAwareMixin
-from bibed.gui.helpers import add_classes, widget_properties
+from bibed.gui.helpers import (
+    add_classes,
+    widget_properties,
+    label_with_markup,
+)
 
 
 class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
@@ -19,14 +25,15 @@ class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_decorated(False)
         self.set_keep_above(True)
-        self.set_default_size(300, 150)
+        self.set_default_size(400, 150)
+        self.set_size_request(400, 150)
         self.set_type_hint(Gdk.WindowTypeHint.SPLASHSCREEN)
         self.set_urgency_hint(True)
 
         add_classes(self, ['splash-screen'])
 
         self.button = Gtk.Button()
-        self.button.connect('clicked', self.hide_splash)
+        self.button.connect('clicked', self.hide)
 
         self.ingrid = Gtk.Grid()
         self.ingrid.set_border_width(GRID_BORDER_WIDTH)
@@ -38,15 +45,37 @@ class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
         self.setup_resources_and_css()
 
         pixcon = self.icon_theme.load_icon('bibed-logo', 256, 0)
-        self.icon = Gtk.Image.new_from_pixbuf(pixcon)
+        self.icon = widget_properties(
+            Gtk.Image.new_from_pixbuf(pixcon),
+            expand=False,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.START,
+        )
 
-        self.lbl = Gtk.Label(xalign=0.5)
-        self.lbl.set_markup('<span size="32768"><b>Bibed</b></span>\nBibliographic Assistant')
+        self.title = widget_properties(
+            label_with_markup(
+                '<span size="32768"><b>{app}</b></span>'.format(app=APP_NAME),
+                xalign=0.0),
+            expand=True,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.END,
+        )
+        self.subtitle = widget_properties(
+            label_with_markup('', xalign=0.0),
+            expand=True,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.START,
+        )
+        self.subtitle.set_size_request(300, -1)
 
-        self.status_box = Gtk.HBox()
+        self.stagrid = Gtk.Grid()
+        self.stagrid.set_column_spacing(GRID_COLS_SPACING)
 
-        self.status = Gtk.Label(xalign=0.0)
-        self.status.set_markup('Loading…')
+        self.status = widget_properties(
+            label_with_markup(_('Loading…'), xalign=0.0),
+            expand=True,
+            valign=Gtk.Align.CENTER,
+        )
 
         self.spinner = widget_properties(
             Gtk.Spinner(),
@@ -57,36 +86,56 @@ class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
         self.spinner.start()
 
         # Grid.attach(widget, left, top, width, height)
-        self.ingrid.attach(self.icon, 0, 0, 1, 1)
-        self.ingrid.attach(self.lbl, 1, 0, 1, 1)
+        self.ingrid.attach(self.icon, 0, 0, 1, 2)
+        self.ingrid.attach(self.title, 1, 0, 1, 1)
+        self.ingrid.attach(self.subtitle, 1, 1, 1, 1)
 
-        self.status_box.pack_start(self.status, True, True, 0)
-        self.status_box.pack_start(self.spinner, False, False, 0)
-        self.ingrid.attach(self.status_box, 0, 1, 2, 1)
+        self.stagrid.attach(self.status, 0, 0, 1, 1)
+        self.stagrid.attach(self.spinner, 1, 0, 1, 1)
+        self.ingrid.attach(self.stagrid, 0, 2, 2, 1)
 
         self.button.add(self.ingrid)
 
         self.add(self.button)
 
+        self.cycle = 0
+        self.cycle_subtitle()
+
+        self.cycle_func = GLib.timeout_add(2000, self.cycle_subtitle)
+
     def set_transient_for(self, parent):
 
         super().set_transient_for(parent)
-        self.spin()
+
+    def cycle_subtitle(self):
+
+        sub_texts = (
+            _('Bibliographic Assistant'),
+            _('or Bibliogra<b>phy</b> Assistant?'),
+            _('Bibliography Editor, perhaps?'),
+            _('Whatever. Nevermind.'),
+        )
+
+        self.subtitle.set_markup(sub_texts[self.cycle % len(sub_texts)])
+        self.cycle += 1
+
+        return True
 
     def set_status(self, message):
 
         self.status.set_markup(message)
 
-        self.spin()
+    def hide(self, *args, **kwargs):
 
-    def spin(self):
+        GLib.source_remove(self.cycle_func)
 
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        super().hide()
 
-    def hide_splash(self, *args):
+    def destroy(self, *args, **kwargs):
 
         self.hide()
+
+        super().destroy()
 
 
 def start_splash():

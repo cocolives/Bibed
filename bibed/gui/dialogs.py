@@ -80,6 +80,8 @@ class BibedMoveDialog(Gtk.MessageDialog):
 
     def setup_destinations(self):
 
+        first_database = self.entries[0].database
+
         radios_box = widget_properties(
             Gtk.VBox(),
             expand=False,
@@ -98,10 +100,6 @@ class BibedMoveDialog(Gtk.MessageDialog):
                 first_button = button = \
                     Gtk.RadioButton.new(None)
 
-                # Else, if user just validates, we have no destination,
-                # while in the dialog the first radio IS selected.
-                self.destination_database = database
-
             else:
                 button = Gtk.RadioButton.new_from_widget(first_button)
 
@@ -113,6 +111,11 @@ class BibedMoveDialog(Gtk.MessageDialog):
             button.connect('toggled',
                            self.on_destination_toggled,
                            database)
+
+            if database == first_database:
+                # Select the database of the first entry
+                # to signify where they come from.
+                button.set_active(True)
 
             radios_box.add(button)
 

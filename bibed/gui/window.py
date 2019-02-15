@@ -1,4 +1,3 @@
-import os
 import logging
 from operator import attrgetter
 
@@ -16,7 +15,7 @@ from bibed.constants import (
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
 )
-
+from bibed.locale import _, n_
 from bibed.preferences import memories, gpod
 from bibed.user import get_user_home_directory
 from bibed.strings import friendly_filename
@@ -24,11 +23,14 @@ from bibed.entry import BibedEntry
 
 from bibed.gtk import Gio, GLib, Gtk, Gdk
 
+from bibed.gui.stack import BibedStack
 from bibed.gui.helpers import (
     flash_field,
     markup_entries,
     message_dialog,
     widget_properties,
+    widgets_show,
+    widgets_hide,
     label_with_markup,
     flat_unclickable_button_in_hbox,
 )
@@ -60,16 +62,16 @@ class BibedWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.set_name('Bibed')
+        self.set_name(APP_NAME)
 
         # This will be in the windows group and have the "win" prefix
         max_action = Gio.SimpleAction.new_stateful(
-            "maximize", None, GLib.Variant.new_boolean(False))
-        max_action.connect("change-state", self.on_maximize_toggle)
+            'maximize', None, GLib.Variant.new_boolean(False))
+        max_action.connect('change-state', self.on_maximize_toggle)
         self.add_action(max_action)
 
         # Keep it in sync with the actual state
-        self.connect("notify::is-maximized",
+        self.connect('notify::is-maximized',
                      lambda obj, pspec: max_action.set_state(
                          GLib.Variant.new_boolean(obj.props.is_maximized)))
 
@@ -106,7 +108,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.application = kwargs['application']
 
         self.setup_treeview()
-        self.setup_network()
+        self.setup_booked()
 
         self.setup_searchbar()
         self.setup_stack()
@@ -118,19 +120,8 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def setup_icon(self):
 
-        # icon_filename = os.path.join(
-        #     BIBED_ICONS_DIR, 'gnome-contacts.png')
-        # LOGGER.debug('loading Window icon from {}'.format(icon_filename))
-
-        self.set_icon_name('gnome-contacts')
-        self.set_default_icon_name('gnome-contacts')
-        # self.set_icon_from_file(icon_filename)
-        # self.set_default_icon_from_file(icon_filename)
-
-        # pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_filename)
-        # self.set_default_icon_list([pixbuf])
-        # self.set_icon_list([pixbuf])
-        pass
+        self.set_icon_name('bibed-logo')
+        self.set_default_icon_name('bibed-logo')
 
     def setup_searchbar(self):
 
@@ -147,7 +138,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def setup_stack(self):
 
-        stack = Gtk.Stack()
+        stack = BibedStack(self)
 
         stack.set_transition_type(
             Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
@@ -158,23 +149,24 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         stack.add_titled(
             self.treeview_sw,
-            'library',
-            'Local library'
+            'bibed',
+            _('bibliography assistant')
         )
 
         stack.child_set_property(
             self.treeview_sw, 'icon-name',
-            'accessories-dictionary-symbolic')
+            'drive-multidisk-symbolic')
 
         stack.add_titled(
-            self.lbl_network,
-            'network',
-            '{app} network'.format(app=APP_NAME)
+            self.lbl_booked,
+            'booked',
+            _('Upcoming feature').format(app=APP_NAME)
         )
 
         stack.child_set_property(
-            self.lbl_network, 'icon-name',
-            'network-workgroup-symbolic')
+            self.lbl_booked, 'icon-name',
+            'accessories-dictionary-symbolic')
+        #
         # 'utilities-system-monitor-symbolic'
 
         self.stack_switcher = stack_switcher
@@ -197,7 +189,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         # to uniquely identify the source of a message
         self.context_id = self.statusbar.get_context_id("example")
 
-        self.do_status_change("Ready. Waiting for action…")
+        self.do_status_change(_('Ready. Waiting for action…'))
 
     def setup_headerbar(self):
 
@@ -216,7 +208,9 @@ class BibedWindow(Gtk.ApplicationWindow):
         )
 
         self.btn_file_new = Gtk.Button()
-        self.btn_file_new.set_tooltip_markup('Create an empty BIB database')
+        self.btn_file_new.set_tooltip_markup(
+            _('Create an empty BIB database')
+        )
         self.btn_file_new.connect('clicked', self.on_file_new_clicked)
         icon = Gio.ThemedIcon(name='document-new-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
@@ -226,7 +220,9 @@ class BibedWindow(Gtk.ApplicationWindow):
         bbox_file.add(self.btn_file_new)
 
         self.btn_file_open = Gtk.Button()
-        self.btn_file_open.set_tooltip_markup('Open an existing BIB database')
+        self.btn_file_open.set_tooltip_markup(
+            _('Open an existing BIB database')
+        )
         self.btn_file_open.connect('clicked', self.on_file_open_clicked)
         icon = Gio.ThemedIcon(name='document-open-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
@@ -239,9 +235,11 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         # object-select-symbolic
         self.btn_file_select = Gtk.Button()
-        self.btn_file_select.set_tooltip_markup('Select databases to display in main view')
+        self.btn_file_select.set_tooltip_markup(
+            _('Select databases to display in main view')
+        )
         self.btn_file_select.add(flat_unclickable_button_in_hbox(
-            'file_select', 'Library',
+            'file_select', _('Library'),
             icon_name='drive-multidisk-symbolic',
         ))
 
@@ -255,55 +253,74 @@ class BibedWindow(Gtk.ApplicationWindow):
         # bbox_file.add(self.btn_file_select)
         hb.pack_start(self.btn_file_select)
 
-        bbox_entry = widget_properties(
+        # —————————————————————————————————— Buttons that act on one entry only
+
+        bbox_entry_one = widget_properties(
             Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
             classes=['linked'],
         )
 
         self.btn_add = Gtk.Button()
-        self.btn_add.set_tooltip_markup('Add a bibliography entry')
+        self.btn_add.set_tooltip_markup(
+            _('Add a bibliography entry')
+        )
         icon = Gio.ThemedIcon(name='list-add-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_add.add(image)
         self.btn_add.connect('clicked', self.on_entry_add_clicked)
 
-        bbox_entry.add(self.btn_add)
+        bbox_entry_one.add(self.btn_add)
 
         self.btn_dupe = Gtk.Button()
-        self.btn_dupe.set_tooltip_markup('Duplicate a bibliography entry into a new one')
+        self.btn_dupe.set_tooltip_markup(
+            _('Duplicate a bibliography entry into a new one')
+        )
         icon = Gio.ThemedIcon(name='edit-copy-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_dupe.add(image)
         self.btn_dupe.connect('clicked', self.on_entry_duplicate_clicked)
 
-        bbox_entry.add(self.btn_dupe)
+        bbox_entry_one.add(self.btn_dupe)
 
-        bbox_entry.add(Gtk.VSeparator())
+        hb.pack_start(bbox_entry_one)
+
+        # ————————————————————————————— Buttons that act on one or MORE entries
+
+        bbox_entry_multi = widget_properties(
+            Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
+            classes=['linked'],
+        )
 
         self.btn_move = Gtk.Button()
-        self.btn_move.set_tooltip_markup('Move selected entries to another database')
+        self.btn_move.set_tooltip_markup(
+            _('Move selected entries to another database')
+        )
         icon = Gio.ThemedIcon(name='go-next-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_move.add(image)
         self.btn_move.connect('clicked', self.on_entries_move_clicked)
 
-        bbox_entry.add(self.btn_move)
+        bbox_entry_multi.add(self.btn_move)
 
         self.btn_delete = Gtk.Button()  # edit-delete-symbolic
-        self.btn_delete.set_tooltip_markup('Trash or delete selected entries')
+        self.btn_delete.set_tooltip_markup(
+            _('Trash or delete selected entries')
+        )
         icon = Gio.ThemedIcon(name='list-remove-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_delete.add(image)
         self.btn_delete.connect('clicked', self.on_entries_delete_clicked)
 
-        bbox_entry.add(self.btn_delete)
+        bbox_entry_multi.add(self.btn_delete)
 
-        hb.pack_start(bbox_entry)
+        hb.pack_start(bbox_entry_multi)
 
         # ————————————————————————————— Right side, from end to start
 
         self.btn_preferences = Gtk.Button()
-        self.btn_preferences.set_tooltip_markup('Show application preferences')
+        self.btn_preferences.set_tooltip_markup(
+            _('Show application preferences')
+        )
         icon = Gio.ThemedIcon(name='preferences-system-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_preferences.add(image)
@@ -315,7 +332,9 @@ class BibedWindow(Gtk.ApplicationWindow):
         hb.pack_end(self.stack_switcher)
 
         self.btn_search = Gtk.Button()
-        self.btn_search.set_tooltip_markup('Start searching in selected databases')
+        self.btn_search.set_tooltip_markup(
+            _('Start searching in selected databases')
+        )
         icon = Gio.ThemedIcon(name='system-search-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_search.add(image)
@@ -325,16 +344,16 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.headerbar = hb
 
-    def setup_network(self):
+    def setup_booked(self):
 
-        self.lbl_network = widget_properties(
+        self.lbl_booked = widget_properties(
             label_with_markup(
-                '<big>Bibed Network</big>\n\n'
+                _('<big>Something will be here</big>\n\n'
                 'Upcoming feature. Please wait.\n'
                 '(You have no choice, anyway :-D)\n'
                 'Come discuss it: '
                 '<a href="{discuss_en}">in english</a> '
-                '| <a href="{discuss_fr}">in french</a>'.format(
+                '| <a href="{discuss_fr}">in french</a>').format(
                     discuss_en=BIBED_ASSISTANCE_EN,
                     discuss_fr=BIBED_ASSISTANCE_FR,
                 ),
@@ -401,25 +420,35 @@ class BibedWindow(Gtk.ApplicationWindow):
             files_count = active_files_count
 
         if active_files:
-            title_value = '{0} – {1}'.format(
-                APP_NAME,
-                friendly_filename(active_files[0][0])
+            title_value = '{app} – {text}'.format(
+                app=APP_NAME,
+                text=friendly_filename(active_files[0][0])
                 if active_files_count == 1
-                else '{} files selected'.format(active_files_count)
+                else n_(
+                    '{count} file selected',
+                    '{count} files selected',
+                    active_files_count
+                ).format(active_files_count)
             )
 
         else:
             if self.application.files.num_user:
-                title_value = '{0} – NO FILE SELECTED'.format(APP_NAME)
+                title_value = _('{app} – NO FILE SELECTED').format(app=APP_NAME)
 
             else:
-                title_value = '{0} – Welcome!'.format(APP_NAME)
+                title_value = _('{0} – Welcome!').format(APP_NAME)
 
-        subtitle_value = '{0} item{1} in {2} file{3}'.format(
-            row_count,
-            's' if row_count > 1 else '',
-            files_count,
-            's' if files_count > 1 else '',
+        subtitle_value = _('{items} in {files}').format(
+            items=n_(
+                '{count} item',
+                '{count} items',
+                row_count,
+            ).format(count=row_count),
+            files=n_(
+                '{count} file',
+                '{count} files',
+                files_count,
+            ).format(count=files_count)
         )
 
         self.headerbar.props.title = title_value
@@ -440,9 +469,12 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         # assert lprint_caller_name(levels=5)
 
-        how_many_files = self.application.files.num_user
-
-        widgets_to_change = (
+        bibed_widgets_base = (
+            self.btn_file_new,
+            self.btn_file_open,
+            self.btn_search,
+        )
+        bibed_widgets_conditional = (
             # file-related buttons
             self.btn_file_select,
             # TODO: insert popover buttons here,
@@ -452,20 +484,23 @@ class BibedWindow(Gtk.ApplicationWindow):
             self.btn_add, self.btn_dupe, self.btn_move, self.btn_delete,
         )
 
-        if how_many_files:
-            for widget in widgets_to_change:
-                widget.show()
+        if self.stack.is_child_visible('bibed'):
+
+            widgets_show(bibed_widgets_base)
+
+            how_many_files = self.application.files.num_user
+
+            if how_many_files:
+                widgets_show(bibed_widgets_conditional)
+
+            else:
+                widgets_hide(bibed_widgets_conditional)
+
+            if sync_children:
+                self.files_popover.sync_buttons_states(sync_parent=False)
 
         else:
-            for widget in widgets_to_change:
-                widget.hide()
-
-        if sync_children:
-            self.files_popover.sync_buttons_states(sync_parent=False)
-
-        # TODO: WHY THIS ?
-        # self.on_treeview_selection_changed()
-        pass
+            widgets_hide(bibed_widgets_base + bibed_widgets_conditional)
 
     def entry_selection_buttons_set_sensitive(self):
 
@@ -532,13 +567,6 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         if gpod('remember_windows_states'):
             memories.main_window_dimensions = self.current_size
-
-        # self.cmb_files_renderer.props.max_width_chars = (
-        #     current_width * RESIZE_SIZE_MULTIPLIER / COMBO_CHARS_DIVIDER
-        # )
-        # self.cmb_files.set_size_request(
-        #     current_width * RESIZE_SIZE_MULTIPLIER, -1)
-        # self.cmb_files.queue_resize()
 
         self.treeview.set_columns_widths(current_width)
 
@@ -638,7 +666,8 @@ class BibedWindow(Gtk.ApplicationWindow):
                 # Don't let combo change and update “memories” while we
                 # just reload files to attain same conditions as now.
                 self.application.reload_files(
-                    'Reloaded all open files at user request.')
+                    _('Reloaded all open files at user request.')
+                )
 
             # restore memory / session
             self.set_selected_databases(selected_databases)
@@ -790,12 +819,12 @@ class BibedWindow(Gtk.ApplicationWindow):
         ''' Create a new file. '''
 
         dialog = Gtk.FileChooserDialog(
-            "Please create a new BIB file", self,
+            _('Please create a new BIB file'), self,
             Gtk.FileChooserAction.SAVE,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
              Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
 
-        dialog.set_current_name('Untitled bibliography.bib')
+        dialog.set_current_name(_('Untitled bibliography.bib'))
         dialog.set_current_folder(
             gpod('working_folder') or get_user_home_directory())
 
@@ -814,7 +843,7 @@ class BibedWindow(Gtk.ApplicationWindow):
     def on_file_open_clicked(self, widget):
 
         dialog = Gtk.FileChooserDialog(
-            "Please choose a BIB file", self,
+            _('Please choose one or more BIB file'), self,
             Gtk.FileChooserAction.OPEN,
             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
              Gtk.STOCK_OPEN, Gtk.ResponseType.OK))
@@ -927,7 +956,7 @@ class BibedWindow(Gtk.ApplicationWindow):
             entry.database = self.autoselect_destination()
 
             return self.entry_edit(
-                entry, message_base='{entry} added to {database}.')
+                entry, message_base=_('{entry} added to {database}.'))
 
     def on_entry_duplicate_clicked(self, button):
 
@@ -937,7 +966,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         dupe_entry = BibedEntry.new_from_entry(selected_entry)
 
         return self.entry_edit(
-            dupe_entry, message_base='{entry} added to {database}.')
+            dupe_entry, message_base=_('{entry} added to {database}.'))
 
     def on_entries_move_clicked(self, button):
 
@@ -951,9 +980,14 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         if destination and moved_count > 0:
             self.do_status_change(
-                '{count} entries moved to {destination}{unchanged}.'.format(
-                    count=len(selected_entries), destination=destination,
-                    unchanged=', {count} already there'.format(unchanged_count)
+                n_(
+                    '{count} entry moved to {destination}{unchanged}.',
+                    '{count} entries moved to {destination}{unchanged}.',
+                    moved_count,
+                ).format(
+                    count=moved_count,
+                    destination=destination,
+                    unchanged=_(', and {count} already there').format(unchanged_count)
                     if unchanged_count else ''))
 
     def on_entries_delete_clicked(self, button):
@@ -982,17 +1016,36 @@ class BibedWindow(Gtk.ApplicationWindow):
             else:
                 self.ask_and_delete_entries(selected_entries)
 
-            self.do_status_change('{count} entries {what}.'.format(
-                count=len(selected_entries),
-                what='trashed' if use_trash else 'definitively deleted'))
+            selected_count = len(selected_entries)
+
+            self.do_status_change(
+                n_(
+                    '{count} entry {what}.',
+                    '{count} entries {what}.',
+                    selected_count,
+                ).format(
+                    count=selected_count,
+                    what=_('trashed')
+                    if use_trash
+                    else _('definitively deleted')
+                )
+            )
 
         if trashed_entries:
             self.ask_and_delete_entries(trashed_entries, trashed=True)
 
+            trashed_count = len(trashed_entries)
+
             self.do_status_change(
-                '{count} previously trashed entries '
-                'definitively deleted.'.format(
-                    count=len(trashed_entries)))
+                n_(
+                    '{count} previously trashed entry '
+                    'definitively deleted.',
+                    '{count} previously trashed entries '
+                    'definitively deleted.',
+                    trashed_count,
+                ).format(
+                    count=trashed_count)
+            )
 
     def ask_and_delete_entries(self, selected_entries, trashed=False):
 
@@ -1014,31 +1067,45 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         entries_count = len(selected_entries)
 
-        if entries_count > 1:
-            if trashed:
-                title = 'Wipe {count} entries from trash?'.format(
-                    count=entries_count)
-            else:
-                title = 'Delete {count} entries?'.format(count=entries_count)
-
-            entries_list = markup_entries(selected_entries, entries_count)
-
-            secondary_text = (
-                'This will permanently delete the following entries:\n'
-                '{entries_list}\n from your database(s).'.format(
-                    entries_list=entries_list
-                )
-            )
+        if trashed:
+            title = n_(
+                'Wipe {count} entry from trash?',
+                'Wipe {count} entries from trash?',
+                entries_count,
+            ).format(
+                count=entries_count)
         else:
-            entry = selected_entries[0]
-            title = 'Delete entry?'
-            secondary_text = (
-                'This will permanently delete {entry} from your database.'.format(
-                    entry=entry.short_display
-                )
-            )
+            title = n_(
+                'Delete {count} entry?',
+                'Delete {count} entries?',
+                entries_count,
+            ).format(count=entries_count)
 
-        secondary_text += '\n\nThis action cannot be undone. Are you sure?'
+        entry = selected_entries[0]
+        entries_list = markup_entries(selected_entries, entries_count)
+
+        database_count = len(set([
+            entry.database for entry in selected_entries
+        ]))
+
+        secondary_text = (
+            n_(
+                'This will permanently delete {entry} from your database.',
+                'This will permanently delete the following entries:\n'
+                '{entries_list}\n from {from_files}.',
+                entries_count,
+            ).format(
+                entry=entry,
+                entries_list=entries_list,
+                from_files=n_(
+                    '{count} database',
+                    '{count} databases',
+                    database_count,
+                ).format(count=database_count)
+            )
+        )
+
+        secondary_text += _('\n\nThis action cannot be undone. Are you sure?')
 
         message_dialog(
             self, Gtk.MessageType.WARNING,
@@ -1057,7 +1124,7 @@ class BibedWindow(Gtk.ApplicationWindow):
             self.update_title()
 
             if message_base is None:
-                message_base = '{entry} modified in {database}.'
+                message_base = _('{entry} modified in {database}.')
 
             message = message_base.format(
                 entry=response, database=friendly_filename(response.database.filename))
@@ -1095,7 +1162,7 @@ class BibedWindow(Gtk.ApplicationWindow):
     def get_bib_filter(self):
 
         filter_bib = Gtk.FileFilter()
-        filter_bib.set_name('Bib(La)Tex files')
+        filter_bib.set_name(_('Bib(La)Tex files'))
         filter_bib.add_pattern('*.bib')
 
         return filter_bib

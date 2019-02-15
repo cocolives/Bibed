@@ -43,9 +43,6 @@ def get_bibed_user_dir():
     return bibed_dir
 
 
-BIBED_LOG_DIR = os.path.join(get_bibed_user_dir(), 'logs', )
-
-
 def make_bibed_user_dir():
 
     bibed_user_dir = get_bibed_user_dir()
@@ -62,6 +59,10 @@ def make_bibed_user_dir():
                 'Could not create preferences directory “{}”.'.format(
                     bibed_user_dir))
             raise SystemExit(1)
+
+
+BIBED_LOG_DIR = os.path.join(get_bibed_user_dir(), 'logs', )
+BIBED_LOG_FILE = os.path.join(BIBED_LOG_DIR, 'bibed.log')
 
 
 # Make the dirs at first module import. Logfile needs it.

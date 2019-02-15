@@ -22,6 +22,7 @@ from bibed.constants import (
 from bibed.foundations import (
     touch_file,
     set_process_title,
+    Anything,
 )
 
 from bibed.strings import (
@@ -29,9 +30,12 @@ from bibed.strings import (
     seconds_to_string,
 )
 
+from bibed.parallel import run_and_wait_on
+
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
 
+from bibed.locale import _, NO_
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
@@ -115,8 +119,9 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         #
         # See “Automatic Resources” at https://lazka.github.io/pgi-docs/Gtk-3.0/classes/Application.html#Gtk.Application  # NOQA
 
+        # TODO: externalize app menu in a file for translations.
         builder = Gtk.Builder.new_from_string(APP_MENU_XML, -1)
-        self.set_app_menu(builder.get_object("app-menu"))
+        self.set_app_menu(builder.get_object('app-menu'))
 
     def setup_data_store(self):
 
@@ -134,11 +139,6 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         # self.filter = Gtk.TreeModelFilter(self.data)
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.data_filter_method)
-
-    def close_splash(self):
-
-        self.splash.destroy()
-        self.splash = None
 
     # ——————————————————————————————————————————————————————— data store filter
 
@@ -207,6 +207,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             to_lower_if_not_none(row[BibAttrs.JOURNAL]),
             to_lower_if_not_none(row[BibAttrs.SUBTITLE]),
             to_lower_if_not_none(row[BibAttrs.COMMENT]),
+            to_lower_if_not_none(row[BibAttrs.KEYWORDS]),
             # NO abstract yet in data_store.
             # to_lower_if_not_none(model[iter][BibAttrs.ABSTRACT])
         ]
@@ -238,18 +239,19 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def do_activate(self):
 
-        # For GUI-setup-order related reasons,
-        # we need to delay some things.
-        search_grab_focus = False
-        databases_to_select = []
-        filenames_to_select = []
+        # assert lprint_function_name()
 
         LOGGER.debug('Startup time (GTK setup): {}'.format(
             seconds_to_string(time.time() - self.time_start)))
 
         # We only allow a single window and raise any existing ones
-        if not self.window:
+        if self.window:
+            LOGGER.info('Window already loaded somewhere, focusing it.')
+            
+        else:
             Notify.init(APP_NAME)
+
+            self.session_prepare()
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
@@ -258,75 +260,133 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             # As soon as the main window is here, keep the splash above it.
             self.splash.set_transient_for(self.window)
 
-            if preferences.remember_open_files:
+            if preferences.remember_open_files and memories.open_files:
+                run_and_wait_on(self.session_restore)
 
-                if memories.open_files:
+            self.session_finish()
 
-                    self.splash.set_status(
-                        'Loading {} file(s) and restoring previous session…'.format(
-                            len(memories.open_files)))
+        self.close_splash()
 
-                    # 1: search_text needs to be loaded first, else it gets
-                    # wiped when file_combo is updated with re-loaded files.
-                    # 2: don't load it if there are no open_files.
-                    # 3: dont call do_filter_data_store(), it will be called
-                    # by on_files_combo_changed() when files are added.
-                    if memories.search_text is not None:
-                        self.window.search.set_text(memories.search_text)
-                        search_grab_focus = True
+        LOGGER.debug('Startup time (including session restore): {}'.format(
+            seconds_to_string(time.time() - self.time_start)))
 
-                    # Idem, same problem.
-                    if memories.selected_filenames is not None:
-                        filenames_to_select = memories.selected_filenames
+        self.window.present()
 
-                    else:
-                        filenames_to_select = memories.open_files.copy()
+    def do_command_line(self, command_line):
 
-                    # Then, load all previously opened files.
-                    # Get a copy to avoid the set being changed while we load,
-                    # because in some corner cases the live “re-ordering”
-                    # makes a file loaded two times.
+        # assert lprint_function_name()
 
-                    with self.window.block_signals():
-                        # We need to block signals and let win.do_activate()
-                        # Update everything, else some on_*_changed() signals
-                        # are not fired. Don't know if it's a Gtk or pgi bug.
+        options = command_line.get_options_dict()
 
-                        for filename in memories.open_files.copy():
+        # convert GVariantDict -> GVariant -> dict
+        options = options.end().unpack()
 
-                            self.splash.spin()
+        if 'test' in options:
+            LOGGER.info("Test argument received: %s" % options['test'])
 
-                            try:
-                                database = self.open_file(filename,
-                                                          select=False)
+        self.activate()
 
-                            except (IOError, OSError):
-                                # TODO: move this into store ?
-                                memories.remove_open_file(filename)
+        return 0
 
-                            else:
-                                if filename in filenames_to_select:
-                                    # we have to convert filenames to databases
-                                    # because all of this seems to happen too
-                                    # fast for store to be ready to return
-                                    # .get_database() results before the end
-                                    # of the current method.
-                                    databases_to_select.append(database)
+    def run(self, *args, **kwargs):
 
-        if sorted(filenames_to_select) != sorted([x.filename for x in databases_to_select]):
+        # assert lprint_function_name()
+
+        try:
+            super().run(*args, **kwargs)
+
+        except KeyboardInterrupt:
+            LOGGER.warning('Interrupted, terminating properly…')
+            self.on_quit(None, None)
+
+    # ———————————————————————————————————————————————————————— Session & splash
+
+    def close_splash(self):
+
+        self.splash.destroy()
+        self.splash = None
+
+    def session_prepare(self):
+
+        # assert lprint_function_name()
+
+        # Needed for the thread to prepare things for the main loop.
+        self.session = Anything()
+        self.session.search_grab_focus = False
+        self.session.databases_to_select = []
+        self.session.filenames_to_select = []
+
+    def session_restore(self):
+
+        # assert lprint_function_name()
+
+        self.splash.set_status(
+            _('Loading {} file(s) and restoring previous session…').format(
+                len(memories.open_files)))
+
+        # 1: search_text needs to be loaded first, else it gets
+        # wiped when file_combo is updated with re-loaded files.
+        # 2: don't load it if there are no open_files.
+        # 3: dont call do_filter_data_store(), it will be called
+        # by on_files_combo_changed() when files are added.
+        if memories.search_text is not None:
+            self.window.search.set_text(memories.search_text)
+            self.session.search_grab_focus = True
+
+        # Idem, same problem.
+        if memories.selected_filenames is not None:
+            self.session.filenames_to_select = memories.selected_filenames
+
+        else:
+            self.session.filenames_to_select = memories.open_files.copy()
+
+        # Then, load all previously opened files.
+        # Get a copy to avoid the set being changed while we load,
+        # because in some corner cases the live “re-ordering”
+        # makes a file loaded two times.
+
+        with self.window.block_signals():
+            # We need to block signals and let win.do_activate()
+            # Update everything, else some on_*_changed() signals
+            # are not fired. Don't know if it's a Gtk or pgi bug.
+
+            for filename in memories.open_files.copy():
+
+                try:
+                    database = self.open_file(filename,
+                                              select=False)
+
+                except (IOError, OSError):
+                    # TODO: move this into store ?
+                    memories.remove_open_file(filename)
+
+                else:
+                    if filename in self.session.filenames_to_select:
+                        # we have to convert filenames to databases
+                        # because all of this seems to happen too
+                        # fast for store to be ready to return
+                        # .get_database() results before the end
+                        # of the current method.
+                        self.session.databases_to_select.append(database)
+
+    def session_finish(self):
+
+        # assert lprint_function_name()
+
+        if sorted(self.session.filenames_to_select) != sorted(
+                [x.filename for x in self.session.databases_to_select]):
             # Most probably a system file was selected before closing.
             # Try to get it again.
 
-            for filename in filenames_to_select:
+            for filename in self.session.filenames_to_select:
                 for system_database in self.files.system_databases:
                     if filename == system_database.filename:
-                        databases_to_select.append(system_database)
+                        self.session.databases_to_select.append(system_database)
 
-        self.splash.spin()
         self.window.show_all()
 
-        if databases_to_select:
-            self.window.set_selected_databases(databases_to_select)
+        if self.session.databases_to_select:
+            self.window.set_selected_databases(self.session.databases_to_select)
 
             # Selecting a system database is the only case that doesn't
             # trigger a full window / treeview update. Fake it.
@@ -343,43 +403,14 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
                 self.window.files_popover.listbox.select_all()
                 # self.window.do_activate()
 
-        if search_grab_focus:
+        if self.session.search_grab_focus:
             self.window.searchbar.set_search_mode(True)
             self.window.search.grab_focus()
 
-        # TODO: splash doesn't work.
-        self.close_splash()
-
-        LOGGER.debug('Startup time (including session restore): {}'.format(
-            seconds_to_string(time.time() - self.time_start)))
-
-        self.window.present()
-
-    def do_command_line(self, command_line):
-        options = command_line.get_options_dict()
-
-        # convert GVariantDict -> GVariant -> dict
-        options = options.end().unpack()
-
-        if 'test' in options:
-            LOGGER.info("Test argument received: %s" % options['test'])
-
-        self.splash.spin()
-
-        self.activate()
-        return 0
-
-    def run(self, *args, **kwargs):
-
-        try:
-            super().run(*args, **kwargs)
-
-        except KeyboardInterrupt:
-            LOGGER.warning('Interrupted, terminating properly…')
-            self.on_quit(None, None)
+        # not necessary anymore.
+        del self.session
 
     # ———————————————————————————————————————————— higher level file operations
-    # TODO: move them to main window?
 
     def create_file(self, filename):
         ''' Create a new BIB file, then open it in the application. '''
@@ -404,15 +435,17 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             database = self.files.load(filename, recompute=recompute)
 
         except AlreadyLoadedException:
-            self.do_notification('“{}” already loaded.'.format(filename))
+            self.do_notification(
+                _('“{}” already loaded.').format(filename))
             # TODO: Select / Focus the file.
             return
 
         except Exception as e:
-            message = 'Cannot load file “{0}”: {1}'.format(filename, e)
-            LOGGER.exception(message)
+            message = NO_('Cannot load file “{file}”: {error}')
+            LOGGER.exception(message.format(file=filename, error=e))
 
-            self.window.do_status_change(message)
+            self.window.do_status_change(_(message).format(
+                file=filename, error=e))
             return
 
         if select:
@@ -467,11 +500,11 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         # about_dialog.set_logo(logo)
         about_dialog.set_logo_icon_name('bibed-logo')
 
-        about_dialog.set_copyright('(c) Collectif Cocoliv.es')
+        about_dialog.set_copyright(_('© Cocoliv.es Collective'))
 
         comments = (
-            'Bibliographic assistance libre software\n\n'
-            'GTK v{}.{}.{}\n'
+            _('Bibliographic assistance libre software')
+            + '\n\nGTK v{}.{}.{}\n'
             'bibtexparser v{}'.format(
                 Gtk.get_major_version(),
                 Gtk.get_minor_version(),
@@ -491,13 +524,14 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
                 last_event = sentry_sdk.last_event_id()
 
                 comments += (
-                    '\nSentry SDK v{sdk_vers}, reporting to\n{dsn}\n'
-                    '(see {website} for details)'
-                    '{last}'.format(
+                    '\n'
+                    + _('Sentry SDK v{sdk_vers}, reporting to\n{dsn}\n'
+                        '(see {website} for details)'
+                        '{last}').format(
                         sdk_vers=sentry_sdk.VERSION,
                         dsn=gpod('sentry_dsn'),
                         website=gpod('sentry_url'),
-                        last='<big>Last event ID: {}</big>'.format(last_event)
+                        last=_('<big>Last event ID: {}</big>').format(last_event)
                         if last_event else ''
                     )
                 )
@@ -505,7 +539,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         about_dialog.set_comments(comments)
 
         about_dialog.set_website('https://bibed.cocoliv.es/')
-        about_dialog.set_website_label('Site web de Bibed')
+        about_dialog.set_website_label(_('{app} website').format(app=APP_NAME))
         about_dialog.set_license_type(Gtk.License.GPL_3_0_ONLY)
 
         about_dialog.set_authors([

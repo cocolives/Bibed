@@ -2,7 +2,9 @@ import os
 import bibtexparser
 
 from bibed.user import (
+    # import other CONSTANTS from sub-levels for higher levels.
     BIBED_LOG_DIR,
+    BIBED_LOG_FILE,
 )
 
 from bibed.foundations import (
@@ -13,12 +15,12 @@ from bibed.foundations import (
     BIBED_ICONS_DIR,
 )
 
+from bibed.locale import _
+
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
-APP_VERSION = '0.9.9.4-develop'
+APP_VERSION = '0.9.9.5-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
-
-BIBED_LOG_FILE = os.path.join(BIBED_LOG_DIR, 'bibed.log')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
 BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
@@ -52,6 +54,7 @@ BibAttrs = Anything((
     ('QUALITY', str, ),  # quality
     ('READ', str, ),  # read status
     ('COMMENT', str, ),  # comment (text field)
+    ('KEYWORDS', str, ),  # keywords (for search/filter only)
     ('FILETYPE', int, ),  # file type
     ('COLOR', str, ),  # foreground color
 ))
@@ -82,14 +85,14 @@ FILETYPES_COLORS = {
 }
 
 SEARCH_SPECIALS = (
-    ('t', BibAttrs.TYPE, 'type'),
-    ('k', BibAttrs.KEY, 'key'),
-    ('a', BibAttrs.AUTHOR, 'author'),
-    ('i', BibAttrs.TITLE, 'title'),
-    ('j', BibAttrs.JOURNAL, 'journal'),
-    ('y', BibAttrs.YEAR, 'year'),
-    ('f', BibAttrs.FILE, 'file'),
-    ('u', BibAttrs.URL, 'URL'),
+    (_('t'), BibAttrs.TYPE, 'type'),
+    (_('k'), BibAttrs.KEY, 'key'),
+    (_('a'), BibAttrs.AUTHOR, 'author'),
+    (_('i'), BibAttrs.TITLE, 'title'),
+    (_('j'), BibAttrs.JOURNAL, 'journal'),
+    (_('y'), BibAttrs.YEAR, 'year'),
+    (_('f'), BibAttrs.FILE, 'file'),
+    (_('u'), BibAttrs.URL, 'URL'),
 )
 
 

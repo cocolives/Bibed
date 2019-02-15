@@ -19,6 +19,7 @@ from bibed.gui.helpers import (
     # add_classes,
 )
 from bibed.gtk import Gtk, Gio, Dazzle
+from bibed.locale import _
 
 # from bibed.gui.renderers import CellRendererTogglePixbuf
 # from bibed.gui.treemixins import BibedEntryTreeViewMixin
@@ -366,7 +367,7 @@ class BibedDatabasePopover(Gtk.Popover):
             halign=Gtk.Align.CENTER,
         )
 
-        label_all.set_markup('Open databases')
+        label_all.set_markup(_('Open databases'))
 
         self.btn_close_all = widget_properties(
             Gtk.Button(), expand=False, halign=Gtk.Align.END,
@@ -374,7 +375,7 @@ class BibedDatabasePopover(Gtk.Popover):
         icon = Gio.ThemedIcon(name='window-close-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_close_all.add(image)
-        self.btn_close_all.set_tooltip_markup('Close all open files.')
+        self.btn_close_all.set_tooltip_markup(_('Close all open files.'))
         self.btn_close_all.connect(
             'clicked', self.on_close_all_clicked)
 
@@ -406,7 +407,7 @@ class BibedDatabasePopover(Gtk.Popover):
 
         self.btn_show_trash = Gtk.ToggleButton()
         self.btn_show_trash.add(flat_unclickable_button_in_hbox(
-            'trash', 'Trash',
+            'trash', _('Trash'),
             icon_name='user-trash-full-symbolic',
         ))
         self.btn_show_trash.set_relief(Gtk.ReliefStyle.NONE)
@@ -415,7 +416,7 @@ class BibedDatabasePopover(Gtk.Popover):
 
         self.btn_show_queue = Gtk.ToggleButton()
         self.btn_show_queue.add(flat_unclickable_button_in_hbox(
-            'queue', 'Queue',
+            'queue', _('Queue'),
             icon_name='view-list-symbolic',
         ))
         self.btn_show_queue.set_relief(Gtk.ReliefStyle.NONE)
@@ -425,7 +426,7 @@ class BibedDatabasePopover(Gtk.Popover):
         # user-bookmarks-symbolic
         self.btn_show_imported = Gtk.ToggleButton()
         self.btn_show_imported.add(flat_unclickable_button_in_hbox(
-            'imported', 'Imported',
+            'imported', _('Imported'),
             icon_name='emblem-ok-symbolic',
         ))
         self.btn_show_imported.set_relief(Gtk.ReliefStyle.NONE)

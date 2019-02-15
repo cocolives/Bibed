@@ -20,26 +20,12 @@ class SplashApp(Gtk.Application, GtkCssAwareMixin):
 
     def do_activate(self):
 
-        # Need to call Gtk.main to draw all widgets
-        while Gtk.events_pending():
-            Gtk.main_iteration()
+        print('ACTIVATE START')
 
-        for i in range(10):
-            Gtk.main_iteration_do(True)
-
-        # print('ACTIVATE')
-
-        # time.sleep(1)
-
-        print('ACTIVATE MAIN')
-
-        # Need to call Gtk.main to draw all widgets
-        while Gtk.events_pending():
-            Gtk.main_iteration()
-
-        print('ACTIVATE MAIN END → sleeping…')
-
-        time.sleep(5)
+        for i in range(500):
+            while Gtk.events_pending():
+                Gtk.main_iteration()
+            time.sleep(0.1)
 
         print('ACTIVATE END')
 
