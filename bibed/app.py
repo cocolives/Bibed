@@ -35,6 +35,7 @@ from bibed.parallel import run_and_wait_on
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
 
+from bibed.locale import _, NO_
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
@@ -118,8 +119,9 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         #
         # See “Automatic Resources” at https://lazka.github.io/pgi-docs/Gtk-3.0/classes/Application.html#Gtk.Application  # NOQA
 
+        # TODO: externalize app menu in a file for translations.
         builder = Gtk.Builder.new_from_string(APP_MENU_XML, -1)
-        self.set_app_menu(builder.get_object("app-menu"))
+        self.set_app_menu(builder.get_object('app-menu'))
 
     def setup_data_store(self):
 
@@ -237,14 +239,19 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def do_activate(self):
 
-        self.session_prepare()
+        # assert lprint_function_name()
 
         LOGGER.debug('Startup time (GTK setup): {}'.format(
             seconds_to_string(time.time() - self.time_start)))
 
         # We only allow a single window and raise any existing ones
-        if not self.window:
+        if self.window:
+            LOGGER.info('Window already loaded somewhere, focusing it.')
+            
+        else:
             Notify.init(APP_NAME)
+
+            self.session_prepare()
 
             # Windows are associated with the application
             # when the last one is closed the application shuts down
@@ -256,7 +263,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             if preferences.remember_open_files and memories.open_files:
                 run_and_wait_on(self.session_restore)
 
-        self.session_finish()
+            self.session_finish()
 
         self.close_splash()
 
@@ -266,6 +273,9 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         self.window.present()
 
     def do_command_line(self, command_line):
+
+        # assert lprint_function_name()
+
         options = command_line.get_options_dict()
 
         # convert GVariantDict -> GVariant -> dict
@@ -275,9 +285,12 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             LOGGER.info("Test argument received: %s" % options['test'])
 
         self.activate()
+
         return 0
 
     def run(self, *args, **kwargs):
+
+        # assert lprint_function_name()
 
         try:
             super().run(*args, **kwargs)
@@ -295,6 +308,8 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def session_prepare(self):
 
+        # assert lprint_function_name()
+
         # Needed for the thread to prepare things for the main loop.
         self.session = Anything()
         self.session.search_grab_focus = False
@@ -303,8 +318,10 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def session_restore(self):
 
+        # assert lprint_function_name()
+
         self.splash.set_status(
-            'Loading {} file(s) and restoring previous session…'.format(
+            _('Loading {} file(s) and restoring previous session…').format(
                 len(memories.open_files)))
 
         # 1: search_text needs to be loaded first, else it gets
@@ -353,6 +370,8 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
                         self.session.databases_to_select.append(database)
 
     def session_finish(self):
+
+        # assert lprint_function_name()
 
         if sorted(self.session.filenames_to_select) != sorted(
                 [x.filename for x in self.session.databases_to_select]):
@@ -416,15 +435,17 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             database = self.files.load(filename, recompute=recompute)
 
         except AlreadyLoadedException:
-            self.do_notification('“{}” already loaded.'.format(filename))
+            self.do_notification(
+                _('“{}” already loaded.').format(filename))
             # TODO: Select / Focus the file.
             return
 
         except Exception as e:
-            message = 'Cannot load file “{0}”: {1}'.format(filename, e)
-            LOGGER.exception(message)
+            message = NO_('Cannot load file “{file}”: {error}')
+            LOGGER.exception(message.format(file=filename, error=e))
 
-            self.window.do_status_change(message)
+            self.window.do_status_change(_(message).format(
+                file=filename, error=e))
             return
 
         if select:
@@ -479,11 +500,11 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         # about_dialog.set_logo(logo)
         about_dialog.set_logo_icon_name('bibed-logo')
 
-        about_dialog.set_copyright('(c) Collectif Cocoliv.es')
+        about_dialog.set_copyright(_('© Cocoliv.es Collective'))
 
         comments = (
-            'Bibliographic assistance libre software\n\n'
-            'GTK v{}.{}.{}\n'
+            _('Bibliographic assistance libre software')
+            + '\n\nGTK v{}.{}.{}\n'
             'bibtexparser v{}'.format(
                 Gtk.get_major_version(),
                 Gtk.get_minor_version(),
@@ -503,13 +524,14 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
                 last_event = sentry_sdk.last_event_id()
 
                 comments += (
-                    '\nSentry SDK v{sdk_vers}, reporting to\n{dsn}\n'
-                    '(see {website} for details)'
-                    '{last}'.format(
+                    '\n'
+                    + _('Sentry SDK v{sdk_vers}, reporting to\n{dsn}\n'
+                        '(see {website} for details)'
+                        '{last}').format(
                         sdk_vers=sentry_sdk.VERSION,
                         dsn=gpod('sentry_dsn'),
                         website=gpod('sentry_url'),
-                        last='<big>Last event ID: {}</big>'.format(last_event)
+                        last=_('<big>Last event ID: {}</big>').format(last_event)
                         if last_event else ''
                     )
                 )
@@ -517,7 +539,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         about_dialog.set_comments(comments)
 
         about_dialog.set_website('https://bibed.cocoliv.es/')
-        about_dialog.set_website_label('Site web de Bibed')
+        about_dialog.set_website_label(_('{app} website').format(app=APP_NAME))
         about_dialog.set_license_type(Gtk.License.GPL_3_0_ONLY)
 
         about_dialog.set_authors([

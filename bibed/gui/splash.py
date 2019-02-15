@@ -1,10 +1,12 @@
 
 from bibed.gtk import GLib, Gtk, Gdk
 from bibed.constants import (
+    APP_NAME,
     GRID_BORDER_WIDTH,
     GRID_COLS_SPACING,
     GRID_ROWS_SPACING,
 )
+from bibed.locale import _
 from bibed.gui.css import GtkCssAwareMixin
 from bibed.gui.helpers import (
     add_classes,
@@ -52,7 +54,7 @@ class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
 
         self.title = widget_properties(
             label_with_markup(
-                '<span size="32768"><b>Bibed</b></span>',
+                '<span size="32768"><b>{app}</b></span>'.format(app=APP_NAME),
                 xalign=0.0),
             expand=True,
             halign=Gtk.Align.START,
@@ -70,7 +72,7 @@ class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
         self.stagrid.set_column_spacing(GRID_COLS_SPACING)
 
         self.status = widget_properties(
-            label_with_markup('Loading…', xalign=0.0),
+            label_with_markup(_('Loading…'), xalign=0.0),
             expand=True,
             valign=Gtk.Align.CENTER,
         )
@@ -108,10 +110,10 @@ class BibedSplashWindow(Gtk.Window, GtkCssAwareMixin):
     def cycle_subtitle(self):
 
         sub_texts = (
-            'Bibliographic Assistant',
-            'or Bibliogra<b>phy</b> Assistant?',
-            'Bibliography Editor, perhaps?',
-            'Whatever. Nevermind.'
+            _('Bibliographic Assistant'),
+            _('or Bibliogra<b>phy</b> Assistant?'),
+            _('Bibliography Editor, perhaps?'),
+            _('Whatever. Nevermind.'),
         )
 
         self.subtitle.set_markup(sub_texts[self.cycle % len(sub_texts)])

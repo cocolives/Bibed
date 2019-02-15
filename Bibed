@@ -85,8 +85,8 @@ if __name__ == '__main__':
     logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
     logging.getLogger('bibtexparser').setLevel(logging.CRITICAL)
 
-    import bibed.locale
-    bibed.locale.init()
+    from bibed.locale import _, init as locale_init
+    locale_init()
 
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
@@ -101,7 +101,9 @@ if __name__ == '__main__':
     splash = start_splash()
 
     if gpod('use_sentry'):
-        splash.set_status('Connecting issue collector to {}…'.format(gpod('sentry_url')))
+        splash.set_status(
+            _('Connecting issue collector to {}…').format(
+                gpod('sentry_url')))
 
         run_and_wait_on(sentry.enable)
 

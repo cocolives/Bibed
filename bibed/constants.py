@@ -15,6 +15,8 @@ from bibed.foundations import (
     BIBED_ICONS_DIR,
 )
 
+from bibed.locale import _
+
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
 APP_VERSION = '0.9.9.4-develop'
@@ -83,14 +85,14 @@ FILETYPES_COLORS = {
 }
 
 SEARCH_SPECIALS = (
-    ('t', BibAttrs.TYPE, 'type'),
-    ('k', BibAttrs.KEY, 'key'),
-    ('a', BibAttrs.AUTHOR, 'author'),
-    ('i', BibAttrs.TITLE, 'title'),
-    ('j', BibAttrs.JOURNAL, 'journal'),
-    ('y', BibAttrs.YEAR, 'year'),
-    ('f', BibAttrs.FILE, 'file'),
-    ('u', BibAttrs.URL, 'URL'),
+    (_('t'), BibAttrs.TYPE, 'type'),
+    (_('k'), BibAttrs.KEY, 'key'),
+    (_('a'), BibAttrs.AUTHOR, 'author'),
+    (_('i'), BibAttrs.TITLE, 'title'),
+    (_('j'), BibAttrs.JOURNAL, 'journal'),
+    (_('y'), BibAttrs.YEAR, 'year'),
+    (_('f'), BibAttrs.FILE, 'file'),
+    (_('u'), BibAttrs.URL, 'URL'),
 )
 
 
