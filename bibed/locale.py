@@ -204,11 +204,15 @@ def iter_locale_dirs():
     dirs = list(xdg_get_system_data_dirs())
 
     # this is the one python gettext uses by default, use as a fallback
-    dirs.append(os.path.join(sys.base_prefix, "share"))
+    dirs.append(os.path.join(sys.base_prefix, 'share'))
+
+    # this is the local directory for development
+    dirs.append(os.path.dirname(os.path.dirname(BIBED_DATA_DIR)))
 
     done = set()
+
     for path in dirs:
-        locale_dir = os.path.join(path, "locale")
+        locale_dir = os.path.join(path, 'locale')
 
         if locale_dir in done:
             continue
@@ -237,6 +241,8 @@ def register_translation(domain, localedir=None):
         iterdirs = lambda: iter([localedir])  # NOQA
 
     for dir_ in iterdirs():
+        lprint('TRY', dir_)
+
         try:
             t = gettext.translation(domain, dir_, class_=GlibTranslations)
 
@@ -293,8 +299,11 @@ def _(message):
 
     Lookup the translation for message
     """
-
-    return __translation.wrap_text(__translation.ugettext(message))
+    try:
+        return __translation.wrap_text(__translation.ugettext(message))
+        
+    except AttributeError:
+        return message
 
 
 def NO_(message):

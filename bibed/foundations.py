@@ -145,7 +145,9 @@ def xdg_get_system_data_dirs():
     else:
         return ('/usr/local/share/', '/usr/share/')
 
+
 # ————————————————————————————————————————————————————————————————————— Classes
+
 
 class GZipNamer:
 
