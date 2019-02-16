@@ -11,7 +11,6 @@ from bibed.ltrace import (  # NOQA
 
 from bibed.constants import (
     APP_NAME,
-    SEARCH_WIDTH_EXPANDED,
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
 )
@@ -130,7 +129,6 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.search = Gtk.SearchEntry()
 
-        self.search.props.width_chars = SEARCH_WIDTH_EXPANDED
         self.search.connect('search-changed',
                             self.on_search_filter_changed)
 
