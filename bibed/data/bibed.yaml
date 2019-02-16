@@ -1438,6 +1438,7 @@ fields:
       as this is compatible with plain years too and supports many more features.
       @@@import{2.3.8}
   labels:
+    abstract: Abstract
     addendum: Addendum
     annotator: Annotator(s)
     author: Author(s)
@@ -1464,6 +1465,7 @@ fields:
     journalsubtitle: Journal sub-title
     journaltitle: Journal title
     key: Entry key
+    keywords: Keywords
     language: Language
     location: Location
     month: Month
@@ -1522,20 +1524,19 @@ types:
       face="monospace">bib</span> file like other types. It is provided for
       third-party packages like <span face="monospace">notes2bib</span> which
       merge notes into the bibliography. The notes should go into the <span
-      face="monospace">note</span> field. Be advised that the @bibnote type
+      face="monospace">note</span> field. Be advised that the <span weight="bold" face="monospace">@bibnote</span> type
       is not related to the <span face="monospace">\defbibnote</span> command
       in any way. <span face="monospace">\defbibnote</span> is for adding
       comments at the beginning or the end of the bibliography, whereas the
-      <span weight="bold" face="monospace">@video</span>@bibnote</span> type
+      <span weight="bold" face="monospace">@bibnote</span> type
       is meant for packages which render endnotes as bibliography entries.
     book: A single-volume book with one or more authors where the authors
       share credit for the work as a whole. This entry type also covers the
       function of the <span weight="bold" face="monospace">@inbook</span>
-      type of traditional BibTeX.
+      type of traditional <span face="monospace">BibTeX</span>.
     booklet: A book-like work without a formal publisher or sponsoring institution.
       Use the field <span face="monospace">howpublished</span> to supply publishing
-      information in free format, if applicable. The field <span face="monospace">type</span>
-      may be useful as well.
+      information in free format, if applicable. The field <span face="monospace">type</span> may be useful as well.
     collection: A single-volume collection with multiple, self-contained contributions
       by distinct authors which have their own title. The work as a whole
       has no overall author but it will usually have an editor.
