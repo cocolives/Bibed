@@ -640,6 +640,11 @@ class BibedWindow(Gtk.ApplicationWindow):
             else:
                 self.treeview.open_entries_urls_in_browser()
 
+        elif ctrl_shift and keyval == Gdk.KEY_F:
+            # NOTE: the upper case 'F'
+
+            self.treeview.copy_entries_files_to_clipboard()
+
         elif ctrl_shift and keyval == Gdk.KEY_T:
 
             self.treeview.switch_tooltips()

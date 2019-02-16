@@ -1,9 +1,8 @@
-import os
 
 # from bibed.foundations import ldebug
+
 from bibed.constants import (
     BibAttrs,
-    FileTypes,
     URL_PIXBUFS,
     FILE_PIXBUFS,
     COMMENT_PIXBUFS,
@@ -24,7 +23,7 @@ from bibed.utils import (
 )
 # from bibed.preferences import memories  # , gpod
 from bibed.entry import BibedEntry
-from bibed.locale import _, C_
+from bibed.locale import _, C_, n_
 
 from bibed.gtk import Gtk, Gio, Pango
 
@@ -267,7 +266,7 @@ class BibedEntryTreeViewMixin:
 
     def on_file_clicked(self, renderer, path):
 
-        self.open_file_in_prefered_application(
+        self.open_entries_files_in_prefered_application(
             [self.get_entry_by_path(path, only_row=True)])
 
     def on_treeview_row_activated(self, treeview, path, column):
@@ -294,6 +293,9 @@ class BibedEntryTreeViewMixin:
     def copy_entries_urls_to_clipboard(self, rows=None):
         return self.copy_to_clipboard_or_action(BibAttrs.URL, rows=rows)
 
+    def copy_entries_files_to_clipboard(self, rows=None):
+        return self.copy_to_clipboard_or_action(BibAttrs.FILE, rows=rows)
+
     # —————————————————————————————————————————————————————————— “Open” Actions
 
     def open_entries_urls_in_browser(self, rows=None):
@@ -304,7 +306,7 @@ class BibedEntryTreeViewMixin:
             rows=rows,
         )
 
-    def open_file_in_prefered_application(self, rows=None):
+    def open_entries_files_in_prefered_application(self, rows=None):
         return self.copy_to_clipboard_or_action(
             BibAttrs.FILE,
             action_func=open_with_system_launcher,
@@ -333,7 +335,7 @@ class BibedEntryTreeViewMixin:
             entry_gids.append(row[BibAttrs.GLOBAL_ID])
             entry_data.append(row[field_index])
 
-        if entry_data:
+        if bool([x for x in entry_data if x is not None and x.strip() != '']):
             transformed_data = (
                 entry_data if transform_func is None
                 else transform_func(entry_data)
@@ -345,23 +347,44 @@ class BibedEntryTreeViewMixin:
                 self.clipboard.set_text(final_data, len=-1)
 
                 self.do_status_change(
-                    '{data} copied to clipboard (from entry {key}).'.format(
-                        data='{} line(s), {} chars'.format(len(transformed_data), len(final_data)), key=entry_gids))
+                    n_(
+                        '{data} copied to clipboard (from entry {key}).',
+                        '{data} copied to clipboard (from entries {key}).',
+                        len(entry_gids),
+                    ).format(
+                        data=n_(
+                            '{} line, {} chars',
+                            '{} lines, {} chars',
+                            len(transformed_data),
+                        ).format(
+                            len(transformed_data),
+                            len(final_data)
+                        ),
+                        key=','.join(str(g) for g in entry_gids)))
 
             else:
-                action_func(transformed_data)
+                returning_data = action_func(transformed_data)
 
                 self.do_status_change(
-                    '“{data}” {message} (from entry {key}).'.format(
-                        data=transformed_data,
-                        message=('run through {func}'.format(
+                    n_(
+                        '“{data}” {message} (from entry {key}).',
+                        '“{data}” {message} (from entries {key}).',
+                        len(entry_gids),
+                    ).format(
+                        data=', '.join(returning_data),
+                        message=(_('run through {func}').format(
                             func=action_func.__name__)
                             if action_message is None
                             else action_message
                         ),
-                        key=entry_gids,
+                        key=', '.join(str(g) for g in entry_gids),
                     )
                 )
 
         else:
-            self.do_status_change('Selected entry {key}.'.format(key=entry_gid))
+            self.do_status_change(
+                n_(
+                    'Selected entry {key}.',
+                    'Selected entries {key}.',
+                    len(entry_gids)
+                ).format(key=', '.join(str(g) for g in entry_gids)))
