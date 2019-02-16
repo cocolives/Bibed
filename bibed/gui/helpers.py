@@ -1,7 +1,7 @@
 import os
 import logging
 
-from bibed.ltrace import ldebug
+from bibed.ltrace import ldebug, lprint_caller_name
 
 from bibed.constants import (
     FileTypes,
@@ -15,6 +15,7 @@ from bibed.constants import (
     HELP_POPOVER_LABEL_MARGIN,
 )
 
+from bibed.locale import _
 from bibed.preferences import preferences
 from bibed.gtk import GLib, Gtk, Gdk, Gio
 
@@ -509,7 +510,34 @@ def widgets_hide(widgets):
         widget.hide()
 
 
-def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, can_focus=None, debug=False):
+def widget_replace(old, new):
+    # Via https://stackoverflow.com/a/50522344/654755
+    # from https://stackoverflow.com/a/27587282/654755
+
+    # assert lprint_caller_name(levels=5)
+
+    parent = old.get_parent()
+
+    if parent is None:
+        # No need to replace, it seems already done…
+        return
+
+    # print('PARENT:', parent, type(parent), parent.get_parent())
+
+    props = {}
+
+    # Gtk.ContainerClass.list_child_properties(parent)
+    for key in parent.list_child_properties():
+        props[key.name] = parent.child_get_property(old, key.name)
+
+    parent.remove(old)
+    parent.add(new)
+
+    for name, value in props.items():
+        parent.child_set_property(new, name, value)
+
+
+def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=None, no_show_all=False, can_focus=None, selectable=None, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA
 
@@ -589,10 +617,15 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
 
         widget.set_receives_default(True)
 
-    if activates_default:
-        if __debug__ and debug: mp('SET activate default')  # NOQA
+    if activates_default is not None:
+        if __debug__ and debug: mp('SET activates_default', activates_default)  # NOQA
 
-        widget.set_activates_default(True)
+        widget.set_activates_default(activates_default)
+
+    if selectable is not None:
+        if __debug__ and debug: mp('SET selectable', selectable)  # NOQA
+
+        widget.set_selectable(selectable)
 
     if classes:
         if __debug__ and debug: mp('classes', classes)  # NOQA
