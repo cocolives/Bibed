@@ -85,14 +85,14 @@ FILETYPES_COLORS = {
 }
 
 SEARCH_SPECIALS = (
-    (_('t'), BibAttrs.TYPE, 'type'),
-    (_('k'), BibAttrs.KEY, 'key'),
-    (_('a'), BibAttrs.AUTHOR, 'author'),
-    (_('i'), BibAttrs.TITLE, 'title'),
-    (_('j'), BibAttrs.JOURNAL, 'journal'),
-    (_('y'), BibAttrs.YEAR, 'year'),
-    (_('f'), BibAttrs.FILE, 'file'),
-    (_('u'), BibAttrs.URL, 'URL'),
+    (_('t'), BibAttrs.TYPE, _('type'), ),
+    (_('k'), BibAttrs.KEY, _('key'), ),
+    (_('a'), BibAttrs.AUTHOR, _('author'), ),
+    (_('i'), BibAttrs.TITLE, _('title'), ),
+    (_('j'), BibAttrs.JOURNAL, _('journal'), ),
+    (_('y'), BibAttrs.YEAR, _('year'), ),
+    (_('f'), BibAttrs.FILE, _('file'), ),
+    (_('u'), BibAttrs.URL, _('URL'), ),
 )
 
 

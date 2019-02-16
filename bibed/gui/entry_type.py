@@ -11,9 +11,10 @@ from bibed.constants import (
     PANGO_BIG_FONT_SIZES,
     GENERIC_HELP_SYMBOL,
 )
-
+from bibed.locale import _
 from bibed.preferences import defaults, preferences
 
+from bibed.gtk import Gtk
 from bibed.gui.helpers import (
     bibed_icon_name,
     widget_properties,
@@ -25,8 +26,6 @@ from bibed.gui.helpers import (
     # frame_defaults,
     # scrolled_textview,
 )
-
-from bibed.gtk import Gtk
 
 
 LOGGER = logging.getLogger(__name__)
@@ -47,20 +46,20 @@ class BibedEntryTypeDialog(Gtk.Dialog):
         self.setup_stack()
 
         self.box.add(widget_properties(label_with_markup(
-            '<span foreground="grey">Keep keyboard key <span '
-            'face="monospace">Alt</span> pressed to show mnemonics, '
-            'available on most bibliographic entry types.'
-            '</span>'.format(APP_NAME),
+            _('<span foreground="grey">Keep keyboard key <span '
+              'face="monospace">Alt</span> pressed to show mnemonics, '
+              'available on most bibliographic entry types.'
+              '</span>').format(APP_NAME),
             xalign=0.5),
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.CENTER,
             margin_top=5))
 
         self.box.add(widget_properties(label_with_markup(
-            '<span foreground="grey">Hover types marked with <span '
-            'face="monospace">(?)</span> with your mouse '
-            ' for a moment to show type description.'
-            '</span>',
+            _('<span foreground="grey">Hover types marked with <span '
+              'face="monospace">(?)</span> with your mouse '
+              ' for a moment to show type description.'
+              '</span>'),
             xalign=0.5),
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.CENTER,
@@ -107,7 +106,9 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                 )
                 btn.add(button_generator(
                     child_name, btn_markup.format(
-                        size=size, label=getattr(types_labels, child_name),
+                        size=size,
+                        # HEADS UP: OTF translation.
+                        label=_(getattr(types_labels, child_name)),
                         help=GENERIC_HELP_SYMBOL
                         if type_doc else ''),
                     icon_name=bibed_icon_name('type', child_name),
@@ -122,7 +123,8 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                     btn.set_sensitive(False)
 
                 if type_doc:
-                    btn.set_tooltip_markup(type_doc)
+                    # HEADS UP: OTF translation.
+                    btn.set_tooltip_markup(_(type_doc))
 
                 grid.attach(
                     btn,

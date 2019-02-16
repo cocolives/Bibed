@@ -349,11 +349,10 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.lbl_booked = widget_properties(
             label_with_markup(
                 _('<big>Something will be here</big>\n\n'
-                'Upcoming feature. Please wait.\n'
-                '(You have no choice, anyway :-D)\n'
-                'Come discuss it: '
-                '<a href="{discuss_en}">in english</a> '
-                '| <a href="{discuss_fr}">in french</a>').format(
+                  'Upcoming feature. Please wait.\n'
+                  '(You have no choice, anyway :-D)\n'
+                  '<a href="{discuss_en}">Come discuss it on Telegram</a> '
+                  'if you wish.').format(
                     discuss_en=BIBED_ASSISTANCE_EN,
                     discuss_fr=BIBED_ASSISTANCE_FR,
                 ),

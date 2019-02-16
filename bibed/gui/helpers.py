@@ -962,7 +962,8 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
 
     lbl.set_markup_with_mnemonic(
         '{label}{help}'.format(
-            label=field_label if field_label else field_name.title(),
+            # HEADS UP: OTF translation.
+            label=_(field_label) if field_label else field_name.title(),
             help=GENERIC_HELP_SYMBOL
             if field_doc else ''))
 
@@ -976,14 +977,16 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
     )
 
     etr.set_name(field_name)
+
     if entry is not None:
         etr.set_text(entry.get_field(field_name, ''))
 
     lbl.set_mnemonic_widget(etr)
 
     if field_doc:
-        lbl.set_tooltip_markup(field_doc)
-        etr.set_tooltip_markup(field_doc)
+        # HEADS UP: OTF translation.
+        lbl.set_tooltip_markup(_(field_doc))
+        etr.set_tooltip_markup(_(field_doc))
 
     return lbl, etr
 
@@ -1003,7 +1006,8 @@ def build_entry_field_textview(fields_docs, field_name, entry):
     field_help = getattr(fields_docs, field_name)
 
     if field_help:
-        textview.set_tooltip_markup(field_help)
+        # HEADS UP: OTF translation.
+        textview.set_tooltip_markup(_(field_help))
 
     return scrolled, textview
 

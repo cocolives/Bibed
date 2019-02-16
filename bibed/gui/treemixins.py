@@ -24,8 +24,8 @@ from bibed.utils import (
 )
 # from bibed.preferences import memories  # , gpod
 from bibed.entry import BibedEntry
+from bibed.locale import _
 
-from bibed.gui.entry import BibedEntryDialog
 from bibed.gtk import Gtk, Gio, Pango
 
 
@@ -58,13 +58,13 @@ class BibedEntryTreeViewMixin:
     def setup_treeview_columns(self):
 
         self.col_key = self.setup_text_column(
-            'key', BibAttrs.KEY,
+            _('Key'), BibAttrs.KEY,
             ellipsize=Pango.EllipsizeMode.START,
             attributes={'foreground': BibAttrs.COLOR},
         )
 
         self.col_type = self.setup_text_column(
-            'type', BibAttrs.TYPE,
+            _('Type'), BibAttrs.TYPE,
             attributes={'foreground': BibAttrs.COLOR},
         )
 
@@ -73,43 +73,43 @@ class BibedEntryTreeViewMixin:
         # TODO: integrate a pixbuf for 'tags' (keywords) ?
 
         self.col_file = self.setup_pixbuf_column(
-            'F', BibAttrs.FILE,
+            _('F'), BibAttrs.FILE,
             self.get_file_cell_column,
-            self.on_file_clicked)
+            self.on_file_clicked,
         self.col_url = self.setup_pixbuf_column(
-            'U', BibAttrs.URL,
+            _('U'), BibAttrs.URL,
             self.get_url_cell_column,
-            self.on_url_clicked)
+            self.on_url_clicked,
         self.col_quality = self.setup_pixbuf_column(
-            'Q', BibAttrs.QUALITY,
+            _('Q'), BibAttrs.QUALITY,
             self.get_quality_cell_column,
-            self.on_quality_clicked)
+            self.on_quality_clicked,
         self.col_read = self.setup_pixbuf_column(
-            'R', BibAttrs.READ,
+            _('R'), BibAttrs.READ,
             self.get_read_cell_column,
-            self.on_read_clicked)
+            self.on_read_clicked,
         self.col_comment = self.setup_pixbuf_column(
-            'C', BibAttrs.COMMENT,
-            self.get_comment_cell_column)
+            _('C'), BibAttrs.COMMENT,
+            self.get_comment_cell_column,
 
         self.col_author = self.setup_text_column(
-            'author', BibAttrs.AUTHOR,
+            _('Author(s)'), BibAttrs.AUTHOR,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
         self.col_title = self.setup_text_column(
-            'title', BibAttrs.TITLE,
+            _('Title'), BibAttrs.TITLE,
             ellipsize=Pango.EllipsizeMode.MIDDLE,
             attributes={'foreground': BibAttrs.COLOR},
         )
         self.col_journal = self.setup_text_column(
-            'journal', BibAttrs.JOURNAL,
+            _('Journal'), BibAttrs.JOURNAL,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
 
         self.col_year = self.setup_text_column(
-            'year', BibAttrs.YEAR, xalign=1.0,
+            _('Year'), BibAttrs.YEAR, xalign=1.0,
             attributes={'foreground': BibAttrs.COLOR},
         )
 
