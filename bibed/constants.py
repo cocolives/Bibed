@@ -15,7 +15,7 @@ from bibed.foundations import (
     BIBED_ICONS_DIR,
 )
 
-from bibed.locale import _
+from bibed.locale import C_
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
@@ -85,14 +85,30 @@ FILETYPES_COLORS = {
 }
 
 SEARCH_SPECIALS = (
-    (_('t'), BibAttrs.TYPE, _('type'), ),
-    (_('k'), BibAttrs.KEY, _('key'), ),
-    (_('a'), BibAttrs.AUTHOR, _('author'), ),
-    (_('i'), BibAttrs.TITLE, _('title'), ),
-    (_('j'), BibAttrs.JOURNAL, _('journal'), ),
-    (_('y'), BibAttrs.YEAR, _('year'), ),
-    (_('f'), BibAttrs.FILE, _('file'), ),
-    (_('u'), BibAttrs.URL, _('URL'), ),
+    (C_('search field', 'p'),
+     BibAttrs.TYPE,
+     C_('search field', 'type'), ),
+    (C_('search field', 'k'),
+     BibAttrs.KEY,
+     C_('search field', 'key'), ),
+    (C_('search field', 'a'),
+     BibAttrs.AUTHOR,
+     C_('search field', 'author'), ),
+    (C_('search field', 't'),
+     BibAttrs.TITLE,
+     C_('search field', 'title'), ),
+    (C_('search field', 'j'),
+     BibAttrs.JOURNAL,
+     C_('search field', 'journal'), ),
+    (C_('search field', 'y'),
+     BibAttrs.YEAR,
+     C_('search field', 'year'), ),
+    (C_('search field', 'f'),
+     BibAttrs.FILE,
+     C_('search field', 'file'), ),
+    (C_('search field', 'u'),
+     BibAttrs.URL,
+     C_('search field', 'URL'), ),
 )
 
 

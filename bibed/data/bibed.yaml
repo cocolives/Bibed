@@ -1429,6 +1429,8 @@ fields:
     editorial_roles:
       content: '@@@import{2.3.6}.'
       title: Editorial Roles
+    eid: The electronic identifier of an <span weight="bold" face="monospace">@article</span>.
+    eprint: The electronic identifier of an online publication. This is roughly comparable to a DOI but specific to a certain archive, repository, service, or system. @@@seealso{3.13.7} for details. Also see <span face="monospace">eprinttype</span> and <span face="monospace">eprintclass</span>.
     journaltitle: The name of a journal, a newspaper, or some other periodical.
     key: The bibliography entry unique key.
     title: The title of the work.
@@ -1452,6 +1454,7 @@ fields:
     editorb: Editor(s) (type B)
     editorc: Editor(s) (type C)
     eid: EID
+    entryset: Entries set
     eprint: E-Print
     eprintclass: E-Print class
     eprinttype: E-Print type
