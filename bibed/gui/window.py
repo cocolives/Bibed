@@ -30,6 +30,7 @@ from bibed.gui.helpers import (
     widget_properties,
     widgets_show,
     widgets_hide,
+    widget_replace,
     label_with_markup,
     flat_unclickable_button_in_hbox,
 )
@@ -80,7 +81,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.setup_icon()
 
         # TODO: use gui.helpers.get_screen_resolution()
-        dimensions = (1200, 600)
+        dimensions = (900, 600)
 
         if gpod('remember_windows_states'):
             remembered_dimensions = memories.main_window_dimensions
@@ -359,6 +360,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 yalign=0.5,
             ),
             expand=True,
+            selectable=False,
         )
 
     def setup_treeview(self):
@@ -384,6 +386,31 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.treeview_sw.add(self.treeview)
 
+        # setup a treeview replacer when no file is loaded.
+
+        self.treeview_placeholder = widget_properties(
+            label_with_markup(
+                _('<big>Welcome to Bibed!</big>\n\n'
+                  'You have no open bibliography yet.\n'
+                  'You can create a new one, or load an exising one,\n'
+                  'via icon-tools in the upper left corner.\n\n'
+                  'In case you need human help,\n'
+                  'you can <a href="{discuss_en}">'
+                  'reach us on Telegram</a>.\n\n'
+                  'Best regards,\n'
+                  'Olivier, Corinne\n'
+                  'and all Bibed contributors').format(
+                    discuss_en=BIBED_ASSISTANCE_EN,
+                    discuss_fr=BIBED_ASSISTANCE_FR,
+                ),
+                name='treeview_placeholder',
+                xalign=0.5,
+                yalign=0.5,
+            ),
+            expand=True,
+            selectable=False,
+        )
+
     def update_title(self):
 
         # assert lprint_caller_name(levels=5)
@@ -395,9 +422,6 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         active_files = self.get_selected_filenames(with_type=True)
         active_files_count = len(active_files)
-
-        if active_files_count > 1:
-            pass
 
         if active_files_count == self.application.files.num_user:
             # All user files are selected.
@@ -425,28 +449,29 @@ class BibedWindow(Gtk.ApplicationWindow):
                     '{count} file selected',
                     '{count} files selected',
                     active_files_count
-                ).format(active_files_count)
+                ).format(count=active_files_count)
+            )
+
+            subtitle_value = _('{items} in {files}').format(
+                items=n_(
+                    '{count} item',
+                    '{count} items',
+                    row_count,
+                ).format(count=row_count),
+                files=n_(
+                    '{count} file',
+                    '{count} files',
+                    files_count,
+                ).format(count=files_count)
             )
 
         else:
             if self.application.files.num_user:
-                title_value = _('{app} – NO FILE SELECTED').format(app=APP_NAME)
-
+                title_value = _('{app} – no file selected').format(app=APP_NAME)
+                subtitle_value = _('select at least one file to display in your library')
             else:
                 title_value = _('{0} – Welcome!').format(APP_NAME)
-
-        subtitle_value = _('{items} in {files}').format(
-            items=n_(
-                '{count} item',
-                '{count} items',
-                row_count,
-            ).format(count=row_count),
-            files=n_(
-                '{count} file',
-                '{count} files',
-                files_count,
-            ).format(count=files_count)
-        )
+                subtitle_value = None
 
         self.headerbar.props.title = title_value
         self.headerbar.props.subtitle = subtitle_value
@@ -488,10 +513,15 @@ class BibedWindow(Gtk.ApplicationWindow):
             how_many_files = self.application.files.num_user
 
             if how_many_files:
+                widget_replace(self.treeview_placeholder, self.treeview)
+                self.treeview.show()
+
                 widgets_show(bibed_widgets_conditional)
 
             else:
                 widgets_hide(bibed_widgets_conditional)
+                widget_replace(self.treeview, self.treeview_placeholder)
+                self.treeview_placeholder.show()
 
             if sync_children:
                 self.files_popover.sync_buttons_states(sync_parent=False)
