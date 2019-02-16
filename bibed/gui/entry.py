@@ -696,6 +696,72 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     def setup_stack(self):
 
+        def build_fields_groups():
+            ''' Get fields groups from user preferences,
+                or application defaults. '''
+
+            try:
+                fields_entry_node = getattr(
+                    preferences.fields.by_type, self.entry.type)
+
+            except AttributeError:
+                # We have no preferences at all (user has started the
+                # app for the first time, or did not set any prefs).
+                fields_entry_node = getattr(
+                    defaults.fields.by_type, self.entry.type)
+
+                # HEADS UP: attributes names are different
+                #       between defaults and preferences.
+                fields_main = fields_entry_node.required[:]
+
+                fields_secondary = []
+
+                try:
+                    fields_other = fields_entry_node.optional[:]
+
+                except TypeError:
+                    fields_other = []
+
+                try:
+                    fields_stacked = fields_entry_node.stacked[:]
+
+                except TypeError:
+                    fields_stacked = []
+
+            else:
+                fields_main = fields_entry_node.main[:]
+
+                try:
+                    fields_secondary = fields_entry_node.secondary[:]
+
+                except TypeError:
+                    fields_secondary = []
+
+                try:
+                    fields_other = fields_entry_node.other[:]
+
+                except TypeError:
+                    fields_other = []
+
+                try:
+                    fields_stacked = fields_entry_node.stacked[:]
+
+                except TypeError:
+                    fields_stacked = []
+
+            for field_name in fields_stacked:
+                if field_name in fields_other:
+                    # This can happen in defaults.
+                    # TODO: chek defaults to avoid it.
+                    fields_other.remove(field_name)
+
+            return (
+                fields_main,
+                fields_secondary,
+                fields_other,
+                fields_stacked,
+            )
+
         def build_fields_grid(entry, fields):
 
             def connect_and_attach_to_grid(label, entry, field_name):
@@ -710,9 +776,6 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             grid.set_border_width(BOXES_BORDER_WIDTH)
             grid.set_column_spacing(GRID_COLS_SPACING)
             grid.set_row_spacing(GRID_ROWS_SPACING)
-
-            fields_labels = defaults.fields.labels
-            fields_docs   = defaults.fields.docs
 
             if len(fields) == 1:
                 field_name = fields[0]
@@ -752,48 +815,64 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
             return grid
 
+        def build_stack_labels():
+
+            if preferences.types.main is None:
+                main_stack_label = _('Required fields')
+
+                # We have no "secondary" in defaults,
+                # this is a user-level feature.
+                secondary_stack_label = None
+
+                other_stack_label = _('Optional fields')
+
+            else:
+                main_stack_label = _('Main fields')
+                secondary_stack_label = _('Secondary fields')
+                other_stack_label = _('Other fields')
+
+            if len(fields_main) == 1:
+                main_stack_label = _(getattr(fields_labels,
+                                             fields_main[0]))
+
+            if len(fields_secondary) == 1:
+                secondary_stack_label = _(getattr(fields_labels,
+                                                  fields_secondary[0]))
+
+            if len(fields_other) == 1:
+                other_stack_label = _(getattr(fields_labels,
+                                              fields_other[0]))
+
+            return (
+                main_stack_label,
+                secondary_stack_label,
+                other_stack_label,
+            )
+
+        # ———————————————————————————————————————————————— Fields groups stacks
+
         stack = Gtk.Stack()
 
-        try:
-            fields_entry_node = getattr(preferences.fields.by_type, self.entry.type)
+        stack_switcher = widget_properties(
+            Gtk.StackSwitcher(),
+            expand=Gtk.Orientation.HORIZONTAL,
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.CENTER,
+            margin=GRID_BORDER_WIDTH,
+        )
 
-        except AttributeError:
-            # We have no preferences at all (user has started the
-            # app for the first time, or did not set any prefs).
-            fields_entry_node = None
+        stack_switcher.set_stack(stack)
 
-        if fields_entry_node is None:
-            fields_entry_node = getattr(defaults.fields.by_type, self.entry.type)
+        # ————————————————————————————————————————————— Fields groups building
 
-            # HEADS UP: attributes names are different
-            #       between defaults and preferences.
-            fields_main = fields_entry_node.required[:]
-            fields_secondary = []
+        (fields_main,
+         fields_secondary,
+         fields_other,
+         fields_stacked) = build_fields_groups()
 
-            fields_other = fields_entry_node.optional[:]
-
-            try:
-                fields_stacked = fields_entry_node.stacked[:]
-
-            except TypeError:
-                fields_stacked = []
-
-        else:
-            fields_main = fields_entry_node.main[:]
-            fields_secondary = fields_entry_node.secondary[:]
-            fields_other = fields_entry_node.other[:]
-
-            try:
-                fields_stacked = fields_entry_node.stacked[:]
-
-            except TypeError:
-                fields_stacked = []
-
-        for field_name in fields_stacked:
-            if field_name in fields_other:
-                # This can happen in defaults.
-                # TODO: chek defaults to avoid it.
-                fields_other.remove(field_name)
+        # Get labels & docs from application defaults (YAML data file).
+        fields_labels = defaults.fields.labels
+        fields_docs   = defaults.fields.docs
 
         self.grids['main'] = build_fields_grid(
             self.entry, fields_main,
@@ -806,32 +885,20 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         for field_name in fields_stacked:
             self.grids[field_name] = build_fields_grid(
-                self.entry,  # TODO: Find Mnemonic
+                self.entry,  # TODO: Find Mnemonic label.
                 [field_name],
             )
 
-        self.grids['other'] = build_fields_grid(
-            self.entry, fields_other,
-        )
+        if fields_other:
+            self.grids['other'] = build_fields_grid(
+                self.entry, fields_other,
+            )
 
-        stack_switcher = widget_properties(
-            Gtk.StackSwitcher(),
-            expand=Gtk.Orientation.HORIZONTAL,
-            halign=Gtk.Align.CENTER,
-            valign=Gtk.Align.CENTER,
-            margin=GRID_BORDER_WIDTH,
-        )
+        # ————————————————————————————————————————————— Populate stack switcher
 
-        stack_switcher.set_stack(stack)
-
-        if preferences.types.main is None:
-            main_stack_label = "Required fields"
-            other_stack_label = "Optional fields"
-
-        else:
-            main_stack_label = "Main fields"
-            secondary_stack_label = "Secondary fields"
-            other_stack_label = "Other fields"
+        (main_stack_label,
+         secondary_stack_label,
+         other_stack_label, ) = build_stack_labels()
 
         stack.add_titled(
             in_scrolled(self.grids['main']),
@@ -846,11 +913,12 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                 secondary_stack_label,
             )
 
-        stack.add_titled(
-            in_scrolled(self.grids['other']),
-            'other',
-            other_stack_label,
-        )
+        if fields_other:
+            stack.add_titled(
+                in_scrolled(self.grids['other']),
+                'other',
+                other_stack_label,
+            )
 
         for grid_name, grid in self.grids.items():
             if grid_name in ['main', 'secondary', 'other']:
@@ -862,6 +930,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                 # HEADS UP: OTF translation.
                 _(getattr(fields_labels, grid_name)),
             )
+
+        # ————————————————————————————————————————————————— Add widgets, finish
 
         self.stack_switcher = stack_switcher
         self.stack = stack
