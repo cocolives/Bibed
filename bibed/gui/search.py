@@ -31,13 +31,12 @@ def help_markup(help_items):
 
 class BibedSearchBar(Gtk.SearchBar):
 
-    def __init__(self, search_entry):
+    def __init__(self, search_entry, treeview):
 
         super().__init__()
 
         self.search = search_entry
-
-        self.search.props.width_chars = SEARCH_WIDTH_EXPANDED
+        self.treeview = treeview
 
         self.set_show_close_button(True)
 
@@ -47,25 +46,20 @@ class BibedSearchBar(Gtk.SearchBar):
 
         half_help_count = int(len(SEARCH_SPECIALS) / 2)
 
-        help_label_left = Gtk.Label()
-        help_label_left.set_markup(
-            help_markup(SEARCH_SPECIALS[:half_help_count])
+        help_label_left = label_with_markup(
+            help_markup(SEARCH_SPECIALS[:half_help_count]),
+            ellipsize=Pango.EllipsizeMode.START,
         )
 
-        help_label_right = Gtk.Label()
-        help_label_right.set_markup(
-            help_markup(SEARCH_SPECIALS[half_help_count:])
+        help_label_right = label_with_markup(
+            help_markup(SEARCH_SPECIALS[half_help_count:]),
+            ellipsize=Pango.EllipsizeMode.END,
         )
 
+        # left, top, width, height
         grid.attach(help_label_left, 0, 0, 1, 1)
-        grid.attach_next_to(
-            self.search, help_label_left,
-            Gtk.PositionType.RIGHT,
-            1, 1)
-        grid.attach_next_to(
-            help_label_right, self.search,
-            Gtk.PositionType.RIGHT,
-            1, 1)
+        grid.attach(self.search, 1, 0, 1, 1)
+        grid.attach(help_label_right, 2, 0, 1, 1)
 
         self.connect_entry(self.search)
 
@@ -73,4 +67,42 @@ class BibedSearchBar(Gtk.SearchBar):
 
         self.add(self.grid)
 
+        self.connect('size-allocate', self.on_size_allocate)
+
         self.show_all()
+
+    def set_search_mode(self, mode):
+
+        super().set_search_mode(mode)
+
+        if mode:
+            # Be sure we re-grab the focus, even if already open,
+            # else a Control-F while browsing the treeview does
+            # not refocus the search entry and we're stuck.
+            self.search.grab_focus()
+
+    @run_at_most_every(500)
+    def on_size_allocate(self, widget, rectangle):
+
+        try:
+            previous_allocation = self.previous_allocation
+
+        except AttributeError:
+            pass
+
+        else:
+            if previous_allocation.width == rectangle.width:
+                # Avoid superflous calls (numerous on Alt-Tab)
+                return
+
+        possible_width = int(rectangle.width / 2.5 / 12)
+
+        if possible_width < SEARCH_WIDTH_MINIMAL:
+            possible_width = SEARCH_WIDTH_MINIMAL
+
+        if possible_width > SEARCH_WIDTH_MAXIMAL:
+            possible_width = SEARCH_WIDTH_MAXIMAL
+
+        self.search.props.width_chars = possible_width
+
+        self.previous_allocation = rectangle
