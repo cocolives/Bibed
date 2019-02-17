@@ -883,7 +883,9 @@ class BibedWindow(Gtk.ApplicationWindow):
             with self.block_signals():
                 for filename in filenames:
                     databases_to_select.append(
-                        self.application.open_file(filename)
+                        # Don't select individually, we will select
+                        # all newly opened databases grouped at once.
+                        self.application.open_file(filename, select=False)
                     )
 
             self.set_selected_databases(databases_to_select)
