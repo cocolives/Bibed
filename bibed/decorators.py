@@ -78,19 +78,21 @@ def wait_for_queued_events(delay=None):
     if delay is None:
         delay = 500
 
-    count = 0
+    wait_cycle = 0
+    had_remaining = 0
 
     if FUNC_IDLE_CALLS or FUNC_MOST_CALLS:
+        had_remaining = len(FUNC_IDLE_CALLS) + len(FUNC_MOST_CALLS)
         LOGGER.info('Waiting for {} queued events to run…'.format(
-            len(FUNC_IDLE_CALLS) + len(FUNC_MOST_CALLS)
+            had_remaining
         ))
 
-    while (FUNC_IDLE_CALLS or FUNC_MOST_CALLS) and count != delay:
+    while (FUNC_IDLE_CALLS or FUNC_MOST_CALLS) and wait_cycle != delay:
 
         while Gtk.events_pending():
             Gtk.main_iteration()
 
-        count += 1
+        wait_cycle += 1
         time.sleep(0.01)
 
     if FUNC_IDLE_CALLS:
@@ -103,5 +105,6 @@ def wait_for_queued_events(delay=None):
             len(FUNC_MOST_CALLS)
         ))
 
-    else:
-        LOGGER.info('All events ran in {} msecs.'.format(count))
+    elif had_remaining:
+        LOGGER.info('{} remaining events ran in {} msecs.'.format(
+            had_remaining, wait_cycle))
