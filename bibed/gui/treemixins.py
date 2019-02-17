@@ -22,7 +22,7 @@ from bibed.utils import (
     open_with_system_launcher,
     open_urls_in_web_browser,
 )
-# from bibed.preferences import memories  # , gpod
+from bibed.preferences import gpod
 from bibed.entry import BibedEntry
 from bibed.locale import _, C_, n_
 
@@ -129,7 +129,10 @@ class BibedEntryTreeViewMixin:
         self.set_columns_widths(rectangle.width)
 
     @only_one_when_idle
-    def set_columns_widths(self, width):
+    def set_columns_widths(self, width=None):
+
+        if width is None:
+            width = self.get_allocated_width()
 
         # assert lprint_caller_name(levels=4)
         # assert lprint_function_name()
@@ -156,14 +159,15 @@ class BibedEntryTreeViewMixin:
         #     # col_title_width,
         # )
 
+        # self.col_title.set_fixed_width(-1)
+        # self.col_title.set_min_width(col_title_width - 50)
+        # self.col_title.set_max_width(col_title_width + 50)
+
         self.col_key.set_fixed_width(col_key_width)
         self.col_type.set_fixed_width(col_type_width)
         self.col_author.set_fixed_width(col_author_width)
         self.col_journal.set_fixed_width(col_journal_width)
         self.col_year.set_fixed_width(col_year_width)
-        # self.col_title.set_fixed_width(-1)
-        # self.col_title.set_min_width(col_title_width - 50)
-        # self.col_title.set_max_width(col_title_width + 50)
 
     # ————————————————————————————————————————————————————————— Pixbufs columns
 
@@ -199,27 +203,9 @@ class BibedEntryTreeViewMixin:
         # TODO: use path instead of GID.
         return self.main_model.get_iter(gid)
 
-    def get_entry_by_path(self, path, with_global_id=False, return_iter=False, only_row=False):
+    def get_entry_by_path(self, path, only_row=False):
 
-        # Are we on the list store, or a filter ?
-        model     = self.get_model()
-        treeiter  = model.get_iter(path)
-
-        if only_row:
-            return model[treeiter]
-
-        bib_key   = model[treeiter][BibAttrs.KEY]
-        filename  = model[treeiter][BibAttrs.FILENAME]
-
-        entry = self.files.get_entry_by_key(bib_key, filename=filename)
-
-        if with_global_id:
-            entry.gid = model[treeiter][BibAttrs.GLOBAL_ID]
-
-        if return_iter:
-            return (entry, treeiter, )
-
-        return entry
+        return self.get_entries_by_paths([path], only_rows=only_row)[0]
 
     def get_entries_by_paths(self, paths, with_global_id=False, return_iter=False, only_rows=False):
 
@@ -229,8 +215,7 @@ class BibedEntryTreeViewMixin:
         entries = []
 
         key_index  = BibAttrs.KEY
-        file_index = BibAttrs.FILENAME
-        gid_index  = BibAttrs.GLOBAL_ID
+        dbid_index = BibAttrs.DBID
 
         for path in paths:
             treeiter = model.get_iter(path)
@@ -240,13 +225,10 @@ class BibedEntryTreeViewMixin:
                 rows.append(row)
                 continue
 
-            bib_key  = row[key_index]
-            filename = row[file_index]
+            bib_key = row[key_index]
+            dbid = row[dbid_index]
 
-            entry = self.files.get_entry_by_key(bib_key, filename=filename)
-
-            if with_global_id:
-                entry.gid = row[gid_index]
+            entry = self.files.get_entry_by_key(bib_key, dbid=dbid)
 
             if return_iter:
                 entries.append((entry, treeiter, ))
@@ -264,28 +246,27 @@ class BibedEntryTreeViewMixin:
 
         return self.get_entries_by_paths(
             self.get_selected_rows(paths_only=True),
-            with_global_id=True
         )
 
     # ————————————————————————————————————————————————————————————— Gtk signals
 
     def on_quality_clicked(self, renderer, path):
 
-        entry = self.get_entry_by_path(path, with_global_id=True)
+        entry = self.get_entry_by_path(path)
 
         entry.toggle_quality()
 
-        # if gpod('bib_auto_save'):
-        self.files.trigger_save(entry.database.filename)
+        if gpod('bib_auto_save'):
+            entry.database.write()
 
     def on_read_clicked(self, renderer, path):
 
-        entry = self.get_entry_by_path(path, with_global_id=True)
+        entry = self.get_entry_by_path(path)
 
         entry.cycle_read_status()
 
-        # if gpod('bib_auto_save'):
-        self.files.trigger_save(entry.database.filename)
+        if gpod('bib_auto_save'):
+            entry.database.write()
 
     def on_url_clicked(self, renderer, path):
 
@@ -295,16 +276,14 @@ class BibedEntryTreeViewMixin:
     def on_file_clicked(self, renderer, path):
 
         self.open_entries_files_in_prefered_application(
-            [self.get_entry_by_path(path, only_row=True)])
+            [self.get_entry_by_path(path, only_row=True)]
+        )
 
     def on_treeview_row_activated(self, treeview, path, column):
 
-        # GLOBAL_ID is needed to update the treeview after modifications.
-        entry = self.get_entry_by_path(path, with_global_id=True)
-
-        assert(isinstance(entry, BibedEntry))
-
-        return self.window.entry_edit(entry)
+        return self.window.entry_edit(
+            self.get_entry_by_path(path)
+        )
 
     # —————————————————————————————————————————————————————————— “Copy” actions
 
@@ -346,6 +325,25 @@ class BibedEntryTreeViewMixin:
 
     def copy_to_clipboard_or_action(self, field_index, transform_func=None, action_func=None, action_message=None, rows=None):
 
+        def display_keys(keys):
+            lenght = len(keys)
+            if lenght == 1:
+                return keys[0]
+
+            elif lenght <= limit_keys:
+                return ', '.join(str(key) for key in keys)
+
+            else:
+                remaining = lenght - limit_keys
+                return (
+                    ', '.join(str(key) for key in keys[:limit_keys])
+                    + n_(
+                        'and one more',
+                        'and {count} more',
+                        remaining,
+                    ).format(count=remaining)
+                )
+
         if rows is None:
             rows = self.get_selected_rows()
         else:
@@ -356,11 +354,15 @@ class BibedEntryTreeViewMixin:
                 'Nothing selected; nothing copied to clipboard.')
             return
 
-        entry_gids = []
+        entry_keys = []
         entry_data = []
 
+        limit_keys = 3
+
+        key_index = BibAttrs.KEY
+
         for row in rows:
-            entry_gids.append(row[BibAttrs.GLOBAL_ID])
+            entry_keys.append(row[key_index])
             entry_data.append(row[field_index])
 
         if bool([x for x in entry_data if x is not None and x.strip() != '']):
@@ -378,7 +380,7 @@ class BibedEntryTreeViewMixin:
                     n_(
                         '{data} copied to clipboard (from entry {key}).',
                         '{data} copied to clipboard (from entries {key}).',
-                        len(entry_gids),
+                        len(entry_keys),
                     ).format(
                         data=n_(
                             '{} line, {} chars',
@@ -388,7 +390,9 @@ class BibedEntryTreeViewMixin:
                             len(transformed_data),
                             len(final_data)
                         ),
-                        key=','.join(str(g) for g in entry_gids)))
+                        key=display_keys(entry_keys)
+                    )
+                )
 
             else:
                 returning_data = action_func(transformed_data)
@@ -397,7 +401,7 @@ class BibedEntryTreeViewMixin:
                     n_(
                         '“{data}” {message} (from entry {key}).',
                         '“{data}” {message} (from entries {key}).',
-                        len(entry_gids),
+                        len(entry_keys),
                     ).format(
                         data=', '.join(returning_data),
                         message=(_('run through {func}').format(
@@ -405,7 +409,7 @@ class BibedEntryTreeViewMixin:
                             if action_message is None
                             else action_message
                         ),
-                        key=', '.join(str(g) for g in entry_gids),
+                        key=display_keys(entry_keys),
                     )
                 )
 
@@ -414,5 +418,6 @@ class BibedEntryTreeViewMixin:
                 n_(
                     'Selected entry {key}.',
                     'Selected entries {key}.',
-                    len(entry_gids)
-                ).format(key=', '.join(str(g) for g in entry_gids)))
+                    len(entry_keys)
+                ).format(key=display_keys(entry_keys))
+            )

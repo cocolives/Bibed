@@ -9,7 +9,7 @@ from bibed.user import (
 
 from bibed.foundations import (
     Anything,
-    BIBED_DATA_DIR, 
+    BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
 )
 
@@ -33,9 +33,9 @@ MINIMUM_BIB_KEY_LENGTH = 8
 
 
 BibAttrs = Anything((
-    ('GLOBAL_ID', int, ),  # global ID / counter across all files
-    ('FILENAME', str, ),  # store origin (filename / ID)
-    ('ID', int, ),  # id / counter in current file
+    ('DBID', int, ),  # database ID (in file store)
+    ('FILETYPE', int, ),  # file type
+    ('COLOR', str, ),  # foreground color
     ('TOOLTIP', str, ),  # Row tooltip (for treeview)
     ('TYPE', str, ),  # BIB entry type (article, book…)
     ('KEY', str, ),  # BIB sort key
@@ -52,8 +52,6 @@ BibAttrs = Anything((
     ('READ', str, ),  # read status
     ('COMMENT', str, ),  # comment (text field)
     ('KEYWORDS', str, ),  # keywords (for search/filter only)
-    ('FILETYPE', int, ),  # file type
-    ('COLOR', str, ),  # foreground color
 ))
 
 

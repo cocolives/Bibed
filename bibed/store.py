@@ -10,6 +10,7 @@ from bibed.exceptions import (
     AlreadyLoadedException,
     FileNotFoundError,
     BibKeyNotFoundError,
+    NoDatabaseForDBIDError,
     NoDatabaseForFilenameError,
 )
 
@@ -73,7 +74,7 @@ class BibedFileStoreNoWatchContextManager:
             self.store.inotify_remove_watch(self.filename)
 
         except KeyError:
-            # When called from store.close_file(),
+            # When called from store.close_database(),
             # the inotify watch has already been removed.
             self.reenable_inotify = False
 
@@ -347,15 +348,15 @@ class BibedFileStore(Gio.ListStore):
 
         return None
 
-    def get_entry_by_key(self, key, filename=None):
+    def get_entry_by_key(self, key, dbid=None):
 
         # assert lprint_function_name()
         # assert lprint(key, filename)
 
-        if filename is None:
+        if dbid is None:
             for database in self:
                 try:
-                    database.get_entry_by_key(key)
+                    return database.get_entry_by_key(key)
 
                 except KeyError:
                     # We must test all databases prior to raising “not found”.
@@ -365,33 +366,42 @@ class BibedFileStore(Gio.ListStore):
 
         else:
             try:
-                return self.get_database(filename).get_entry_by_key(key)
+                return self.get_database(dbid=dbid).get_entry_by_key(key)
 
             except NoDatabaseForFilenameError:
                 raise BibKeyNotFoundError
 
-    def get_database(self, filename=None, filetype=None):
+    def get_database(self, filename=None, filetype=None, dbid=None):
         ''' Get a database, either for a filename *or* a filetype. '''
 
         # assert lprint_function_name()
 
         assert (
-            filename is None and filetype is not None
-        ) or (
-            filename is not None and filetype is None
+            filename is not None
+            or filetype is not None
+            or dbid is not None
         )
-        assert filetype is None or (
-            filetype is not None and filetype in (
-                FileTypes.TRASH, FileTypes.QUEUE,
-            )
+
+        assert filetype is None or filetype in (
+            FileTypes.TRASH,
+            FileTypes.QUEUE,
+            FileTypes.IMPORTED,
         )
 
         if filetype is None:
-            for database in self:
-                if database.filename == filename:
-                    return database
+            if dbid:
+                for database in self:
+                    if database.objectid == dbid:
+                        return database
 
-            raise NoDatabaseForFilenameError(filename)
+                raise NoDatabaseForDBIDError(dbid)
+
+            else:
+                for database in self:
+                    if database.filename == filename:
+                        return database
+
+                raise NoDatabaseForFilenameError(filename)
 
         for database in self:
             if database.filetype == filetype:
@@ -477,28 +487,10 @@ class BibedFileStore(Gio.ListStore):
 
     # ————————————————————————————————————————————————————————— File operations
 
-    def parse(self, filename, filetype, impact_data_store=True, recompute=True):
-        ''' Internal method. '''
+    def load(self, filename, filetype=None):
 
         # assert lprint_function_name()
-        # assert lprint(filename, recompute)
-
-        database = BibedDatabase(filename, filetype, self)
-
-        if impact_data_store:
-            for entry in database.values():
-                self.data_store.append(entry, filetype)
-
-            # Don't bother recompute if data_store is not impacted.
-            if recompute:
-                self.data_store.do_recompute_global_ids()
-
-        return database
-
-    def load(self, filename, filetype=None, recompute=True):
-
-        # assert lprint_function_name()
-        # assert lprint(filename, filetype, recompute)
+        # assert lprint(filename, filetype)
 
         if self.has(filename):
             raise AlreadyLoadedException
@@ -512,14 +504,13 @@ class BibedFileStore(Gio.ListStore):
         # Transient files don't get to the datastore.
         if filetype == FileTypes.TRANSIENT:
             impact_data_store = False
-            recompute = False
             inotify = False
 
-        database = self.parse(
-            filename, filetype,
-            impact_data_store=impact_data_store,
-            recompute=recompute
-        )
+        database = BibedDatabase(filename, filetype)
+
+        if impact_data_store:
+            for entry in database.values():
+                self.data_store.append(entry)
 
         if inotify:
             self.inotify_add_watch(filename)
@@ -564,10 +555,10 @@ class BibedFileStore(Gio.ListStore):
 
         database_to_write.write()
 
-    def close(self, filename, save_before=True, recompute=True, remember_close=True):
+    def close(self, db_to_close, save_before=True, remember_close=True):
 
         # assert lprint_function_name()
-        # assert lprint(filename, save_before, recompute, remember_close)
+        # assert lprint(filename, save_before, remember_close)
 
         database_to_remove = None
         index_to_remove = None
@@ -576,7 +567,7 @@ class BibedFileStore(Gio.ListStore):
 
         for index, database in enumerate(self):
 
-            if database.filename == filename:
+            if database == db_to_close:
                 if database.filetype == FileTypes.USER:
                     self.num_user -= 1
 
@@ -585,7 +576,6 @@ class BibedFileStore(Gio.ListStore):
 
                 elif database.filetype == FileTypes.TRANSIENT:
                     impact_data_store = False
-                    recompute = False
                     inotify = False
 
                 database_to_remove = database
@@ -593,7 +583,7 @@ class BibedFileStore(Gio.ListStore):
                 break
 
         if inotify:
-            self.inotify_remove_watch(filename, delete=True)
+            self.inotify_remove_watch(database_to_remove.filename, delete=True)
 
         if save_before:
             # self.clear_save_callback()
@@ -604,15 +594,17 @@ class BibedFileStore(Gio.ListStore):
         self.remove(index_to_remove)
 
         if __debug__:
-            LOGGER.debug('Closed database “{}”.'.format(filename))
+            LOGGER.debug('Closed database “{}”.'.format(database_to_remove))
 
         if impact_data_store:
-            self.clear_data(filename, recompute=recompute)
+            self.clear_data(database_to_remove)
 
         if impact_data_store and remember_close:
-            memories.remove_open_file(filename)
+            memories.remove_open_file(database_to_remove.filename)
 
-    def close_all(self, save_before=True, recompute=True, remember_close=True):
+        del database_to_remove, db_to_close
+
+    def close_all(self, save_before=True, remember_close=True):
 
         # Again, still, copy()/slice() self to avoid misses.
         for index, database in enumerate(self[:]):
@@ -620,9 +612,8 @@ class BibedFileStore(Gio.ListStore):
                 continue
 
             self.close(
-                database.filename,
+                database,
                 save_before=save_before,
-                recompute=recompute,
                 remember_close=remember_close
             )
 
@@ -632,7 +623,7 @@ class BibedFileStore(Gio.ListStore):
         except Exception:
             pass
 
-    def reload(self, filename):
+    def reload(self, database):
 
         # assert lprint_function_name()
 
@@ -643,8 +634,10 @@ class BibedFileStore(Gio.ListStore):
         # manually while an inotify reload occurs.
         self.lock(blocking=False)
 
+        filename = database.filename
+
         # self.window.treeview.set_editable(False)
-        self.close(filename,
+        self.close(database,
                    save_before=False,
                    remember_close=False)
 
@@ -654,70 +647,20 @@ class BibedFileStore(Gio.ListStore):
 
         return result
 
-    def clear_data(self, filename, recompute=True):
+    def clear_data(self, database=None):
         ''' Clear the data store from one or more file contents. '''
-
-        # assert lprint_function_name()
-        # assert lprint(filename, recompute)
-
-        if filename is None:
-            # clear all USER data only (no system).
-            for database in self:
-                if database.filetype == FileTypes.USER:
-                    self.data_store.clear_data(
-                        database.filename, recompute=recompute)
-
-        else:
-            self.data_store.clear_data(filename, recompute=recompute)
-
-    def trigger_save(self, filename):
-        ''' function called by anywhere in the code to trigger a save().
-
-            This method acts as a proxy, can be called 10 times a second,
-            and will just trigger *one* save operation one second after the
-            first call.
-
-        '''
 
         # assert lprint_function_name()
         # assert lprint(filename)
 
-        if self.file_write_lock.acquire(blocking=False) is False:
-            return
+        if database is None:
+            # clear all USER data only (no system).
+            for database in self:
+                if database.filetype == FileTypes.USER:
+                    self.data_store.clear_data(database)
 
-        # Useless, everything runs too fast.
-        # self.clear_save_callback()
-
-        LOGGER.debug('Programming save of {0} when idle.'.format(filename))
-
-        self.save_trigger_source = GLib.idle_add(
-            self.save_trigger_callback, filename)
-
-    def save_trigger_callback(self, filename):
-
-        # assert lprint_function_name()
-
-        # time.sleep(1)
-
-        self.save(filename)
-
-        # The trigger acquired the lock to avoid concurrent / parallel save().
-        # We need to release to allow the database save() method to re-lock.
-        self.file_write_lock.release()
-
-    def clear_save_callback(self):
-
-        # assert lprint_function_name()
-
-        if self.save_trigger_source:
-            # Remove the in-progress save()
-            try:
-                GLib.source_remove(self.save_trigger_source)
-
-            except Exception:
-                # The callback finished while we were blocked on the lock,
-                # or GLib didn't automatically wipe self.save_trigger_source.
-                pass
+        else:
+            self.data_store.clear_data(database)
 
 
 class BibedDataStore(Gtk.ListStore):
@@ -738,127 +681,105 @@ class BibedDataStore(Gtk.ListStore):
 
         self.files_store.data_store = self
 
+        BibedDatabase.data_store = self
+        BibedDatabase.files_store = self.files_store
+        BibedEntry.files_store = self.files_store
+
     def __str__(self):
         return 'BibedDataStore'
 
-    def __entry_to_store(self, entry, filetype=None):
+    def __entry_to_store(self, entry):
         ''' Convert a BIB entry, to fields for a Gtk.ListStore. '''
 
-        # `BibedEntry`.`bibtexparser_entry` (eg. dict)
-        entry_fields = entry.entry
-
-        if filetype is None:
-            filetype = self.files_store.get_filetype(entry.database.filename)
-
         return (
-            entry.gid,  # global_id, computed by app.
-            entry.database.filename,
-            entry.index,
+            entry.database.objectid,
+            entry.database.filetype,
+            FILETYPES_COLORS[entry.database.filetype],
             entry.tooltip,
             entry.type,
             entry.key,
-            entry_fields.get('file', ''),
-            entry_fields.get('url', ''),
-            entry_fields.get('doi', ''),
+            entry.get_field('file', ''),
+            entry.get_field('url', ''),
+            entry.get_field('doi', ''),
             GLib.markup_escape_text(entry.author),
-            GLib.markup_escape_text(entry_fields.get('title', '')),
-            entry_fields.get('subtitle', ''),
+            GLib.markup_escape_text(entry.title),
+            entry.get_field('subtitle', ''),
             GLib.markup_escape_text(entry.journal),
             entry.year,
-            entry_fields.get('date', ''),
+            entry.get_field('date', ''),
             entry.quality,
             entry.read_status,
             entry.comment,
             ','.join(entry.keywords),  # flatten for search / filter.
-            filetype,
-            FILETYPES_COLORS[filetype],
         )
 
-    def do_recompute_global_ids(self):
-        ''' Global ID is a data-store stored absolute TreeView ``Path``.
+    def append(self, entry):
 
-            We recompute it on file load/close operations for store direct
-            indexed access all the time.
-        '''
-        # assert lprint_function_name()
+        return super().append(self.__entry_to_store(entry))
 
-        gid_index = BibAttrs.GLOBAL_ID
-
-        for index, row in enumerate(self):
-            row[gid_index] = index
-
-        LOGGER.debug('{0}.do_recompute_global_ids() with {1} rows.'.format(
-                     self, len(self)))
-
-    def append(self, entry, filetype=None):
-
-        return super().append(self.__entry_to_store(entry, filetype))
-
-    def insert_entry(self, entry):
+    def add_entry(self, entry):
 
         # assert lprint_function_name()
 
         iter = self.append(entry)
 
-        self.do_recompute_global_ids()
+        index = self.get_path(iter)
 
-        row = self[iter]
-
-        LOGGER.debug('Row {} created with entry {}.'.format(
-                     row[BibAttrs.GLOBAL_ID], entry.key))
+        LOGGER.debug('Row {} created with entry {}.'.format(index, entry.key))
 
     def update_entry(self, entry, fields=None):
 
         # assert lprint_function_name()
 
-        assert entry.gid >= 0
+        key_col = BibAttrs.KEY
+        key_to_update = entry.key
+        index = None
 
-        # GID is an absolute TreePath.
-        entry_iter = self.get_iter(entry.gid)
+        for index, row in enumerate(self):
+            if row[key_col] == key_to_update:
+                if fields:
+                    for key, value in fields.items():
+                        row[key] = value
+                else:
+                    for index, value in self.__entry_to_store(entry):
+                        row[index] = value
 
-        # This is far from perfect, we could just update the row.
-        # But I'm tired and I want a simple way to view results.
-        # TODO: do better on next code review.
-
-        if fields:
-            for key, value in fields.items():
-                self[entry_iter][key] = value
-        else:
-            self.insert_after(entry_iter, self.__entry_to_store(entry))
-            self.remove(entry_iter)
+                break
 
         LOGGER.debug('Row {} updated (entry {}{}).'.format(
-                     entry.gid, entry.key,
+                     index, entry.key,
                      ', fields={}'.format(fields) if fields else ''))
 
     def delete_entry(self, entry):
 
         # assert lprint_function_name()
 
-        assert entry.gid >= 0
+        key_to_delete = entry.key
+        key_col = BibAttrs.KEY
+        index = None
 
-        old_gid = entry.gid
-
-        # GID is absolute path :-)
-        self.remove(self.get_iter(entry.gid))
-
-        # at the cost of this.
-        self.do_recompute_global_ids()
+        for index, row in enumerate(self):
+            if row[key_col] == key_to_delete:
+                self.remove(row.iter)
+                break
 
         LOGGER.debug('Row {} deleted (was entry {}).'.format(
-                     old_gid, entry.key))
+                     index, entry.key))
 
-    def clear_data(self, filename, recompute=True):
+    def clear_data(self, database):
 
         # assert lprint_function_name()
 
-        column_filename = BibAttrs.FILENAME
+        db_col = BibAttrs.DBID
+        db_id = database.objectid
+
+        iters_to_remove = []
 
         for row in self:
-            if row[column_filename] == filename:
-                self.remove(row.iter)
+            if row[db_col] == db_id:
+                iters_to_remove.append(row.iter)
 
-        if recompute:
-            self.do_recompute_global_ids()
+        for iter in iters_to_remove:
+            self.remove(iter)
 
-        LOGGER.debug('Cleared data for {}.'.format(filename))
+        LOGGER.debug('Cleared data for {}.'.format(database))

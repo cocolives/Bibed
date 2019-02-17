@@ -32,12 +32,15 @@ from bibed.gtk import GLib
 
 LOGGER = logging.getLogger(__name__)
 
+
 # —————————————————————————————————————————————————————— regular expressions
+
 
 KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
 
 # There is a non-breaking space and an space.
 SPLIT_RE = re.compile(' | |:|,|;|\'|"|«|»|“|”|‘|’', re.IGNORECASE)
+
 
 # ———————————————————————————————————————————————————————————————— Functions
 
@@ -64,6 +67,8 @@ class BibedEntry:
     KEYWORDS_SEPARATOR = ','
     TRASHED_FROM       = 'trashedFrom'
     TRASHED_DATE       = 'trashedDate'
+
+    files_store = None
 
     @classmethod
     def new_from_type(cls, entry_type):
@@ -122,84 +127,30 @@ class BibedEntry:
 
         return result
 
-    def __init__(self, database, entry, index, gid=None):
+    # ———————————————————————————————————————————— Python / dict-like behaviour
+
+    def __init__(self, database, entry):
 
         # The raw bibtextparser entry.
-        self.entry = entry
+        self.bib_dict = entry
 
         # Our BibedDatabase.
         self.database = database
 
-        # Index in the database file.
-        # == index in the bibtexparser entries list.
-        self.index = index
-
-        # Global ID (across multiple files). This is
-        # needed to update the treeview after modifications.
-        self.gid = -1 if gid is None else gid
-
-        self._internal_verbb = {
+        self.__internal_verbb = {
             key: value
             for (key, value) in (
                 line.split(':')
-                for line in self._internal_split_tokens(
-                    self.entry.get('verbb', ''),
+                for line in self.__internal_split_tokens(
+                    self.bib_dict.get('verbb', ''),
                     separator=self.VERBB_SEPARATOR
                 )
             )
         }
 
         # Proxy keywords here for faster operations.
-        self._internal_keywords = self._internal_split_tokens(
-            self.entry.get('keywords', ''))
-
-    def _internal_split_tokens(self, value, separator=None):
-
-        if separator is None:
-            separator = self.KEYWORDS_SEPARATOR
-
-        return [
-            expression.strip()
-            for expression in value.split(separator)
-            if expression.strip() != ''
-        ]
-
-    def _internal_add_keywords(self, keywords):
-
-        self._internal_keywords.extend(keywords)
-
-        self.entry['keywords'] = ', '.join(self._internal_keywords)
-
-    def _internal_remove_keywords(self, keywords):
-
-        for kw in keywords:
-            try:
-                self._internal_keywords.remove(kw)
-
-            except IndexError:
-                pass
-
-        self.entry['keywords'] = ', '.join(self._internal_keywords)
-
-    def _internal_translate(self, name):
-        ''' Translation Bibed ←→ bibtexparser. '''
-
-        if name == 'key':
-            return 'ID'
-
-        # NO !!! we have type for thesis, etc.
-        # elif name == 'type':
-        #     return 'ENTRYTYPE'
-
-        return name
-
-    def copy(self):
-        ''' Return a copy of self, with no database and no index. '''
-
-        return BibedEntry(None, self.entry.copy(), -1)
-
-    def fields(self):
-        return self.entry.keys()
+        self.__internal_keywords = self.__internal_split_tokens(
+            self.bib_dict.get('keywords', ''))
 
     def __setitem__(self, item_name, value):
         ''' Translation Bibed ←→ bibtexparser. '''
@@ -209,11 +160,11 @@ class BibedEntry:
         #       Keeping this could lead to inconsistencies and bugs.
 
         value = value.strip()
-        item_name = self._internal_translate(item_name)
+        item_name = self.__internal_translate(item_name)
 
         if value is None or value == '':
             try:
-                del self.entry[item_name]
+                del self.bib_dict[item_name]
             except KeyError:
                 # Situation: the field was initially empty. Then, in the
                 # editor dialog, the field was filled, then emptied before
@@ -225,7 +176,7 @@ class BibedEntry:
                     self, item_name))
 
         else:
-            self.entry[item_name] = value
+            self.bib_dict[item_name] = value
 
     def __getitem__(self, item_name):
 
@@ -233,23 +184,119 @@ class BibedEntry:
         #       we have more and more proxy specifics.
         #       Keeping this could lead to inconsistencies and bugs.
 
-        return self.entry[self._internal_translate(item_name)]
+        return self.bib_dict[self.__internal_translate(item_name)]
 
     def __str__(self):
 
         return 'Entry {}@{}{}'.format(
             self.key, self.type,
             ' NEW' if self.database is None
-            else ' in {}[{}]'.format(
-                os.path.basename(self.database.filename), self.index))
+            else ' in {}'.format(
+                self.database))
+
+    def copy(self):
+        ''' Return a copy of self, with no database and. '''
+
+        return BibedEntry(None, self.bib_dict.copy())
+
+    # ——————————————————————————————————————————————————————————————— Internals
+
+    def __internal_split_tokens(self, value, separator=None):
+
+        if separator is None:
+            separator = self.KEYWORDS_SEPARATOR
+
+        return [
+            expression.strip()
+            for expression in value.split(separator)
+            if expression.strip() != ''
+        ]
+
+    def __internal_add_keywords(self, keywords):
+
+        self.__internal_keywords.extend(keywords)
+
+        self.bib_dict['keywords'] = ', '.join(self.__internal_keywords)
+
+    def __internal_remove_keywords(self, keywords):
+
+        for kw in keywords:
+            try:
+                self.__internal_keywords.remove(kw)
+
+            except IndexError:
+                pass
+
+        self.bib_dict['keywords'] = ', '.join(self.__internal_keywords)
+
+    def __internal_translate(self, name):
+        ''' Translation Bibed ←→ bibtexparser. '''
+
+        if name == 'key':
+            return 'ID'
+
+        # NO !!! we have type for thesis, etc.
+        # elif name == 'type':
+        #     return 'ENTRYTYPE'
+
+        return name
+
+    def __internal_set_verbb(self):
+        ''' update `verbb` BibLaTeX field with our internal values. '''
+
+        # assert lprint_function_name()
+
+        self.bib_dict['verbb'] = self.VERBB_SEPARATOR.join(
+            ':'.join((key, value, ))
+            for (key, value) in self.__internal_verbb.items()
+        )
+
+    def __escape_for_tooltip(self, text):
+        ''' Escape esperluette and other entities for GTK tooltip display. '''
+
+        # .replace('& ', '&amp; ')
+
+        text = GLib.markup_escape_text(text)
+
+        # TODO: re.sub() sur texttt, emph, url, etc.
+        #       probably some sort of TeX → Gtk Markup.
+        #       and code the opposite for rich text
+        #       editor on abstract / comment.
+
+        return text
+
+    def __clean_for_display(self, name):
+
+        # TODO: do better than this.
+
+        field = bibtexparser_as_text(self.bib_dict.get(name, ''))
+
+        if field == '':
+            return ''
+
+        if field.startswith('{') and field.endswith('}'):
+            field = field[1:-1]
+
+        if '{' in field:
+            field = field.replace('{', '').replace('}', '')
+
+        field = field.replace('\\&', '&')
+
+        return field
+
+    # ———————————————————————————————————————————————————— Methods & attributes
+
+    def fields(self):
+
+        return self.bib_dict.keys()
 
     def set_timestamp_and_owner(self):
 
         if gpod('bib_add_timestamp'):
-            current_ts = self.entry.get('timestamp', None)
+            current_ts = self.bib_dict.get('timestamp', None)
 
             if current_ts is None or gpod('bib_update_timestamp'):
-                self.entry['timestamp'] = datetime.date.today().isoformat()
+                self.bib_dict['timestamp'] = datetime.date.today().isoformat()
 
         owner_name = preferences.bib_owner_name
 
@@ -257,52 +304,55 @@ class BibedEntry:
             owner_name = owner_name.strip()
 
             if gpod('bib_add_owner'):
-                current_owner = self.entry.get('owner', None)
+                current_owner = self.bib_dict.get('owner', None)
 
                 if current_owner is None or gpod('bib_update_owner'):
-                    self.entry['owner'] = owner_name
+                    self.bib_dict['owner'] = owner_name
 
     def get_field(self, name, default=None):
+        ''' Used massively and exclusively in editor dialog and data store. '''
 
-        name = self._internal_translate(name)
-
-        if default is None:
-            return bibtexparser_as_text(self.entry[name])
-
+        # We should use properties for these attributes.
         if name == 'keywords':
-            # Return for edition in a Gtk.TextBuffer.
             return ', '.join(self.keywords)
 
-        return bibtexparser_as_text(self.entry.get(name, default))
+        name = self.__internal_translate(name)
+
+        if default is None:
+            return bibtexparser_as_text(self.bib_dict[name])
+
+        return bibtexparser_as_text(self.bib_dict.get(name, default))
 
     def set_field(self, name, value):
 
-        name = self._internal_translate(name)
+        name = self.__internal_translate(name)
 
         try:
             setter = getattr(self, 'set_field_{}'.format(name))
 
         except AttributeError:
-            self.entry[name] = value
+            self.bib_dict[name] = value
 
         else:
             setter(value)
 
     def set_field_keywords(self, value):
 
-        kw = self._internal_split_tokens(value)
+        kw = self.__internal_split_tokens(value)
 
-        self._internal_keywords = kw + [self.read_status] + [self.quality]
+        self.__internal_keywords = kw + [self.read_status] + [self.quality]
 
         # Flatten for bibtexparser
-        self.entry['keywords'] = ','.join(self._internal_keywords)
+        self.bib_dict['keywords'] = ','.join(self.__internal_keywords)
+
+    # —————————————————————————————————————————————————————————————— properties
 
     @property
     def is_trashed(self):
 
         # assert lprint_function_name()
 
-        return self.TRASHED_FROM in self._internal_verbb
+        return self.TRASHED_FROM in self.__internal_verbb
 
     @property
     def trashed_informations(self):
@@ -312,8 +362,8 @@ class BibedEntry:
 
         try:
             return (
-                self._internal_verbb[self.TRASHED_FROM],
-                self._internal_verbb[self.TRASHED_DATE],
+                self.__internal_verbb[self.TRASHED_FROM],
+                self.__internal_verbb[self.TRASHED_DATE],
             )
         except KeyError:
             return None
@@ -326,38 +376,32 @@ class BibedEntry:
         if is_trashed:
             assert not self.is_trashed
 
-            self._internal_verbb[self.TRASHED_FROM] = self.database.filename
-            self._internal_verbb[self.TRASHED_DATE] = datetime.date.today().isoformat()
+            self.__internal_verbb[self.TRASHED_FROM] = self.database.filename
+            self.__internal_verbb[self.TRASHED_DATE] = \
+                datetime.date.today().isoformat()
 
         else:
             assert self.is_trashed
 
-            del self._internal_verbb[self.TRASHED_FROM]
-            del self._internal_verbb[self.TRASHED_DATE]
+            del self.__internal_verbb[self.TRASHED_FROM]
+            del self.__internal_verbb[self.TRASHED_DATE]
 
-        self._internal_set_verbb()
-
-    def _internal_set_verbb(self):
-        ''' update `verbb` BibLaTeX field with our internal values. '''
-
-        # assert lprint_function_name()
-
-        self.entry['verbb'] = self.VERBB_SEPARATOR.join(
-            ':'.join((key, value, ))
-            for (key, value) in self._internal_verbb.items()
-        )
+        self.__internal_set_verbb()
 
     @property
     def type(self):
-        return self.entry['ENTRYTYPE']
+
+        return self.bib_dict['ENTRYTYPE']
 
     @type.setter
     def type(self, value):
-        self.entry['ENTRYTYPE'] = value
+
+        self.bib_dict['ENTRYTYPE'] = value
 
     @property
     def key(self):
-        return self.entry.get('ID', None)
+
+        return self.bib_dict.get('ID', None)
 
     @key.setter
     def key(self, value):
@@ -365,25 +409,27 @@ class BibedEntry:
         # TODO: check key validity on the fly ?
         #       this should be implemented higher
         #       in the GUI check_field*() methods.
-        self.entry['ID'] = value
+        self.bib_dict['ID'] = value
 
     @property
     def title(self):
-        return self.entry.get('title', '')
+
+        return self.bib_dict.get('title', '')
 
     @property
     def comment(self):
-        return self.entry.get('comment', '')
+
+        return self.bib_dict.get('comment', '')
 
     @comment.setter
     def comment(self, value):
 
-        self.entry['comment'] = value
+        self.bib_dict['comment'] = value
 
     @property
     def tooltip(self):
 
-        esc = self.escape_for_tooltip
+        esc = self.__escape_for_tooltip
         is_trashed = self.is_trashed
 
         def strike(text):
@@ -458,7 +504,7 @@ class BibedEntry:
             missing = False
 
             try:
-                tType = self.database.files_store.get_filetype(tFrom)
+                tType = BibedEntry.files_store.get_filetype(tFrom)
 
             except FileNotFoundError:
                 # Most probably a deleted database, but could be also (99%)
@@ -519,59 +565,28 @@ class BibedEntry:
 
         return self.__clean_for_display('author')
 
-    def escape_for_tooltip(self, text):
-        ''' Escape esperluette and other entities for GTK tooltip display. '''
-
-        # .replace('& ', '&amp; ')
-
-        text = GLib.markup_escape_text(text)
-
-        # TODO: re.sub() sur texttt, emph, url, etc.
-        #       probably some sort of TeX → Gtk Markup.
-        #       and code the opposite for rich text
-        #       editor on abstract / comment.
-
-        return text
-
-    def __clean_for_display(self, name):
-
-        # TODO: do better than this.
-
-        field = bibtexparser_as_text(self.entry.get(name, ''))
-
-        if field == '':
-            return ''
-
-        if field.startswith('{') and field.endswith('}'):
-            field = field[1:-1]
-
-        if '{' in field:
-            field = field.replace('{', '').replace('}', '')
-
-        field = field.replace('\\&', '&')
-
-        return field
-
     @property
     def year(self):
         ''' Will try to return year field or year part of date field. '''
 
         # TODO: handle non-ISO date gracefully.
         return int(
-            self.entry.get('year',
-                           self.entry.get('date', '0').split('-')[0])
+            self.bib_dict.get(
+                'year',
+                self.bib_dict.get('date', '0').split('-')[0])
         )
 
     @property
     def keywords(self):
         ''' Return entry keywords without JabRef internals. '''
 
-        # HEADS UP: copy(), else we alter _internal_keywords!
-        keywords = self._internal_keywords[:]
+        # HEADS UP: copy(), else we alter __internal_keywords!
+        keywords = self.__internal_keywords[:]
 
         for kw in JABREF_QUALITY_KEYWORDS + JABREF_READ_KEYWORDS:
             try:
                 keywords.remove(kw)
+
             except ValueError:
                 pass
 
@@ -581,7 +596,7 @@ class BibedEntry:
     def quality(self):
         ''' Get the JabRef quality from keywords. '''
 
-        keywords = self._internal_keywords
+        keywords = self.__internal_keywords
 
         for kw in JABREF_QUALITY_KEYWORDS:
             if kw in keywords:
@@ -593,7 +608,7 @@ class BibedEntry:
     def read_status(self):
         ''' Get the JabRef read status from keywords. '''
 
-        keywords = self._internal_keywords
+        keywords = self.__internal_keywords
 
         for kw in JABREF_READ_KEYWORDS:
             if kw in keywords:
@@ -637,6 +652,8 @@ class BibedEntry:
             )
         )
 
+    # ————————————————————————————————————————————————————————————————— Methods
+
     def update_fields(self, **kwargs):
 
         # assert lprint_function_name()
@@ -662,14 +679,13 @@ class BibedEntry:
             # The data store will be updated later by add_entry().
             self.database.data_store.update_entry(self, fields)
 
-
     def toggle_quality(self):
 
         if self.quality == '':
-            self._internal_add_keywords([JABREF_QUALITY_KEYWORDS[0]])
+            self.__internal_add_keywords([JABREF_QUALITY_KEYWORDS[0]])
 
         else:
-            self._internal_remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
+            self.__internal_remove_keywords([JABREF_QUALITY_KEYWORDS[0]])
 
         self.set_timestamp_and_owner()
 
@@ -680,14 +696,14 @@ class BibedEntry:
         read_status = self.read_status
 
         if read_status == '':
-            self._internal_add_keywords([JABREF_READ_KEYWORDS[0]])
+            self.__internal_add_keywords([JABREF_READ_KEYWORDS[0]])
 
         elif read_status == JABREF_READ_KEYWORDS[0]:
-            self._internal_remove_keywords([JABREF_READ_KEYWORDS[0]])
-            self._internal_add_keywords([JABREF_READ_KEYWORDS[1]])
+            self.__internal_remove_keywords([JABREF_READ_KEYWORDS[0]])
+            self.__internal_add_keywords([JABREF_READ_KEYWORDS[1]])
 
         else:
-            self._internal_remove_keywords([JABREF_READ_KEYWORDS[1]])
+            self.__internal_remove_keywords([JABREF_READ_KEYWORDS[1]])
 
         self.set_timestamp_and_owner()
 

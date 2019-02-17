@@ -146,7 +146,7 @@ class BibedWindow(Gtk.ApplicationWindow):
     def setup_searchbar(self):
 
         # used to speed up title updates during searches.
-        self.matched_files = set()
+        self.matched_databases = set()
 
         self.search = Gtk.SearchEntry()
 
@@ -442,10 +442,10 @@ class BibedWindow(Gtk.ApplicationWindow):
         # because this points either to the TreeModelFilter or the main model.
         row_count = len(self.treeview.get_model())
 
-        active_files = self.get_selected_filenames(with_type=True)
-        active_files_count = len(active_files)
+        active_databases = self.get_selected_databases()
+        active_databases_count = len(active_databases)
 
-        if active_files_count == self.application.files.num_user:
+        if active_databases_count == self.application.files.num_user:
             # All user files are selected.
 
             search_text = self.get_search_text()
@@ -454,24 +454,24 @@ class BibedWindow(Gtk.ApplicationWindow):
                 # We have to gather files count from
                 # current global filter results.
 
-                files_count = len(self.matched_files)
+                files_count = len(self.matched_databases)
 
             else:
                 files_count = self.application.files.num_user
 
         else:
-            files_count = active_files_count
+            files_count = active_databases_count
 
-        if active_files:
+        if active_databases:
             title_value = '{app} – {text}'.format(
                 app=APP_NAME,
-                text=friendly_filename(active_files[0][0])
-                if active_files_count == 1
+                text=(active_databases[0].friendly_filename)
+                if active_databases_count == 1
                 else n_(
                     '{count} file selected',
                     '{count} files selected',
-                    active_files_count
-                ).format(count=active_files_count)
+                    active_databases_count
+                ).format(count=active_databases_count)
             )
 
             subtitle_value = _('{items} in {files}').format(
@@ -662,13 +662,12 @@ class BibedWindow(Gtk.ApplicationWindow):
         search_result = self.searchbar.handle_event(event)
 
         if search_result:
-            return True
+            return Gdk.EVENT_STOP
 
         # get search context
         search_text = self.search.get_text().strip()
 
         keyval = event.keyval
-        # state = event.state
 
         # TODO: convert all of these to proper accels.
         #       See  http://gtk.10911.n7.nabble.com/GdkModifiers-bitmask-and-GDK-SHIFT-MASK-question-td4404.html
@@ -678,15 +677,11 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         # check the event modifiers (can also use SHIFTMASK, etc)
         ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
-        # shift = (event.state & Gdk.ModifierType.SHIFT_MASK)
+        # only shift = (event.state & Gdk.ModifierType.SHIFT_MASK)
         ctrl_shift = (
             event.state & (Gdk.ModifierType.CONTROL_MASK
                            | Gdk.ModifierType.SHIFT_MASK)
         )
-
-        # Alternative way of knowing key pressed.
-        # keyval_name = Gdk.keyval_name(keyval)
-        # if ctrl and keyval_name == 's':
 
         if ctrl and keyval == Gdk.KEY_c:
             self.treeview.copy_entries_keys_formatted_to_clipboard()
@@ -720,11 +715,8 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         elif ctrl and keyval == Gdk.KEY_s:
 
-            if gpod('bib_auto_save'):
-                # propagate signal, we do not need to save.
-                return True
-
-            LOGGER.info('Control-S pressed (no action yet).')
+            if not gpod('bib_auto_save'):
+                LOGGER.info('Control-S pressed (no action yet).')
 
             # TODO: save selected files.
 
@@ -736,8 +728,8 @@ class BibedWindow(Gtk.ApplicationWindow):
             with self.block_signals():
                 # Don't let combo change and update “memories” while we
                 # just reload files to attain same conditions as now.
-                self.application.reload_files(
-                    _('Reloaded all open files at user request.')
+                self.application.reload_databases(
+                    _('Reloaded all open databases at user request.')
                 )
 
             # restore memory / session
@@ -789,7 +781,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
             for database in tuple(
                     self.application.files.selected_user_databases):
-                self.application.close_file(database.filename)
+                self.application.close_database(database)
 
         elif not ctrl and keyval == Gdk.KEY_Escape:
 
@@ -832,10 +824,10 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         else:
             # The keycode combination was not handled, propagate.
-            return False
+            return Gdk.EVENT_PROPAGATE
 
         # Stop propagation of signal, we handled it.
-        return True
+        return Gdk.EVENT_STOP
 
     # ——————————————————————————————————————————————————————————— Files buttons
 
@@ -892,10 +884,9 @@ class BibedWindow(Gtk.ApplicationWindow):
             with self.block_signals():
                 for filename in filenames:
                     databases_to_select.append(
-                        self.application.open_file(filename, recompute=False)
+                        self.application.open_file(filename)
                     )
 
-            self.treeview.main_model.do_recompute_global_ids()
             self.set_selected_databases(databases_to_select)
 
             self.do_activate()
@@ -1151,7 +1142,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 message_base = _('{entry} modified in {database}.')
 
             message = message_base.format(
-                entry=response, database=friendly_filename(response.database.filename))
+                entry=response, database=database.friendly_filename)
 
             self.do_status_change(message)
 
@@ -1191,7 +1182,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         return filter_bib
 
-    def get_selected_filenames(self, with_type=False):
+    def get_selected_databases(self, with_type=False, only_ids=False):
 
         selected_databases = tuple(self.application.files.selected_databases)
 
@@ -1201,10 +1192,13 @@ class BibedWindow(Gtk.ApplicationWindow):
                 for database in selected_databases
             ]
 
-        return [
-            database.filename
-            for database in selected_databases
-        ]
+        if only_ids:
+            return [
+                database.objectid
+                for database in selected_databases
+            ]
+
+        return selected_databases
 
     def set_selected_databases(self, databases_to_select):
 
@@ -1274,7 +1268,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 del memories.search_text
 
         def refilter():
-            self.matched_files = set()
+            self.matched_databases = set()
             self.treeview.set_model(self.application.sorter)
             self.application.filter.refilter()
 
