@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-02-16 12:00+0100\n"
-"PO-Revision-Date: 2019-02-16 12:48+0100\n"
+"POT-Creation-Date: 2019-02-17 23:54+0100\n"
+"PO-Revision-Date: 2019-02-17 23:56+0100\n"
 "Last-Translator: \n"
 "Language: fr\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -19,27 +19,27 @@ msgstr ""
 "Generated-By: Babel 2.6.0\n"
 "X-Generator: Poedit 2.2.1\n"
 
-#: bibed/app.py:324
+#: bibed/app.py:319
 msgid "Loading {} file(s) and restoring previous session…"
 msgstr "Chargement de {} fichier(s) et rétablissement de la session…"
 
-#: bibed/app.py:439
+#: bibed/app.py:434
 msgid "“{}” already loaded."
 msgstr "« {} » déjà chargé."
 
-#: bibed/app.py:444
+#: bibed/app.py:439
 msgid "Cannot load file “{file}”: {error}"
 msgstr "Impossible de charger « {file} » : {error}"
 
-#: bibed/app.py:503
+#: bibed/app.py:497
 msgid "© Cocoliv.es Collective"
 msgstr "© Collectif Cocoliv.es"
 
-#: bibed/app.py:506
+#: bibed/app.py:500
 msgid "Bibliographic assistance libre software"
 msgstr "Logiciel libre d'assistance bibliographique"
 
-#: bibed/app.py:528
+#: bibed/app.py:522
 msgid ""
 "Sentry SDK v{sdk_vers}, reporting to\n"
 "{dsn}\n"
@@ -49,93 +49,101 @@ msgstr ""
 "{dsn}\n"
 "(voir {website} pour des détails){last}"
 
-#: bibed/app.py:534
+#: bibed/app.py:528
 msgid "<big>Last event ID: {}</big>"
 msgstr "<big>ID du dernier événement : {}</big>"
 
-#: bibed/app.py:542
+#: bibed/app.py:536
 msgid "{app} website"
 msgstr "Site web de {app}"
 
-#: bibed/constants.py:88
+#: bibed/constants.py:83
 msgctxt "search field"
 msgid "p"
 msgstr "p"
 
-#: bibed/constants.py:90
+#: bibed/constants.py:85
 msgctxt "search field"
 msgid "type"
 msgstr "type d'élément"
 
-#: bibed/constants.py:91
+#: bibed/constants.py:86
 msgctxt "search field"
 msgid "k"
 msgstr "c"
 
-#: bibed/constants.py:93
+#: bibed/constants.py:88
 msgctxt "search field"
 msgid "key"
 msgstr "clef unique"
 
-#: bibed/constants.py:94
+#: bibed/constants.py:89
 msgctxt "search field"
 msgid "a"
 msgstr "a"
 
-#: bibed/constants.py:96
+#: bibed/constants.py:91
 msgctxt "search field"
 msgid "author"
 msgstr "auteurice(s)"
 
-#: bibed/constants.py:97
+#: bibed/constants.py:92
 msgctxt "search field"
 msgid "t"
 msgstr "t"
 
-#: bibed/constants.py:99
+#: bibed/constants.py:94
 msgctxt "search field"
 msgid "title"
 msgstr "titre"
 
-#: bibed/constants.py:100
+#: bibed/constants.py:95
 msgctxt "search field"
 msgid "j"
 msgstr "j"
 
-#: bibed/constants.py:102
+#: bibed/constants.py:97
 msgctxt "search field"
 msgid "journal"
 msgstr "journal"
 
-#: bibed/constants.py:103
+#: bibed/constants.py:98
 msgctxt "search field"
 msgid "y"
 msgstr "n"
 
-#: bibed/constants.py:105
+#: bibed/constants.py:100
 msgctxt "search field"
 msgid "year"
 msgstr "année"
 
-#: bibed/constants.py:106
+#: bibed/constants.py:101
 msgctxt "search field"
 msgid "f"
 msgstr "f"
 
-#: bibed/constants.py:108
+#: bibed/constants.py:103
 msgctxt "search field"
 msgid "file"
 msgstr "fichier"
 
-#: bibed/constants.py:109
+#: bibed/constants.py:104
 msgctxt "search field"
 msgid "u"
 msgstr "u"
 
-#: bibed/constants.py:111
+#: bibed/constants.py:106
 msgctxt "search field"
 msgid "URL"
 msgstr "URL"
+
+#: bibed/database.py:170
+msgid ""
+"Duplicate key {key} in {database}. You should probably edit the file by hand to "
+"fix it."
+msgstr ""
+"Clef {key} dupliquée dans {database}. Vous devriez éditer le fichier à la main "
+"pour corriger."
 
 #: bibed/data/bibed.yaml:9
 msgid ""
@@ -288,7 +296,7 @@ msgstr "Addendum"
 msgid "Annotator(s)"
 msgstr "Annotateurice(s)"
 
-#: bibed/data/bibed.yaml:191 bibed/gui/treemixins.py:101
+#: bibed/data/bibed.yaml:191 bibed/gui/treemixins.py:107
 msgid "Author(s)"
 msgstr "Auteurice(s)"
 
@@ -440,7 +448,7 @@ msgstr "Collection"
 msgid "Subtitle"
 msgstr "Sous-titre"
 
-#: bibed/data/bibed.yaml:229 bibed/gui/treemixins.py:106
+#: bibed/data/bibed.yaml:229 bibed/gui/treemixins.py:112
 msgid "Title"
 msgstr "Titre"
 
@@ -472,7 +480,7 @@ msgstr "Version"
 msgid "Volume"
 msgstr "Volume"
 
-#: bibed/data/bibed.yaml:237 bibed/gui/treemixins.py:117
+#: bibed/data/bibed.yaml:237 bibed/gui/treemixins.py:123
 msgid "Year"
 msgstr "Année"
 
@@ -985,23 +993,23 @@ msgstr "_Vidéo"
 msgid "eXtended data"
 msgstr "Données étendues"
 
-#: bibed/gui/database.py:370
+#: bibed/gui/database.py:364
 msgid "Open databases"
 msgstr "Bases de données ouvertes"
 
-#: bibed/gui/database.py:378
+#: bibed/gui/database.py:372
 msgid "Close all open files."
 msgstr "Fermer tous les fichiers."
 
-#: bibed/gui/database.py:410
+#: bibed/gui/database.py:404
 msgid "Trash"
 msgstr "Corbeille"
 
-#: bibed/gui/database.py:419
+#: bibed/gui/database.py:413
 msgid "Queue"
 msgstr "En attente"
 
-#: bibed/gui/database.py:429
+#: bibed/gui/database.py:423
 msgid "Imported"
 msgstr "Importé"
 
@@ -1103,6 +1111,18 @@ msgstr ""
 "<span foreground=\"grey\">Survolez les types marqués d'un <span face=\"monospace"
 "\">(?)</span> pour afficher leur description.</span>"
 
+#: bibed/gui/helpers.py:316
+msgid "Working folder"
+msgstr "Dossier de travail"
+
+#: bibed/gui/helpers.py:321
+msgid "<i>Working folder</i> {remaining}"
+msgstr "<i>Dossier de travail</i> {remaining}"
+
+#: bibed/gui/helpers.py:327
+msgid "<i>Home directory</i> {remaining}"
+msgstr "<i>Dossier personnel</i> {remaining}"
+
 #: bibed/gui/splash.py:75
 msgid "Loading…"
 msgstr "Chargement…"
@@ -1123,150 +1143,132 @@ msgstr "Éditeur de bibliographie, peut-être ?"
 msgid "Whatever. Nevermind."
 msgstr "Laissez tomber. Je reprends."
 
-#: bibed/gui/treemixins.py:60
+#: bibed/gui/treemixins.py:61
 msgctxt "treeview header"
 msgid "Key"
 msgstr "Clef"
 
-#: bibed/gui/treemixins.py:63
-msgid "Entry unique key across all databases"
-msgstr "Clef unique de l'élément"
-
-#: bibed/gui/treemixins.py:67
+#: bibed/gui/treemixins.py:68
 msgctxt "treeview header"
 msgid "Type"
 msgstr "Type"
 
-#: bibed/gui/treemixins.py:76
+#: bibed/gui/treemixins.py:77
 msgctxt "treeview header"
 msgid "F"
 msgstr "F"
 
-#: bibed/gui/treemixins.py:79
-msgid "File (PDF)"
-msgstr "Fichier (PDF)"
-
-#: bibed/gui/treemixins.py:81
+#: bibed/gui/treemixins.py:83
 msgctxt "treeview header"
 msgid "U"
 msgstr "U"
 
-#: bibed/gui/treemixins.py:84
-msgid "URL of entry"
-msgstr "URL de l'élément"
-
-#: bibed/gui/treemixins.py:86
+#: bibed/gui/treemixins.py:89
 msgctxt "treeview header"
 msgid "Q"
 msgstr "Q"
 
-#: bibed/gui/treemixins.py:89
-msgid "Verified qualify"
-msgstr "Qualité vérifiée"
-
-#: bibed/gui/treemixins.py:91
+#: bibed/gui/treemixins.py:95
 msgctxt "treeview header"
 msgid "R"
 msgstr "L"
 
-#: bibed/gui/treemixins.py:94
-msgid "Read status"
-msgstr "État de lecture"
-
-#: bibed/gui/treemixins.py:96
+#: bibed/gui/treemixins.py:101
 msgctxt "treeview header"
 msgid "C"
 msgstr "C"
 
-#: bibed/gui/treemixins.py:98
-msgid "Personal comment(s)"
-msgstr "Commentaire(s) personnel(s)"
-
-#: bibed/gui/treemixins.py:111
+#: bibed/gui/treemixins.py:117
 msgid "Journal"
 msgstr "Journal"
 
-#: bibed/gui/treemixins.py:359
+#: bibed/gui/treemixins.py:340
+msgid "and one more"
+msgid_plural "and {count} more"
+msgstr[0] "et un de plus"
+msgstr[1] "et {count} de plus"
+
+#: bibed/gui/treemixins.py:383
 msgid "{data} copied to clipboard (from entry {key})."
 msgid_plural "{data} copied to clipboard (from entries {key})."
 msgstr[0] "{data} copié dans le presse-papier (depuis l'élément {key})."
 msgstr[1] "{data} copié dans le presse-papier (depuis les éléments {key})."
 
-#: bibed/gui/treemixins.py:364
+#: bibed/gui/treemixins.py:388
 msgid "{} line, {} chars"
 msgid_plural "{} lines, {} chars"
 msgstr[0] "{} ligne, {} caractères"
 msgstr[1] "{} lignes, {} caractères"
 
-#: bibed/gui/treemixins.py:378
+#: bibed/gui/treemixins.py:404
 msgid "“{data}” {message} (from entry {key})."
 msgid_plural "“{data}” {message} (from entries {key})."
 msgstr[0] "« {data} » {message} (depuis l'élément {key})."
 msgstr[1] "« {data} » {message} (depuis les éléments {key})."
 
-#: bibed/gui/treemixins.py:381
+#: bibed/gui/treemixins.py:407
 msgid "run through {func}"
 msgstr "passé à travers {func}"
 
-#: bibed/gui/treemixins.py:395
+#: bibed/gui/treemixins.py:421
 msgid "Selected entry {key}."
 msgid_plural "Selected entries {key}."
 msgstr[0] "Élément {key} sélectionné."
 msgstr[1] "Éléments {key} sélectionnés."
 
-#: bibed/gui/window.py:152
+#: bibed/gui/window.py:172
 msgid "bibliography assistant"
 msgstr "assistant de bibliographie"
 
-#: bibed/gui/window.py:162
+#: bibed/gui/window.py:182
 msgid "Upcoming feature"
 msgstr "Fonctionnalité en développement"
 
-#: bibed/gui/window.py:191
+#: bibed/gui/window.py:211
 msgid "Ready. Waiting for action…"
 msgstr "Prêt. En attente d'action…"
 
-#: bibed/gui/window.py:211
+#: bibed/gui/window.py:231
 msgid "Create an empty BIB database"
 msgstr "Créer une base de données bibliographique vide"
 
-#: bibed/gui/window.py:223
+#: bibed/gui/window.py:243
 msgid "Open an existing BIB database"
 msgstr "Ouvrir une base de données bibliographique existante"
 
-#: bibed/gui/window.py:238
+#: bibed/gui/window.py:258
 msgid "Select databases to display in main view"
 msgstr "Sélectionnez les bases de données à afficher"
 
-#: bibed/gui/window.py:241
+#: bibed/gui/window.py:261
 msgid "Library"
 msgstr "Bibliothèque"
 
-#: bibed/gui/window.py:264
+#: bibed/gui/window.py:284
 msgid "Add a bibliography entry"
 msgstr "Ajouter une entrée bibliographique"
 
-#: bibed/gui/window.py:275
+#: bibed/gui/window.py:295
 msgid "Duplicate a bibliography entry into a new one"
 msgstr "Dupliquer une entrée bibliographique"
 
-#: bibed/gui/window.py:295
+#: bibed/gui/window.py:315
 msgid "Move selected entries to another database"
 msgstr "Déplacer les entrées sélectionnées dans une autre base de données"
 
-#: bibed/gui/window.py:306
+#: bibed/gui/window.py:326
 msgid "Trash or delete selected entries"
 msgstr "Supprimer ou mettre à la corbeille les entrées sélectionnées"
 
-#: bibed/gui/window.py:321
+#: bibed/gui/window.py:341
 msgid "Show application preferences"
 msgstr "Afficher les paramètres de l'application"
 
-#: bibed/gui/window.py:335
+#: bibed/gui/window.py:355
 msgid "Start searching in selected databases"
 msgstr "Chercher dans les bases de données sélectionnées"
 
-#: bibed/gui/window.py:350
+#: bibed/gui/window.py:370
 msgid ""
 "<big>Something will be here</big>\n"
 "\n"
@@ -1280,7 +1282,7 @@ msgstr ""
 "(Vous n'avez pas le choix, de toute façon :-D)\n"
 "<a href=\"{discuss_fr}\">Venez en discuter sur Telegram</a> si vous le souhaitez."
 
-#: bibed/gui/window.py:393
+#: bibed/gui/window.py:413
 msgid ""
 "<big>Welcome to Bibed!</big>\n"
 "\n"
@@ -1302,109 +1304,110 @@ msgstr ""
 "via les icônes-outils dans le coin en haut à gauche.\n"
 "\n"
 "En cas de besoin d'assistance humaine,\n"
-"vous pouvez <a href=\"{discuss_en}\">nous joindre sur Telegram</a>.\n"
+"vous pouvez <a href=\"{discuss_fr}\">nous joindre sur Telegram</a>.\n"
 "\n"
 "Salutations,\n"
 "Olivier, Corinne\n"
 "et toustes les contributeurices"
 
-#: bibed/gui/window.py:448
+#: bibed/gui/window.py:470
 msgid "{count} file selected"
 msgid_plural "{count} files selected"
 msgstr[0] "{count} fichier sélectionné"
 msgstr[1] "{count} fichiers sélectionnés"
 
-#: bibed/gui/window.py:455
+#: bibed/gui/window.py:477
 msgid "{items} in {files}"
 msgstr "{items} dans {files}"
 
-#: bibed/gui/window.py:456
+#: bibed/gui/window.py:478
 msgid "{count} item"
 msgid_plural "{count} items"
 msgstr[0] "{count} élément"
 msgstr[1] "{count} éléments"
 
-#: bibed/gui/window.py:461
+#: bibed/gui/window.py:483
 msgid "{count} file"
 msgid_plural "{count} files"
 msgstr[0] "{count} fichier"
 msgstr[1] "{count} fichiers"
 
-#: bibed/gui/window.py:470
+#: bibed/gui/window.py:492
 msgid "{app} – no file selected"
 msgstr "{app} – aucun fichier sélectionné"
 
-#: bibed/gui/window.py:471
+#: bibed/gui/window.py:493
 msgid "select at least one file to display in your library"
 msgstr "sélectionnez au moins un fichier à afficher dans votre bibliothèque"
 
-#: bibed/gui/window.py:473
+#: bibed/gui/window.py:495
 msgid "{0} – Welcome!"
 msgstr "{0} – Bienvenue !"
 
-#: bibed/gui/window.py:701
-msgid "Reloaded all open files at user request."
-msgstr "Tous les fichiers ont été rechargés à la demande de l'utilisateur."
+#: bibed/gui/window.py:732
+msgid "Reloaded all open databases at user request."
+msgstr ""
+"Toutes les bases de données ont été rechargées à la demande de l'utilisateur."
 
-#: bibed/gui/window.py:854
+#: bibed/gui/window.py:838
 msgid "Please create a new BIB file"
 msgstr "Merci de créer une nouvelle base de données BIB"
 
-#: bibed/gui/window.py:859
+#: bibed/gui/window.py:843
 msgid "Untitled bibliography.bib"
 msgstr "Bibliographie sans nom.bib"
 
-#: bibed/gui/window.py:878
+#: bibed/gui/window.py:862
 msgid "Please choose one or more BIB file"
 msgstr "Merci de choisir un ou plusieurs fichier(s) BIB"
 
-#: bibed/gui/window.py:991 bibed/gui/window.py:1001
+#: bibed/gui/window.py:974 bibed/gui/window.py:984
 msgid "{entry} added to {database}."
 msgstr "{entry} ajouté dans {database}."
 
-#: bibed/gui/window.py:1015
+#: bibed/gui/window.py:998
 msgid "{count} entry moved to {destination}{unchanged}."
 msgid_plural "{count} entries moved to {destination}{unchanged}."
 msgstr[0] "{count} élément déplacé dans {destination}{unchanged}."
 msgstr[1] "{count} éléments déplacés dans {destination}{unchanged}."
 
-#: bibed/gui/window.py:1022
+#: bibed/gui/window.py:1005
 msgid ", and {count} already there"
 msgstr ", et {count} déjà à destination"
 
-#: bibed/gui/window.py:1054
+#: bibed/gui/window.py:1037
 msgid "{count} entry {what}."
 msgid_plural "{count} entries {what}."
 msgstr[0] "{count} élément {what}"
 msgstr[1] "{count} éléments {what}"
 
-#: bibed/gui/window.py:1060
+#: bibed/gui/window.py:1043
 msgid "trashed"
 msgstr "mis à la corbeille"
 
-#: bibed/gui/window.py:1062
+#: bibed/gui/window.py:1045
 msgid "definitively deleted"
 msgstr "définitivement supprimé(s)"
 
-#: bibed/gui/window.py:1072
+#: bibed/gui/window.py:1055
 msgid "{count} previously trashed entry definitively deleted."
 msgid_plural "{count} previously trashed entries definitively deleted."
 msgstr[0] "{count} entrée de corbeille définitivement supprimée."
 msgstr[1] "{count} entrées de corbeille définitivement supprimées."
 
-#: bibed/gui/window.py:1103
+#: bibed/gui/window.py:1086
 msgid "Wipe {count} entry from trash?"
 msgid_plural "Wipe {count} entries from trash?"
 msgstr[0] "Supprimer {count} entrée de la corbeille ?"
 msgstr[1] "Supprimer {count} entrées de la corbeille ?"
 
-#: bibed/gui/window.py:1110
+#: bibed/gui/window.py:1093
 msgid "Delete {count} entry?"
 msgid_plural "Delete {count} entries?"
 msgstr[0] "Supprimer {count} entrée ?"
 msgstr[1] "Supprimer {count} entrées ?"
 
-#: bibed/gui/window.py:1124
+#: bibed/gui/window.py:1107
 msgid "This will permanently delete {entry} from your database."
 msgid_plural ""
 "This will permanently delete the following entries:\n"
@@ -1416,13 +1419,13 @@ msgstr[1] ""
 "{entries_list}\n"
 "seront définitivement effacées de votre base de données."
 
-#: bibed/gui/window.py:1132
+#: bibed/gui/window.py:1115
 msgid "{count} database"
 msgid_plural "{count} databases"
 msgstr[0] "{count} base de données"
 msgstr[1] "{count} bases de données"
 
-#: bibed/gui/window.py:1140
+#: bibed/gui/window.py:1123
 msgid ""
 "\n"
 "\n"
@@ -1432,11 +1435,11 @@ msgstr ""
 "\n"
 "Cette action ne peut pas être annulée. Êtes-vous sur·e ?"
 
-#: bibed/gui/window.py:1159
+#: bibed/gui/window.py:1142
 msgid "{entry} modified in {database}."
 msgstr "{entry} modifié dans {database}."
 
-#: bibed/gui/window.py:1197
+#: bibed/gui/window.py:1180
 msgid "Bib(La)Tex files"
 msgstr "Fichiers Bib(La)TeX"
 
@@ -1554,3 +1557,24 @@ msgstr "Fichiers Bib(La)TeX"
 
 #~ msgid "C"
 #~ msgstr "C"
+
+#~ msgid "Entry unique key across all databases"
+#~ msgstr "Clef unique de l'élément"
+
+#~ msgid "File (PDF)"
+#~ msgstr "Fichier (PDF)"
+
+#~ msgid "URL of entry"
+#~ msgstr "URL de l'élément"
+
+#~ msgid "Verified qualify"
+#~ msgstr "Qualité vérifiée"
+
+#~ msgid "Read status"
+#~ msgstr "État de lecture"
+
+#~ msgid "Personal comment(s)"
+#~ msgstr "Commentaire(s) personnel(s)"
+
+#~ msgid "Reloaded all open files at user request."
+#~ msgstr "Tous les fichiers ont été rechargés à la demande de l'utilisateur."
