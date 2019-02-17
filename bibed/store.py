@@ -736,7 +736,7 @@ class BibedDataStore(Gtk.ListStore):
                     for key, value in fields.items():
                         row[key] = value
                 else:
-                    for index, value in self.__entry_to_store(entry):
+                    for index, value in enumerate(self.__entry_to_store(entry)):
                         row[index] = value
 
                 break
