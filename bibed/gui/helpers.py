@@ -313,22 +313,22 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
 
     if with_folder:
         if dirname == working_folder:
-            folder = 'Working folder'
+            folder = _('Working folder')
 
         elif dirname.startswith(working_folder):
             remaining = dirname[len(working_folder):]
 
-            folder = '<i>Working folder</i> {remaining}'.format(
-                remaining=remaining)
+            folder = _('<i>Working folder</i> {remaining}').format(
+                remaining=GLib.markup_escape_text(remaining))
 
         elif dirname.startswith(home_folder):
             remaining = dirname[len(home_folder):]
 
-            folder = '<i>Home directory</i> {remaining}'.format(
-                remaining=remaining)
+            folder = _('<i>Home directory</i> {remaining}').format(
+                remaining=GLib.markup_escape_text(remaining))
 
         else:
-            folder = dirname
+            folder = GLib.markup_escape_text(dirname)
 
     else:
         folder = None
@@ -353,7 +353,7 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
         format_kwargs = {
             'separator': ' ' if same_line else '\n',
             'basename': GLib.markup_escape_text(basename),
-            'folder': GLib.markup_escape_text(folder),
+            'folder': folder,  # already escaped before
         }
 
     else:
