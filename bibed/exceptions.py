@@ -47,6 +47,10 @@ class AlreadyLoadedException(BibedFileStoreException):
     pass
 
 
+class NoDatabaseForDBIDError(BibedFileStoreError):
+    pass
+
+
 class NoDatabaseForFilenameError(BibedFileStoreError):
     pass
 
@@ -71,6 +75,10 @@ class BibedDatabaseError(BibedError):
 
 
 class IndexingFailedError(BibedDatabaseError):
+    pass
+
+
+class DuplicateKeyError(BibedDatabaseError):
     pass
 
 
