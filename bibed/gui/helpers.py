@@ -57,7 +57,7 @@ def is_dark_theme():
     pass
 
 
-def get_screen_resolution():
+def get_screen_size(window=None):
 
     if os.name != 'posix':
         import ctypes
@@ -73,10 +73,40 @@ def get_screen_resolution():
         # Multi-monitor setup.
         # screensize = user32.GetSystemMetrics(78), user32.GetSystemMetrics(79)
 
-    else:
-        Gdk.Display.get_primary_monitor()
+        return screensize
 
-    return screensize
+    else:
+
+        if window is None:
+            display = Gdk.Display.get_default()
+            # monitors_count = screen.get_n_monitors()
+
+        else:
+            display = window.get_screen().get_display()
+
+            # This needs a Gdk.Window, thus comparisons of sizes and positions
+            # of all Gdk.Window and `window`, which is a Gtk one, to find the
+            # right monitor.
+            # TODO: implement the comparison / finding.
+            #
+            # monitor_num = display.get_monitor_at_window(window)
+            # geometry = display.get_monitor_geometry(monitor_num)
+
+        monitor = display.get_primary_monitor()
+
+        if monitor is None:
+            monitor = display.get_monitor(0)
+
+        geometry = monitor.get_geometry()
+        scale_factor = monitor.get_scale_factor()
+
+        if int(scale_factor) != 1:
+            return (
+                geometry.width * scale_factor,
+                geometry.height * scale_factor,
+            )
+
+        return geometry.width, geometry.height
 
 
 def get_children_recursive(start_node, reverse=True):
