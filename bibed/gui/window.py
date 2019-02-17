@@ -1,6 +1,5 @@
 
 import logging
-from operator import attrgetter
 
 from bibed.exceptions import NoDatabaseForFilenameError
 
@@ -1067,11 +1066,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         def delete_callback(selected_entries):
             databases_to_write = set()
 
-            # Remove entries starting by the end, else our internal
-            # method fail at some point because indexes are altered.
-            for entry in sorted(selected_entries,
-                                key=attrgetter('index'),
-                                reverse=True):
+            for entry in selected_entries:
                 databases_to_write.add(entry.database)
                 entry.delete(write=False)
 

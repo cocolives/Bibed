@@ -2,7 +2,6 @@ import os
 import time
 import logging
 import pyinotify
-from operator import attrgetter
 
 from threading import RLock
 
@@ -168,11 +167,7 @@ class BibedFileStore(Gio.ListStore):
         trash_database = self.get_database(filetype=FileTypes.TRASH)
         databases_to_write = set((trash_database, ))
 
-        # Move entries starting by the end, else our internal
-        # method fail at some point because indexes are altered.
-        for entry in sorted(entries,
-                            key=attrgetter('index'),
-                            reverse=True):
+        for entry in entries:
             entry.set_trashed()
 
             # Note the database BEFORE the move(), because

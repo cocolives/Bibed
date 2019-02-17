@@ -78,19 +78,15 @@ class BibedEntry:
         return cls(
             None,
             {'ENTRYTYPE': entry_type},
-            # Index to -1 is checked in BibedEntryDialog
-            # to ensure the new entry is written only once
-            # into database.
-            -1,  # index
-            -1,  # GID
         )
 
     @classmethod
     def new_from_entry(cls, entry_to_dupe):
 
-        new_entry = cls(entry_to_dupe.database,
-                        entry_to_dupe.entry.copy(),
-                        -1, -1)
+        new_entry = cls(
+            entry_to_dupe.database,
+            entry_to_dupe.entry.copy(),
+        )
 
         # It's a new entry. Wipe key, else the old could get overwritten.
         del new_entry.entry['ID']
