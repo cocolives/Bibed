@@ -78,19 +78,15 @@ class BibedEntry:
         return cls(
             None,
             {'ENTRYTYPE': entry_type},
-            # Index to -1 is checked in BibedEntryDialog
-            # to ensure the new entry is written only once
-            # into database.
-            -1,  # index
-            -1,  # GID
         )
 
     @classmethod
     def new_from_entry(cls, entry_to_dupe):
 
-        new_entry = cls(entry_to_dupe.database,
-                        entry_to_dupe.entry.copy(),
-                        -1, -1)
+        new_entry = cls(
+            entry_to_dupe.database,
+            entry_to_dupe.entry.copy(),
+        )
 
         # It's a new entry. Wipe key, else the old could get overwritten.
         del new_entry.entry['ID']
@@ -659,6 +655,8 @@ class BibedEntry:
         # assert lprint_function_name()
         # assert lprint(kwargs)
 
+        update_store = kwargs.pop('update_store', True)
+
         LOGGER.debug('{0}.update_fields({1})'.format(self, kwargs))
 
         for field_name, field_value in kwargs.items():
@@ -666,7 +664,7 @@ class BibedEntry:
 
         self.set_timestamp_and_owner()
 
-        if self.gid >= 0:
+        if update_store:
             # TODO: map entry fields to data_store fields?
             #       for now it's not worth it.
             self.update_store_row()

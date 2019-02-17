@@ -1,6 +1,5 @@
 
 import logging
-from operator import attrgetter
 
 from bibed.exceptions import NoDatabaseForFilenameError
 
@@ -884,7 +883,9 @@ class BibedWindow(Gtk.ApplicationWindow):
             with self.block_signals():
                 for filename in filenames:
                     databases_to_select.append(
-                        self.application.open_file(filename)
+                        # Don't select individually, we will select
+                        # all newly opened databases grouped at once.
+                        self.application.open_file(filename, select=False)
                     )
 
             self.set_selected_databases(databases_to_select)
@@ -1067,11 +1068,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         def delete_callback(selected_entries):
             databases_to_write = set()
 
-            # Remove entries starting by the end, else our internal
-            # method fail at some point because indexes are altered.
-            for entry in sorted(selected_entries,
-                                key=attrgetter('index'),
-                                reverse=True):
+            for entry in selected_entries:
                 databases_to_write.add(entry.database)
                 entry.delete(write=False)
 
@@ -1142,7 +1139,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 message_base = _('{entry} modified in {database}.')
 
             message = message_base.format(
-                entry=response, database=database.friendly_filename)
+                entry=response, database=response.database.friendly_filename)
 
             self.do_status_change(message)
 

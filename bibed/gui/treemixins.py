@@ -337,7 +337,7 @@ class BibedEntryTreeViewMixin:
                 remaining = lenght - limit_keys
                 return (
                     ', '.join(str(key) for key in keys[:limit_keys])
-                    + n_(
+                    + ' ' + n_(
                         'and one more',
                         'and {count} more',
                         remaining,
