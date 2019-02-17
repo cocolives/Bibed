@@ -1137,7 +1137,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 message_base = _('{entry} modified in {database}.')
 
             message = message_base.format(
-                entry=response, database=database.friendly_filename)
+                entry=response, database=response.database.friendly_filename)
 
             self.do_status_change(message)
 
