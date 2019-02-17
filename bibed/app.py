@@ -19,6 +19,7 @@ from bibed.constants import (
     BIBTEXPARSER_VERSION,
 )
 
+from bibed.decorators import wait_for_queued_events
 from bibed.foundations import Anything
 from bibed.system import touch_file, set_process_title
 from bibed.strings import to_lower_if_not_none, seconds_to_string
@@ -91,6 +92,8 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         action = Gio.SimpleAction.new('about', None)
         action.connect('activate', self.on_about)
         self.add_action(action)
+
+        self.is_quitting = False
 
         action = Gio.SimpleAction.new('quit', None)
         action.connect('activate', self.on_quit)
@@ -559,6 +562,15 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def on_quit(self, action, param):
 
+        if self.is_quitting:
+            return
+
+        self.is_quitting = True
+
+        # Hide the window immediately to fake reactivity
+        # in case there are still pending events.
+        self.window.hide()
+
         # Block signals, else memories.combo_filename will
         # finish empty When last file has been closed.
         self.window.block_signals()
@@ -573,6 +585,8 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             # This will allow automatic reopen on next launch.
             remember_close=False,
         )
+
+        wait_for_queued_events()
 
         self.quit()
 
