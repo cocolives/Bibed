@@ -27,6 +27,7 @@ from bibed.gtk import Gio, GLib, Gtk, Gdk
 
 from bibed.gui.stack import BibedStack
 from bibed.gui.helpers import (
+    get_screen_size,
     flash_field,
     markup_entries,
     message_dialog,
@@ -68,47 +69,18 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.set_name(APP_NAME)
 
         # This will be in the windows group and have the "win" prefix
-        max_action = Gio.SimpleAction.new_stateful(
+        self.action_maximize = Gio.SimpleAction.new_stateful(
             'maximize', None, GLib.Variant.new_boolean(False))
-        max_action.connect('change-state', self.on_maximize_toggle)
-        self.add_action(max_action)
-
-        # Keep it in sync with the actual state
-        self.connect('notify::is-maximized',
-                     lambda obj, pspec: max_action.set_state(
-                         GLib.Variant.new_boolean(obj.props.is_maximized)))
-
-        self.connect('check-resize', self.on_resize)
-        self.connect('key-press-event', self.on_key_pressed)
+        self.add_action(self.action_maximize)
 
         self.setup_icon()
-
-        # TODO: use gui.helpers.get_screen_resolution()
-        dimensions = (900, 600)
-
-        if gpod('remember_windows_states'):
-            remembered_dimensions = memories.main_window_dimensions
-
-            if remembered_dimensions is not None:
-                dimensions = remembered_dimensions
-
-        # TODO: check dimensions are not > screen_size, then lower them.
-        #       20190129: I've had a 23487923 pixels windows which made
-        #       Bibed crash at startup, don't know how nor why.
-
-        self.set_default_size(*dimensions)
-
-        # keep for resize() operations smothing.
-        self.current_size = dimensions
-
-        # self.set_border_width(10)
 
         # prepared for future references.
         self.preferences_dialog = None
 
-        # ———————————————————————————————————————————————————————— BibEd Window
-
         self.application = kwargs['application']
+
+        was_maximized = self.setup_dimensions()
 
         self.setup_treeview()
         self.setup_booked()
@@ -120,6 +92,51 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.setup_statusbar()
 
         self.setup_vbox()
+
+        self.action_maximize.connect('change-state', self.on_maximize_toggle)
+        self.connect('window-state-event', self.on_window_state_changed)
+
+        self.connect('check-resize', self.on_resize)
+        self.connect('key-press-event', self.on_key_pressed)
+
+        self.set_default_size(*self.current_size)
+
+        if was_maximized:
+            self.on_maximize_toggle(self.action_maximize, True)
+
+    def setup_dimensions(self):
+
+        was_maximized = False
+        monitor_dimensions = get_screen_size(self)
+
+        # This is a start, in case everything fails.
+        dimensions = [int(d * 0.8) for d in monitor_dimensions]
+
+        if gpod('remember_windows_states'):
+
+            is_maximized = memories.main_window_is_maximized
+
+            if is_maximized is not None and is_maximized:
+                was_maximized = True
+
+            remembered_dimensions = memories.main_window_dimensions
+
+            if remembered_dimensions is not None:
+                dimensions = remembered_dimensions
+
+        # 20190129: I've been given a 23487923 pixels windows which made
+        # Bibed crash in wayland at startup, don't know how nor why.
+
+        if dimensions[0] > monitor_dimensions[0]:
+            dimensions = [monitor_dimensions[0] * 0.8, dimensions[1]]
+
+        if dimensions[1] > monitor_dimensions[1]:
+            dimensions = (dimensions[0], monitor_dimensions[1] * 0.8)
+
+        # keep for resize() operations smothing.
+        self.current_size = dimensions
+
+        return was_maximized
 
     def setup_icon(self):
 
@@ -136,7 +153,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.search.connect('search-changed',
                             self.on_search_filter_changed)
 
-        self.searchbar = BibedSearchBar(self.search)
+        self.searchbar = BibedSearchBar(self.search, self.treeview)
 
     def setup_stack(self):
 
@@ -414,6 +431,8 @@ class BibedWindow(Gtk.ApplicationWindow):
             selectable=False,
         )
 
+    # ————————————————————————————————————————————————— Window & buttons states
+
     def update_title(self):
 
         # assert lprint_caller_name(levels=5)
@@ -497,9 +516,10 @@ class BibedWindow(Gtk.ApplicationWindow):
         bibed_widgets_base = (
             self.btn_file_new,
             self.btn_file_open,
-            self.btn_search,
         )
         bibed_widgets_conditional = (
+            self.btn_search,
+
             # file-related buttons
             self.btn_file_select,
             # TODO: insert popover buttons here,
@@ -572,33 +592,49 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.entry_selection_buttons_set_sensitive()
 
+    @only_one_when_idle
+    def on_window_state_changed(self, window, event):
+
+        state = event.new_window_state
+
+        if state & Gdk.WindowState.WITHDRAWN:
+            return
+
+        is_maximized = int(state & Gdk.WindowState.MAXIMIZED)
+
+        self.action_maximize.set_state(GLib.Variant.new_boolean(is_maximized))
+
+        memories.main_window_is_maximized = is_maximized
+
     def on_maximize_toggle(self, action, value):
 
-        action.set_state(value)
+        action.set_state(GLib.Variant.new_boolean(value))
 
-        if value.get_boolean():
+        is_maximized = value
+
+        if is_maximized:
             self.maximize()
         else:
             self.unmaximize()
 
-        self.on_resize(self)
-
+    @run_at_most_every(1000)
     def on_resize(self, window):
 
         previous_width, previous_height = self.current_size
         current_width, current_height = self.get_size()
 
         if previous_width == current_width:
-            # Avoid resize infinite loops.
+            # Avoid useless loops (on Alt-tab there are a lot).
             return
 
         # Keep in memory for next resize.
         self.current_size = (current_width, current_height)
 
-        if gpod('remember_windows_states'):
+        # Do not save dimensions if maximized.
+        # This allows, at next sessions, to restore a smaller size
+        # When unmaximizing, if the app has started maximized.
+        if gpod('remember_windows_states') and not self.props.is_maximized:
             memories.main_window_dimensions = self.current_size
-
-        self.treeview.set_columns_widths(current_width)
 
     def on_search_filter_changed(self, entry):
         ''' Signal: chain the global filter method. '''
@@ -754,53 +790,6 @@ class BibedWindow(Gtk.ApplicationWindow):
             for database in tuple(
                     self.application.files.selected_user_databases):
                 self.application.close_file(database.filename)
-
-        elif search_text and (
-            keyval in (Gdk.KEY_Down, Gdk.KEY_Up) or (
-                ctrl and keyval in (Gdk.KEY_j, Gdk.KEY_k)
-            )
-        ):
-            # we limit on search_text, else we grab the genuine
-            # up/down keys already handled by the treeview.
-
-            # TODO: refactor this block and create
-            #       treeview.select_next() and treeview.select_previous()
-            select = self.treeview.get_selection()
-            model, treeiter = select.get_selected()
-
-            # Here we iterate through the SORTER,
-            # (first level under the TreeView),
-            # not the filter. This is INTENDED.
-            # It doesn't work on the filter.
-            store = self.application.sorter
-
-            if keyval in (Gdk.KEY_j, Gdk.KEY_Down):
-
-                if treeiter is not None:
-                    select.unselect_iter(treeiter)
-                    treeiter_next = store.iter_next(treeiter)
-
-                    if treeiter_next is None:
-                        # We hit last row.
-                        treeiter_next = treeiter
-
-                else:
-                    treeiter_next = store[0].iter
-
-            else:
-                # Key up / Control-K (backward)
-
-                if treeiter is not None:
-                    select.unselect_iter(treeiter)
-                    treeiter_next = store.iter_previous(treeiter)
-
-                    if treeiter_next is None:
-                        # We hit first row.
-                        treeiter_next = treeiter
-                else:
-                    treeiter_next = store[-1].iter
-
-            select.select_iter(treeiter_next)
 
         elif not ctrl and keyval == Gdk.KEY_Escape:
 

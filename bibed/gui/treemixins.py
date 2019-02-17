@@ -61,6 +61,7 @@ class BibedEntryTreeViewMixin:
             C_('treeview header', 'Key'), BibAttrs.KEY,
             ellipsize=Pango.EllipsizeMode.START,
             attributes={'foreground': BibAttrs.COLOR},
+            # tooltip=_('Entry unique key across all databases'),
         )
 
         self.col_type = self.setup_text_column(
@@ -76,21 +77,31 @@ class BibedEntryTreeViewMixin:
             C_('treeview header', 'F'), BibAttrs.FILE,
             self.get_file_cell_column,
             self.on_file_clicked,
+            # tooltip=_('File (PDF)'),
+        )
         self.col_url = self.setup_pixbuf_column(
             C_('treeview header', 'U'), BibAttrs.URL,
             self.get_url_cell_column,
             self.on_url_clicked,
+            # tooltip=_('URL of entry')
+        )
         self.col_quality = self.setup_pixbuf_column(
             C_('treeview header', 'Q'), BibAttrs.QUALITY,
             self.get_quality_cell_column,
             self.on_quality_clicked,
+            # tooltip=_('Verified qualify')
+        )
         self.col_read = self.setup_pixbuf_column(
             C_('treeview header', 'R'), BibAttrs.READ,
             self.get_read_cell_column,
             self.on_read_clicked,
+            # tooltip=_('Read status')
+        )
         self.col_comment = self.setup_pixbuf_column(
             C_('treeview header', 'C'), BibAttrs.COMMENT,
             self.get_comment_cell_column,
+            # tooltip=_('Personal comment(s)')
+        )
 
         self.col_author = self.setup_text_column(
             _('Author(s)'), BibAttrs.AUTHOR,
@@ -98,7 +109,7 @@ class BibedEntryTreeViewMixin:
             attributes={'foreground': BibAttrs.COLOR},
         )
         self.col_title = self.setup_text_column(
-            _('Title'), BibAttrs.TITLE,
+            _('Title'), BibAttrs.TITLE, resizable=True,
             ellipsize=Pango.EllipsizeMode.MIDDLE,
             attributes={'foreground': BibAttrs.COLOR},
         )
@@ -113,30 +124,46 @@ class BibedEntryTreeViewMixin:
             attributes={'foreground': BibAttrs.COLOR},
         )
 
-        self.set_columns_widths(self.window.current_size[0])
+    def on_size_allocate(self, treeview, rectangle):
 
+        self.set_columns_widths(rectangle.width)
+
+    @only_one_when_idle
     def set_columns_widths(self, width):
+
+        # assert lprint_caller_name(levels=4)
+        # assert lprint_function_name()
 
         col_key_width     = round(width * COL_KEY_WIDTH)
         col_type_width    = round(width * COL_TYPE_WIDTH)
         col_author_width  = round(width * COL_AUTHOR_WIDTH)
         col_journal_width = round(width * COL_JOURNAL_WIDTH)
         col_year_width    = round(width * COL_YEAR_WIDTH)
-        col_title_width   = round(width - (
-            col_key_width + col_author_width
-            + col_journal_width + col_year_width
-            + col_type_width
-            + 5 * COL_PIXBUF_WIDTH
-        ) - COL_SEPARATOR_WIDTH * 10)
 
-        # print(col_key_width, col_type_width, col_author_width, col_journal_width, col_year_width, col_title_width, )
+        # col_title_width   = round(width - (
+        #     col_key_width + col_author_width
+        #     + col_journal_width + col_year_width
+        #     + col_type_width
+        #     + 5 * COL_PIXBUF_WIDTH
+        # ) - COL_SEPARATOR_WIDTH * 10)
+
+        # print(
+        #     col_key_width,
+        #     col_type_width,
+        #     col_author_width,
+        #     col_journal_width,
+        #     col_year_width,
+        #     # col_title_width,
+        # )
 
         self.col_key.set_fixed_width(col_key_width)
         self.col_type.set_fixed_width(col_type_width)
         self.col_author.set_fixed_width(col_author_width)
         self.col_journal.set_fixed_width(col_journal_width)
-        self.col_title.set_fixed_width(col_title_width)
         self.col_year.set_fixed_width(col_year_width)
+        # self.col_title.set_fixed_width(-1)
+        # self.col_title.set_min_width(col_title_width - 50)
+        # self.col_title.set_max_width(col_title_width + 50)
 
     # ————————————————————————————————————————————————————————— Pixbufs columns
 
