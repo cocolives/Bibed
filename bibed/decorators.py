@@ -11,28 +11,43 @@ FUNC_IDLE_CALLS = {}
 FUNC_MOST_CALLS = {}
 
 
+def build_signature(func, args, limit=None):
+    ''' Very simple signature generator, hard-assuming how I use the decorators. '''
+
+    if limit is None:
+        # with "2", we get self and first argument.
+        # In most of our uses cases this is sufficient.
+        limit = 2
+
+    return '{}{}'.format(
+        func.__name__,
+        ''.join(
+            str(id(arg))
+            for arg in args[:limit]
+        )
+    )
+
+
 def only_one_when_idle(func):
     ''' Stack a burst of calls of one function, and execute it only once. '''
 
     @functools.wraps(func)
     def wrapper(*args):
 
-        if func.__name__ in FUNC_IDLE_CALLS:
-            try:
-                GLib.source_remove(FUNC_IDLE_CALLS[func.__name__])
+        signature = build_signature(func, args)
 
-            except Exception:
-                # Obsolete source. It's like it wasn't there.
-                del FUNC_IDLE_CALLS[func.__name__]
+        if signature in FUNC_IDLE_CALLS:
+            # Already in idle queue
+            return
 
         def run_and_remove():
 
             func(*args)
 
-            GLib.source_remove(FUNC_IDLE_CALLS[func.__name__])
-            del FUNC_IDLE_CALLS[func.__name__]
+            GLib.source_remove(FUNC_IDLE_CALLS[signature])
+            del FUNC_IDLE_CALLS[signature]
 
-        FUNC_IDLE_CALLS[func.__name__] = GLib.idle_add(run_and_remove)
+        FUNC_IDLE_CALLS[signature] = GLib.idle_add(run_and_remove)
 
     return wrapper
 
@@ -48,25 +63,27 @@ def run_at_most_every(delay):
         @functools.wraps(func)
         def wrapper(*args):
 
-            if func.__name__ in FUNC_MOST_CALLS:
+            signature = build_signature(func, args)
+
+            if signature in FUNC_MOST_CALLS:
                 try:
-                    GLib.source_remove(FUNC_MOST_CALLS[func.__name__])
+                    GLib.source_remove(FUNC_MOST_CALLS[signature])
 
                 except Exception:
                     # Obsolete source. It's like it wasn't there.
-                    del FUNC_MOST_CALLS[func.__name__]
+                    del FUNC_MOST_CALLS[signature]
 
             def run_and_remove():
 
                 func(*args)
 
-                GLib.source_remove(FUNC_MOST_CALLS[func.__name__])
-                del FUNC_MOST_CALLS[func.__name__]
+                GLib.source_remove(FUNC_MOST_CALLS[signature])
+                del FUNC_MOST_CALLS[signature]
 
                 # Be sure the function will not be re-run.
                 return False
 
-            FUNC_MOST_CALLS[func.__name__] = GLib.timeout_add(delay, run_and_remove)
+            FUNC_MOST_CALLS[signature] = GLib.timeout_add(delay, run_and_remove)
 
         return wrapper
 
