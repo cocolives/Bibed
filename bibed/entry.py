@@ -655,6 +655,8 @@ class BibedEntry:
         # assert lprint_function_name()
         # assert lprint(kwargs)
 
+        update_store = kwargs.pop('update_store', True)
+
         LOGGER.debug('{0}.update_fields({1})'.format(self, kwargs))
 
         for field_name, field_value in kwargs.items():
@@ -662,7 +664,7 @@ class BibedEntry:
 
         self.set_timestamp_and_owner()
 
-        if self.gid >= 0:
+        if update_store:
             # TODO: map entry fields to data_store fields?
             #       for now it's not worth it.
             self.update_store_row()

@@ -1358,18 +1358,13 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         if 'key' in self.changed_fields:
             # Do not remove() the field, we could be in 'new entry' case.
             if not key_updated:
-
-                # This -1 value comes from BibedEntry.new_from_type().
-                if entry.index == -1:
-                    # Special case at first auto-save.
-                    # While user continues to type the key, more auto-saves
-                    # will be triggered and we need to avoid creating multiple
-                    # entries with same key (or partial same keys) in database.
-                    # We thus rely on database index, which will have been
-                    # replaced with definitive value by database at first write.
+                if self.brand_new:
+                    # Special case at first save / auto-save.
                     new_entry = True
 
-        entry.update_fields(**self.get_changed_fields_with_values())
+        entry.update_fields(
+            **self.get_changed_fields_with_values(),
+            update_store=not self.brand_new)
 
         if new_entry:
             entry.database.add_entry(entry)
@@ -1381,6 +1376,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             self.files.save(entry)
 
         # Reset changed fields now that everything is saved.
+        # Entry is not brand_new, it now has a key and it's
+        # written in one of our files.
         self.reset_fields(with_brand_new=True)
 
         return entry
