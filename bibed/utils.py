@@ -12,14 +12,15 @@ from bibed.ltrace import (  # NOQA
     lprint_function_name,
 )
 
-from bibed.foundations import (
+from bibed.system import (
     is_osx, is_windows,
 )
 
 LOGGER = logging.getLogger(__name__)
 
 
-# ————————————————————————————————————————————————————————————— Functions
+# ——————————————————————————————————————————————————————————————————— Functions
+
 
 def open_urls_in_web_browser(urls):
 

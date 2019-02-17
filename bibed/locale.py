@@ -9,9 +9,9 @@ import gettext
 from bibed.foundations import (
     Anything,
     BIBED_DATA_DIR,
-    xdg_get_system_data_dirs,
 )
-from bibed.ltrace import lprint
+from bibed.system import xdg_get_system_data_dirs
+# from bibed.ltrace import lprint
 from bibed.utils import (
     is_windows,
     is_osx,

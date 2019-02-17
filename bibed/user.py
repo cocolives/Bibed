@@ -2,7 +2,7 @@
 import sys
 import os
 
-from bibed.foundations import (
+from bibed.system import (
     is_windows,
     # is_osx,
 )

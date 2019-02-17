@@ -1,19 +1,18 @@
 
 import logging
 
-# from bibed.foundations import ldebug
+from bibed.ltrace import lprint_function_name, lprint_caller_name
+
 from bibed.constants import (
     SEARCH_SPECIALS,
     GRID_COLS_SPACING,
-    SEARCH_WIDTH_EXPANDED,
+    SEARCH_WIDTH_MINIMAL,
+    SEARCH_WIDTH_MAXIMAL,
 )
 
-# from bibed.exceptions import BibedTreeViewException
-# from bibed.preferences import memories  # , gpod
-
-# from bibed.gui.renderers import CellRendererTogglePixbuf
-# from bibed.gui.treemixins import BibedEntryTreeViewMixin
-from bibed.gtk import Gtk
+from bibed.decorators import run_at_most_every
+from bibed.gtk import Gtk, Gdk, Pango
+from bibed.gui.helpers import label_with_markup
 
 
 LOGGER = logging.getLogger(__name__)

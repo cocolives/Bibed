@@ -19,23 +19,14 @@ from bibed.constants import (
     BIBTEXPARSER_VERSION,
 )
 
-from bibed.foundations import (
-    touch_file,
-    set_process_title,
-    Anything,
-)
-
-from bibed.strings import (
-    to_lower_if_not_none,
-    seconds_to_string,
-)
-
+from bibed.foundations import Anything
+from bibed.system import touch_file, set_process_title
+from bibed.strings import to_lower_if_not_none, seconds_to_string
 from bibed.parallel import run_and_wait_on
+from bibed.locale import _, NO_
 
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
-
-from bibed.locale import _, NO_
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
@@ -247,7 +238,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         # We only allow a single window and raise any existing ones
         if self.window:
             LOGGER.info('Window already loaded somewhere, focusing it.')
-            
+
         else:
             Notify.init(APP_NAME)
 

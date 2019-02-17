@@ -1,5 +1,5 @@
 
-# from bibed.foundations import ldebug
+from bibed.ltrace import lprint_function_name, lprint_caller_name
 
 from bibed.constants import (
     BibAttrs,
@@ -11,12 +11,13 @@ from bibed.constants import (
     COL_KEY_WIDTH,
     COL_TYPE_WIDTH,
     COL_YEAR_WIDTH,
-    COL_PIXBUF_WIDTH,
+    # COL_PIXBUF_WIDTH,
     COL_AUTHOR_WIDTH,
     COL_JOURNAL_WIDTH,
-    COL_SEPARATOR_WIDTH,
+    # COL_SEPARATOR_WIDTH,
 )
 
+from bibed.decorators import only_one_when_idle
 from bibed.utils import (
     open_with_system_launcher,
     open_urls_in_web_browser,

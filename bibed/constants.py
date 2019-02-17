@@ -9,9 +9,7 @@ from bibed.user import (
 
 from bibed.foundations import (
     Anything,
-
-    # import other CONSTANTS from sub-levels for higher levels.
-    BIBED_DATA_DIR,
+    BIBED_DATA_DIR, 
     BIBED_ICONS_DIR,
 )
 
@@ -25,7 +23,6 @@ BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
 BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
 BIBED_SYSTEM_IMPORTED_NAME = 'imported.bib'
-
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
@@ -173,8 +170,8 @@ GRID_BORDER_WIDTH = 20
 GRID_COLS_SPACING = 20
 GRID_ROWS_SPACING = 20
 
-SEARCH_WIDTH_NORMAL   = 10
-SEARCH_WIDTH_EXPANDED = 60
+SEARCH_WIDTH_MINIMAL = 20
+SEARCH_WIDTH_MAXIMAL = 60
 
 COMBO_CHARS_DIVIDER = 10
 

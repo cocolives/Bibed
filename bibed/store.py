@@ -28,7 +28,7 @@ from bibed.constants import (
     BIBED_SYSTEM_TRASH_NAME,
 )
 
-from bibed.foundations import touch_file
+from bibed.system import touch_file
 from bibed.user import get_bibed_user_dir
 from bibed.preferences import memories
 from bibed.database import BibedDatabase
