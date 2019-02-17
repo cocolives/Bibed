@@ -34,7 +34,7 @@ import time
 import logging
 import logging.handlers
 
-from bibed.foundations import GZipRotator, GZipNamer
+from bibed.logging import GZipRotator, GZipNamer
 from bibed.user import BIBED_LOG_FILE
 
 

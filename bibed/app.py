@@ -19,23 +19,15 @@ from bibed.constants import (
     BIBTEXPARSER_VERSION,
 )
 
-from bibed.foundations import (
-    touch_file,
-    set_process_title,
-    Anything,
-)
-
-from bibed.strings import (
-    to_lower_if_not_none,
-    seconds_to_string,
-)
-
+from bibed.decorators import wait_for_queued_events
+from bibed.foundations import Anything
+from bibed.system import touch_file, set_process_title
+from bibed.strings import to_lower_if_not_none, seconds_to_string
 from bibed.parallel import run_and_wait_on
+from bibed.locale import _, NO_
 
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
-
-from bibed.locale import _, NO_
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
@@ -101,6 +93,8 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         action.connect('activate', self.on_about)
         self.add_action(action)
 
+        self.is_quitting = False
+
         action = Gio.SimpleAction.new('quit', None)
         action.connect('activate', self.on_quit)
         self.add_action(action)
@@ -145,7 +139,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
     def data_filter_method(self, model, iter, data):
 
         # a local reference for faster access.
-        matched_files = self.window.matched_files
+        matched_databases = self.window.matched_databases
 
         try:
             filter_text = self.window.search.get_text()
@@ -157,24 +151,25 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         row = model[iter]
 
         try:
-            selected_filenames = self.window.get_selected_filenames()
+            selected_databases_ids = \
+                self.window.get_selected_databases(only_ids=True)
 
         except TypeError:
             # The window is not yet constructed.
             return True
 
         else:
-            if not selected_filenames:
+            if not selected_databases_ids:
                 # No data should match when no file is selected.
                 return False
 
-            elif row[BibAttrs.FILENAME] not in selected_filenames:
+            elif row[BibAttrs.DBID] not in selected_databases_ids:
                 # The current row is not part of displayed
                 # files. No need to go further.
                 return False
 
         if filter_text is None:
-            matched_files.add(row[BibAttrs.FILENAME])
+            matched_databases.add(row[BibAttrs.DBID])
             return True
 
         filter_text = filter_text.strip().lower()
@@ -216,7 +211,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
             if word not in ' '.join(model_full_text_data):
                 return False
 
-        matched_files.add(row[BibAttrs.FILENAME])
+        matched_databases.add(row[BibAttrs.DBID])
         return True
 
     # ———————————————————————————————————————————————————————————— do “actions”
@@ -247,7 +242,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         # We only allow a single window and raise any existing ones
         if self.window:
             LOGGER.info('Window already loaded somewhere, focusing it.')
-            
+
         else:
             Notify.init(APP_NAME)
 
@@ -421,18 +416,18 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
         self.open_file(filename)
 
-    def open_file(self, filename, select=True, recompute=True):
+    def open_file(self, filename, select=True):
         ''' Add a file to the application. '''
 
         # assert lprint_function_name()
-        # assert lprint(filename, recompute)
+        # assert lprint(filename)
 
         # Be sure we keep a consistent path across all application.
         filename = os.path.realpath(os.path.abspath(filename))
 
         try:
             # Note: via events, this will update the window title.
-            database = self.files.load(filename, recompute=recompute)
+            database = self.files.load(filename)
 
         except AlreadyLoadedException:
             self.do_notification(
@@ -454,34 +449,33 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         # Needed for correct session reload.
         return database
 
-    def reload_files(self, message=None):
+    def reload_databases(self, message=None):
 
         # assert lprint_function_name()
         # assert lprint(message)
 
-        for filename in self.files.get_open_filenames():
-            self.reload_file(filename)
+        for database in self.files.user_databases:
+            self.reload_database(database)
 
         if message:
             self.window.do_status_change(message)
 
-    def reload_file(self, filename, message=None):
+    def reload_database(self, database, message=None):
 
         # assert lprint_function_name()
         # assert lprint(filename, message)
 
-        if self.files.reload(filename):
+        if self.files.reload(database):
             if message:
                 self.window.do_status_change(message)
 
-    def close_file(self, filename, save_before=True, recompute=True, remember_close=True):
+    def close_database(self, database, save_before=True, remember_close=True):
         ''' Close a file and impact changes. '''
 
         # assert lprint_function_name()
 
-        self.files.close(filename,
+        self.files.close(database,
                          save_before=save_before,
-                         recompute=recompute,
                          remember_close=remember_close)
 
     # ———————————————————————————————————————————————————————————— on “actions”
@@ -568,6 +562,15 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
     def on_quit(self, action, param):
 
+        if self.is_quitting:
+            return
+
+        self.is_quitting = True
+
+        # Hide the window immediately to fake reactivity
+        # in case there are still pending events.
+        self.window.hide()
+
         # Block signals, else memories.combo_filename will
         # finish empty When last file has been closed.
         self.window.block_signals()
@@ -577,11 +580,12 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
 
             # Save is done along-the-way at each user action that needs it.
             save_before=False,
-            recompute=False,
 
             # This will allow automatic reopen on next launch.
             remember_close=False,
         )
+
+        wait_for_queued_events()
 
         self.quit()
 

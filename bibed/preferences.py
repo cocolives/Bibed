@@ -2,12 +2,8 @@
 import os
 import logging
 
-from bibed.foundations import (
-    AttributeDictFromYaml,
-    AttributeDict,
-    Singleton,
-)
-
+from bibed.foundations import Singleton, AttributeDict
+from bibed.yaml import AttributeDictFromYaml
 from bibed.user import get_bibed_user_dir
 
 LOGGER = logging.getLogger(__name__)

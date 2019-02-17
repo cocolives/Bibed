@@ -2,12 +2,14 @@
 import os
 import shutil
 import datetime
+import random
+import functools
 
 import logging
 import bibtexparser
 from bibtexparser.bibdatabase import BibDatabase as BibtexParserDatabase
 
-from bibed.exceptions import IndexingFailedError
+from bibed.exceptions import DuplicateKeyError
 
 from bibed.ltrace import (  # NOQA
     ldebug, lprint,
@@ -15,6 +17,8 @@ from bibed.ltrace import (  # NOQA
     lprint_function_name,
 )
 
+from bibed.locale import _
+from bibed.decorators import run_at_most_every
 from bibed.constants import FileTypes
 from bibed.strings import friendly_filename
 from bibed.preferences import gpod
@@ -22,6 +26,32 @@ from bibed.entry import BibedEntry
 from bibed.gtk import GObject
 
 LOGGER = logging.getLogger(__name__)
+
+bibtex_parser = functools.partial(
+    bibtexparser.bparser.BibTexParser,
+    ignore_nonstandard_types=False,
+    interpolate_strings=False,
+    common_strings=True,
+)
+
+
+def bibtex_writer():
+    writer = bibtexparser.bwriter.BibTexWriter()
+    writer.indent = '    '
+    return writer
+
+
+DATABASES_IDS = set()
+
+
+def generate_database_id():
+
+    new_id = random.randrange(131072)
+
+    while new_id in DATABASES_IDS:
+        new_id = random.randrange(131072)
+
+    return new_id
 
 
 # ———————————————————————————————————————————————————————— Controller Classes
@@ -37,13 +67,58 @@ class BibedDatabase(GObject.GObject):
 
     # NOTE: https://stackoverflow.com/a/11180599/654755
 
+    objectid = GObject.property(type=int)
     filename = GObject.property(type=str)
     filetype = GObject.property(type=int, default=FileTypes.USER)
 
     # Used in the GUI to know which file(s) is(are) selected.
     selected = GObject.property(type=bool, default=False)
 
-    def __init__(self, filename, filetype, store):
+    data_store = None
+    files_store = None
+
+    @classmethod
+    def move_entry(cls, entry, destination_database, write=True):
+        ''' Move an entry from a database to another.
+
+            internally, this inserts the entry into the destination database,
+            and then removes it from the source one. There could be some
+            situations (application crash…) where the entry would be
+            duplicated, or lost. Typically these situations have external
+            causes.
+
+            This operation will update underlying the Gtk datastore.
+
+            :param entry: a :class:`~bibed.entry.BibedEntry` instance.
+            :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
+            :param save: boolean, which can be disabled in case of multiple
+                move operations, for the caller to merge write() calls and
+                optimize resources consumption.
+        '''
+
+        # assert lprint_function_name()
+
+        assert entry.database is not None
+
+        # This is important for the delete operation to act
+        # on the right database, else “self” could be the
+        # destination and thus delete() just after add().
+        source_database = entry.database
+
+        # NOTE: this method does not update the data store, because
+        #       add*() and delete*() methods already do what's needed.
+
+        source_database.delete_entry(entry)
+        destination_database.add_entry(entry)
+
+        if write:
+            destination_database.write()
+            source_database.write()
+
+        LOGGER.debug('{0}.move_entry({1}) to {2} done (add+delete).'.format(
+                     source_database, entry, destination_database))
+
+    def __init__(self, filename, filetype):
         ''' Create a :class:`~bibed.database.BibedDatabase` instance.
 
             :param filename: a full pathname, as a string, for a `BibTeX` /
@@ -62,47 +137,50 @@ class BibedDatabase(GObject.GObject):
 
         super().__init__()
 
+        self.objectid = generate_database_id()
         self.filename = filename
         self.filetype = filetype
-        self.files_store = store
-        self.data_store  = self.files_store.data_store
 
         # TODO: detect BibTeX aliased fields and set
         #       self.use_aliased fields or convert them.
 
-        self.parser = bibtexparser.bparser.BibTexParser(
-            ignore_nonstandard_types=False,
-            interpolate_strings=False,
-            common_strings=True,
-        )
-
-        self.writer = bibtexparser.bwriter.BibTexWriter()
-        self.writer.indent = '    '
-
         try:
             with open(self.filename, 'r') as bibfile:
-                self.bibdb = self.parser.parse_file(bibfile)
+                bibdb = bibtex_parser().parse_file(bibfile)
 
         except IndexError:
             # empty file (probably just created)
-            self.bibdb = BibtexParserDatabase()
+            bibdb = BibtexParserDatabase()
 
-        # self.bibdb.comments
-        # self.bibdb.preambles
-        # self.bibdb.strings
+        # Keep them for write.
+        self.bibdb_attributes = {
+            'comments': bibdb.comments,
+            'preambles': bibdb.preambles,
+            'strings': bibdb.strings,
+        }
 
         self.entries = {}
 
-        for index, entry in enumerate(self.bibdb.entries):
-            # Needs to be a tuple for re-indexation operations.
-            self.entries[entry['ID']] = [entry, index]
+        for btp_entry in bibdb.entries:
+
+            key = btp_entry['ID']
+
+            if key in self.entries:
+                raise DuplicateKeyError(
+                    _('Duplicate key {key} in {database}. You should '
+                      'probably edit the file by hand to fix it.').format(
+                        key=key, database=self.friendly_filename))
+
+            self.entries[key] = BibedEntry(self, btp_entry)
+
+        del bibdb
 
     def __str__(self):
 
-        return 'BibedDatabase({}[{}]{})'.format(
-            os.path.basename(self.filename),
+        return 'BibedDatabase({}@{}{})'.format(
+            self.friendly_filename,
             self.filetype,
-            ' SELECTED' if self.selected else '')
+            ' <selected>' if self.selected else '')
 
     def __len__(self):
 
@@ -124,11 +202,11 @@ class BibedDatabase(GObject.GObject):
 
         # assert lprint_function_name()
 
-        return BibedEntry(self, *self.entries[key])
+        return self.entries[key]
 
     def keys(self):
 
-        # assert lprint_function_name()
+        assert lprint_function_name()
 
         return self.entries.keys()
 
@@ -136,14 +214,21 @@ class BibedDatabase(GObject.GObject):
 
         # assert lprint_function_name()
 
-        for index, entry in enumerate(self.bibdb.entries):
-            yield BibedEntry(self, entry, index)
+        for entry in self.entries.values():
+            yield entry
 
     def values(self):
 
         # assert lprint_function_name()
 
-        return [x for x in self.itervalues()]
+        return self.entries.values()
+
+    @property
+    def friendly_filename(self):
+
+        return friendly_filename(self.filename)
+
+    # ———————————————————————————————————————————— databases/entries operations
 
     def add_entry(self, entry):
         ''' Add an entry into the current database.
@@ -157,20 +242,14 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
         # assert lprint(entry)
 
-        new_index = len(self.bibdb.entries)
+        assert entry.key is not None
+        assert entry.key not in self.entries
 
-        # Insert in BibedDatabase.
-        # We need a tuple for later index assignments.
-        self.entries[entry.key] = [entry.entry, new_index]
+        # Make bi-directional link.
+        entry.database = self
+        self.entries[entry.key] = entry
 
-        # Idem in bibtexparser database.
-        self.bibdb.entries.append(entry.entry)
-
-        entry.index = new_index
-
-        assert self.bibdb.entries.index(entry.entry) == new_index
-
-        self.data_store.insert_entry(entry)
+        BibedDatabase.data_store.add_entry(entry)
 
         LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
 
@@ -185,85 +264,21 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
         # assert lprint(entry, entry.gid)
 
-        assert entry.index >= 0
-        assert entry.gid >= 0
+        assert entry.key is not None
+        assert entry.key in self.entries
+        assert entry.database is not None
+        assert entry.database == self
 
-        # old_index is set in case of a move.
-        entry_index = entry.index if old_index is None else old_index
+        BibedDatabase.data_store.delete_entry(entry)
 
-        # Here, or at the end?
-        self.data_store.delete_entry(entry)
-
+        entry.database = None
         del self.entries[entry.key]
 
-        self.bibdb.entries.pop(entry_index)
-
-        # NOTE: 20190203: the underlying dict is updated correctly,
-        # but only the first time you call it. It's a one shot.
-        # lprint(self.bibdb.entries_dict.keys())
-
-        # decrement indexes of posterior entries
-        for btp_entry in self.bibdb.entries[entry_index:]:
-
-            # In rare cases (multiple deletion) the garbage collector does not
-            # collect deleted keys fast enough. Thus we get() and handle the
-            # situation gracefully.
-            value = self.entries.get(btp_entry['ID'])
-            try:
-                value[1] -= 1
-
-            except TypeError:
-                pass
-
-        assert self.check_indexes()
+        # NOTE: do NOT delete the entry, in case it's a move operation.
+        #       in case of a simple delete, the garbage collector should
+        #       wipe it automatically anyway.
 
         LOGGER.debug('{0}.delete_entry({1}) done.'.format(self, entry))
-
-    def move_entry(self, entry, destination_database, write=True):
-        ''' Move an entry from a database to another.
-
-            internally, this inserts the entry into the destination database,
-            and then removes it from the source one. There could be some
-            situations (application crash…) where the entry would be
-            duplicated, or lost. Typically these situations have external
-            causes.
-
-            This operation will update underlying the Gtk datastore.
-
-            :param entry: a :class:`~bibed.entry.BibedEntry` instance.
-            :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
-            :param save: boolean, which can be disabled in case of multiple
-                move operations, for the caller to merge write() calls and
-                optimize resources consumption.
-        '''
-
-        # assert lprint_function_name()
-
-        assert entry.gid >= 0
-
-        # This is important for the delete operation to act
-        # on the right database, else “self” could be the
-        # destination and thus delete() just after add().
-        source_database = entry.database
-
-        # This is important, else GUI will still write in source database.
-        entry.database = destination_database
-
-        # save it before it gets overwritten by add_entry()
-        old_index = entry.index
-
-        # NOTE: this method does not update the data store, because
-        #       add*() and delete*() methods already do what's needed.
-
-        destination_database.add_entry(entry)
-        source_database.delete_entry(entry, old_index)
-
-        if write:
-            destination_database.write()
-            source_database.write()
-
-        LOGGER.debug('{0}.move_entry({1}) to {2} done (add+delete).'.format(
-                     source_database, entry, destination_database))
 
     def update_entry_key(self, entry):
 
@@ -304,8 +319,8 @@ class BibedDatabase(GObject.GObject):
         new_filename = os.path.join(
             dirname,
             # HEADS UP: backup file starts with a dot, it's hidden.
-            '.{basename}.save.{datetime}.bib'.format(
-                basename=coolname,
+            '.{coolname}.save.{datetime}.bib'.format(
+                coolname=coolname,
                 datetime=datetime.datetime.now().isoformat(sep='_')
             )
         )
@@ -347,6 +362,7 @@ class BibedDatabase(GObject.GObject):
         # TODO: clean old backup files. (PREFERENCE [number])
         LOGGER.debug('{0}.backup() done.'.format(self))
 
+    @run_at_most_every(2000)  # Save once per two seconds maximum
     def write(self):
 
         # assert lprint_function_name()
@@ -354,38 +370,27 @@ class BibedDatabase(GObject.GObject):
 
         filename = self.filename
 
-        with self.files_store.no_watch(filename):
+        with BibedDatabase.files_store.no_watch(filename):
 
             if gpod('backup_before_save'):
                 self.backup()
 
+            # Rebuild a BibtexParserDatabase
+            # on the fly just for write.
+            bibdb = BibtexParserDatabase()
+            bibdb.comments = self.bibdb_attributes['comments']
+            bibdb.preambles = self.bibdb_attributes['preambles']
+            bibdb.strings = self.bibdb_attributes['strings']
+            bibdb.entries = [
+                self.entries[key].bib_dict
+                for key
+                in sorted(self.entries)
+            ]
+
             with open(filename, 'w') as bibfile:
-                bibfile.write(self.writer.write(self.bibdb))
+                bibfile.write(bibtex_writer().write(bibdb))
+
+            del bibdb
 
         if __debug__:
             LOGGER.debug('{0}.write(): written to disk.'.format(self))
-
-    def check_indexes(self):
-
-        # assert lprint_function_name()
-
-        for index, btp_entry in enumerate(self.bibdb.entries):
-
-            # In rare cases (multiple deletion) the garbage collector does not
-            # collect deleted keys fast enough. Thus we get() and handle the
-            # situation gracefully.
-            value = self.entries.get(btp_entry['ID'])
-
-            try:
-                current_value = value[1]
-
-            except TypeError:
-                continue
-
-            if current_value != index:
-                raise IndexingFailedError('{} is not {} (entry {})'.format(
-                    self.entries[btp_entry['ID']][1],
-                    index, btp_entry['ID']
-                ))
-
-        return True

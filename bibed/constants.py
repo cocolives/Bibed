@@ -9,23 +9,20 @@ from bibed.user import (
 
 from bibed.foundations import (
     Anything,
-
-    # import other CONSTANTS from sub-levels for higher levels.
     BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
 )
 
-from bibed.locale import _
+from bibed.locale import C_
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
-APP_VERSION = '0.9.9.5-develop'
+APP_VERSION = '0.9.10-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
 BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
 BIBED_SYSTEM_IMPORTED_NAME = 'imported.bib'
-
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
@@ -36,9 +33,9 @@ MINIMUM_BIB_KEY_LENGTH = 8
 
 
 BibAttrs = Anything((
-    ('GLOBAL_ID', int, ),  # global ID / counter across all files
-    ('FILENAME', str, ),  # store origin (filename / ID)
-    ('ID', int, ),  # id / counter in current file
+    ('DBID', int, ),  # database ID (in file store)
+    ('FILETYPE', int, ),  # file type
+    ('COLOR', str, ),  # foreground color
     ('TOOLTIP', str, ),  # Row tooltip (for treeview)
     ('TYPE', str, ),  # BIB entry type (article, book…)
     ('KEY', str, ),  # BIB sort key
@@ -55,8 +52,6 @@ BibAttrs = Anything((
     ('READ', str, ),  # read status
     ('COMMENT', str, ),  # comment (text field)
     ('KEYWORDS', str, ),  # keywords (for search/filter only)
-    ('FILETYPE', int, ),  # file type
-    ('COLOR', str, ),  # foreground color
 ))
 
 
@@ -85,14 +80,30 @@ FILETYPES_COLORS = {
 }
 
 SEARCH_SPECIALS = (
-    (_('t'), BibAttrs.TYPE, 'type'),
-    (_('k'), BibAttrs.KEY, 'key'),
-    (_('a'), BibAttrs.AUTHOR, 'author'),
-    (_('i'), BibAttrs.TITLE, 'title'),
-    (_('j'), BibAttrs.JOURNAL, 'journal'),
-    (_('y'), BibAttrs.YEAR, 'year'),
-    (_('f'), BibAttrs.FILE, 'file'),
-    (_('u'), BibAttrs.URL, 'URL'),
+    (C_('search field', 'p'),
+     BibAttrs.TYPE,
+     C_('search field', 'type'), ),
+    (C_('search field', 'k'),
+     BibAttrs.KEY,
+     C_('search field', 'key'), ),
+    (C_('search field', 'a'),
+     BibAttrs.AUTHOR,
+     C_('search field', 'author'), ),
+    (C_('search field', 't'),
+     BibAttrs.TITLE,
+     C_('search field', 'title'), ),
+    (C_('search field', 'j'),
+     BibAttrs.JOURNAL,
+     C_('search field', 'journal'), ),
+    (C_('search field', 'y'),
+     BibAttrs.YEAR,
+     C_('search field', 'year'), ),
+    (C_('search field', 'f'),
+     BibAttrs.FILE,
+     C_('search field', 'file'), ),
+    (C_('search field', 'u'),
+     BibAttrs.URL,
+     C_('search field', 'URL'), ),
 )
 
 
@@ -157,8 +168,8 @@ GRID_BORDER_WIDTH = 20
 GRID_COLS_SPACING = 20
 GRID_ROWS_SPACING = 20
 
-SEARCH_WIDTH_NORMAL   = 10
-SEARCH_WIDTH_EXPANDED = 30
+SEARCH_WIDTH_MINIMAL = 20
+SEARCH_WIDTH_MAXIMAL = 60
 
 COMBO_CHARS_DIVIDER = 10
 

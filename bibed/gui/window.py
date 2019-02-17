@@ -1,3 +1,4 @@
+
 import logging
 from operator import attrgetter
 
@@ -11,10 +12,11 @@ from bibed.ltrace import (  # NOQA
 
 from bibed.constants import (
     APP_NAME,
-    SEARCH_WIDTH_EXPANDED,
     BIBED_ASSISTANCE_FR,
     BIBED_ASSISTANCE_EN,
 )
+
+from bibed.decorators import run_at_most_every, only_one_when_idle
 from bibed.locale import _, n_
 from bibed.preferences import memories, gpod
 from bibed.user import get_user_home_directory
@@ -25,12 +27,14 @@ from bibed.gtk import Gio, GLib, Gtk, Gdk
 
 from bibed.gui.stack import BibedStack
 from bibed.gui.helpers import (
+    get_screen_size,
     flash_field,
     markup_entries,
     message_dialog,
     widget_properties,
     widgets_show,
     widgets_hide,
+    widget_replace,
     label_with_markup,
     flat_unclickable_button_in_hbox,
 )
@@ -65,47 +69,18 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.set_name(APP_NAME)
 
         # This will be in the windows group and have the "win" prefix
-        max_action = Gio.SimpleAction.new_stateful(
+        self.action_maximize = Gio.SimpleAction.new_stateful(
             'maximize', None, GLib.Variant.new_boolean(False))
-        max_action.connect('change-state', self.on_maximize_toggle)
-        self.add_action(max_action)
-
-        # Keep it in sync with the actual state
-        self.connect('notify::is-maximized',
-                     lambda obj, pspec: max_action.set_state(
-                         GLib.Variant.new_boolean(obj.props.is_maximized)))
-
-        self.connect('check-resize', self.on_resize)
-        self.connect('key-press-event', self.on_key_pressed)
+        self.add_action(self.action_maximize)
 
         self.setup_icon()
-
-        # TODO: use gui.helpers.get_screen_resolution()
-        dimensions = (1200, 600)
-
-        if gpod('remember_windows_states'):
-            remembered_dimensions = memories.main_window_dimensions
-
-            if remembered_dimensions is not None:
-                dimensions = remembered_dimensions
-
-        # TODO: check dimensions are not > screen_size, then lower them.
-        #       20190129: I've had a 23487923 pixels windows which made
-        #       Bibed crash at startup, don't know how nor why.
-
-        self.set_default_size(*dimensions)
-
-        # keep for resize() operations smothing.
-        self.current_size = dimensions
-
-        # self.set_border_width(10)
 
         # prepared for future references.
         self.preferences_dialog = None
 
-        # ———————————————————————————————————————————————————————— BibEd Window
-
         self.application = kwargs['application']
+
+        was_maximized = self.setup_dimensions()
 
         self.setup_treeview()
         self.setup_booked()
@@ -118,6 +93,51 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.setup_vbox()
 
+        self.action_maximize.connect('change-state', self.on_maximize_toggle)
+        self.connect('window-state-event', self.on_window_state_changed)
+
+        self.connect('check-resize', self.on_resize)
+        self.connect('key-press-event', self.on_key_pressed)
+
+        self.set_default_size(*self.current_size)
+
+        if was_maximized:
+            self.on_maximize_toggle(self.action_maximize, True)
+
+    def setup_dimensions(self):
+
+        was_maximized = False
+        monitor_dimensions = get_screen_size(self)
+
+        # This is a start, in case everything fails.
+        dimensions = [int(d * 0.8) for d in monitor_dimensions]
+
+        if gpod('remember_windows_states'):
+
+            is_maximized = memories.main_window_is_maximized
+
+            if is_maximized is not None and is_maximized:
+                was_maximized = True
+
+            remembered_dimensions = memories.main_window_dimensions
+
+            if remembered_dimensions is not None:
+                dimensions = remembered_dimensions
+
+        # 20190129: I've been given a 23487923 pixels windows which made
+        # Bibed crash in wayland at startup, don't know how nor why.
+
+        if dimensions[0] > monitor_dimensions[0]:
+            dimensions = [monitor_dimensions[0] * 0.8, dimensions[1]]
+
+        if dimensions[1] > monitor_dimensions[1]:
+            dimensions = (dimensions[0], monitor_dimensions[1] * 0.8)
+
+        # keep for resize() operations smothing.
+        self.current_size = dimensions
+
+        return was_maximized
+
     def setup_icon(self):
 
         self.set_icon_name('bibed-logo')
@@ -126,15 +146,14 @@ class BibedWindow(Gtk.ApplicationWindow):
     def setup_searchbar(self):
 
         # used to speed up title updates during searches.
-        self.matched_files = set()
+        self.matched_databases = set()
 
         self.search = Gtk.SearchEntry()
 
-        self.search.props.width_chars = SEARCH_WIDTH_EXPANDED
         self.search.connect('search-changed',
                             self.on_search_filter_changed)
 
-        self.searchbar = BibedSearchBar(self.search)
+        self.searchbar = BibedSearchBar(self.search, self.treeview)
 
     def setup_stack(self):
 
@@ -349,11 +368,10 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.lbl_booked = widget_properties(
             label_with_markup(
                 _('<big>Something will be here</big>\n\n'
-                'Upcoming feature. Please wait.\n'
-                '(You have no choice, anyway :-D)\n'
-                'Come discuss it: '
-                '<a href="{discuss_en}">in english</a> '
-                '| <a href="{discuss_fr}">in french</a>').format(
+                  'Upcoming feature. Please wait.\n'
+                  '(You have no choice, anyway :-D)\n'
+                  '<a href="{discuss_en}">Come discuss it on Telegram</a> '
+                  'if you wish.').format(
                     discuss_en=BIBED_ASSISTANCE_EN,
                     discuss_fr=BIBED_ASSISTANCE_FR,
                 ),
@@ -362,6 +380,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 yalign=0.5,
             ),
             expand=True,
+            selectable=False,
         )
 
     def setup_treeview(self):
@@ -387,6 +406,33 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.treeview_sw.add(self.treeview)
 
+        # setup a treeview replacer when no file is loaded.
+
+        self.treeview_placeholder = widget_properties(
+            label_with_markup(
+                _('<big>Welcome to Bibed!</big>\n\n'
+                  'You have no open bibliography yet.\n'
+                  'You can create a new one, or load an exising one,\n'
+                  'via icon-tools in the upper left corner.\n\n'
+                  'In case you need human help,\n'
+                  'you can <a href="{discuss_en}">'
+                  'reach us on Telegram</a>.\n\n'
+                  'Best regards,\n'
+                  'Olivier, Corinne\n'
+                  'and all Bibed contributors').format(
+                    discuss_en=BIBED_ASSISTANCE_EN,
+                    discuss_fr=BIBED_ASSISTANCE_FR,
+                ),
+                name='treeview_placeholder',
+                xalign=0.5,
+                yalign=0.5,
+            ),
+            expand=True,
+            selectable=False,
+        )
+
+    # ————————————————————————————————————————————————— Window & buttons states
+
     def update_title(self):
 
         # assert lprint_caller_name(levels=5)
@@ -396,13 +442,10 @@ class BibedWindow(Gtk.ApplicationWindow):
         # because this points either to the TreeModelFilter or the main model.
         row_count = len(self.treeview.get_model())
 
-        active_files = self.get_selected_filenames(with_type=True)
-        active_files_count = len(active_files)
+        active_databases = self.get_selected_databases()
+        active_databases_count = len(active_databases)
 
-        if active_files_count > 1:
-            pass
-
-        if active_files_count == self.application.files.num_user:
+        if active_databases_count == self.application.files.num_user:
             # All user files are selected.
 
             search_text = self.get_search_text()
@@ -411,45 +454,46 @@ class BibedWindow(Gtk.ApplicationWindow):
                 # We have to gather files count from
                 # current global filter results.
 
-                files_count = len(self.matched_files)
+                files_count = len(self.matched_databases)
 
             else:
                 files_count = self.application.files.num_user
 
         else:
-            files_count = active_files_count
+            files_count = active_databases_count
 
-        if active_files:
+        if active_databases:
             title_value = '{app} – {text}'.format(
                 app=APP_NAME,
-                text=friendly_filename(active_files[0][0])
-                if active_files_count == 1
+                text=(active_databases[0].friendly_filename)
+                if active_databases_count == 1
                 else n_(
                     '{count} file selected',
                     '{count} files selected',
-                    active_files_count
-                ).format(active_files_count)
+                    active_databases_count
+                ).format(count=active_databases_count)
+            )
+
+            subtitle_value = _('{items} in {files}').format(
+                items=n_(
+                    '{count} item',
+                    '{count} items',
+                    row_count,
+                ).format(count=row_count),
+                files=n_(
+                    '{count} file',
+                    '{count} files',
+                    files_count,
+                ).format(count=files_count)
             )
 
         else:
             if self.application.files.num_user:
-                title_value = _('{app} – NO FILE SELECTED').format(app=APP_NAME)
-
+                title_value = _('{app} – no file selected').format(app=APP_NAME)
+                subtitle_value = _('select at least one file to display in your library')
             else:
                 title_value = _('{0} – Welcome!').format(APP_NAME)
-
-        subtitle_value = _('{items} in {files}').format(
-            items=n_(
-                '{count} item',
-                '{count} items',
-                row_count,
-            ).format(count=row_count),
-            files=n_(
-                '{count} file',
-                '{count} files',
-                files_count,
-            ).format(count=files_count)
-        )
+                subtitle_value = None
 
         self.headerbar.props.title = title_value
         self.headerbar.props.subtitle = subtitle_value
@@ -472,9 +516,10 @@ class BibedWindow(Gtk.ApplicationWindow):
         bibed_widgets_base = (
             self.btn_file_new,
             self.btn_file_open,
-            self.btn_search,
         )
         bibed_widgets_conditional = (
+            self.btn_search,
+
             # file-related buttons
             self.btn_file_select,
             # TODO: insert popover buttons here,
@@ -491,10 +536,15 @@ class BibedWindow(Gtk.ApplicationWindow):
             how_many_files = self.application.files.num_user
 
             if how_many_files:
+                widget_replace(self.treeview_placeholder, self.treeview)
+                self.treeview.show()
+
                 widgets_show(bibed_widgets_conditional)
 
             else:
                 widgets_hide(bibed_widgets_conditional)
+                widget_replace(self.treeview, self.treeview_placeholder)
+                self.treeview_placeholder.show()
 
             if sync_children:
                 self.files_popover.sync_buttons_states(sync_parent=False)
@@ -542,33 +592,49 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.entry_selection_buttons_set_sensitive()
 
+    @only_one_when_idle
+    def on_window_state_changed(self, window, event):
+
+        state = event.new_window_state
+
+        if state & Gdk.WindowState.WITHDRAWN:
+            return
+
+        is_maximized = int(state & Gdk.WindowState.MAXIMIZED)
+
+        self.action_maximize.set_state(GLib.Variant.new_boolean(is_maximized))
+
+        memories.main_window_is_maximized = is_maximized
+
     def on_maximize_toggle(self, action, value):
 
-        action.set_state(value)
+        action.set_state(GLib.Variant.new_boolean(value))
 
-        if value.get_boolean():
+        is_maximized = value
+
+        if is_maximized:
             self.maximize()
         else:
             self.unmaximize()
 
-        self.on_resize(self)
-
+    @run_at_most_every(1000)
     def on_resize(self, window):
 
         previous_width, previous_height = self.current_size
         current_width, current_height = self.get_size()
 
         if previous_width == current_width:
-            # Avoid resize infinite loops.
+            # Avoid useless loops (on Alt-tab there are a lot).
             return
 
         # Keep in memory for next resize.
         self.current_size = (current_width, current_height)
 
-        if gpod('remember_windows_states'):
+        # Do not save dimensions if maximized.
+        # This allows, at next sessions, to restore a smaller size
+        # When unmaximizing, if the app has started maximized.
+        if gpod('remember_windows_states') and not self.props.is_maximized:
             memories.main_window_dimensions = self.current_size
-
-        self.treeview.set_columns_widths(current_width)
 
     def on_search_filter_changed(self, entry):
         ''' Signal: chain the global filter method. '''
@@ -596,13 +662,12 @@ class BibedWindow(Gtk.ApplicationWindow):
         search_result = self.searchbar.handle_event(event)
 
         if search_result:
-            return True
+            return Gdk.EVENT_STOP
 
         # get search context
         search_text = self.search.get_text().strip()
 
         keyval = event.keyval
-        # state = event.state
 
         # TODO: convert all of these to proper accels.
         #       See  http://gtk.10911.n7.nabble.com/GdkModifiers-bitmask-and-GDK-SHIFT-MASK-question-td4404.html
@@ -612,15 +677,11 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         # check the event modifiers (can also use SHIFTMASK, etc)
         ctrl = (event.state & Gdk.ModifierType.CONTROL_MASK)
-        # shift = (event.state & Gdk.ModifierType.SHIFT_MASK)
+        # only shift = (event.state & Gdk.ModifierType.SHIFT_MASK)
         ctrl_shift = (
             event.state & (Gdk.ModifierType.CONTROL_MASK
                            | Gdk.ModifierType.SHIFT_MASK)
         )
-
-        # Alternative way of knowing key pressed.
-        # keyval_name = Gdk.keyval_name(keyval)
-        # if ctrl and keyval_name == 's':
 
         if ctrl and keyval == Gdk.KEY_c:
             self.treeview.copy_entries_keys_formatted_to_clipboard()
@@ -643,17 +704,19 @@ class BibedWindow(Gtk.ApplicationWindow):
             else:
                 self.treeview.open_entries_urls_in_browser()
 
+        elif ctrl_shift and keyval == Gdk.KEY_F:
+            # NOTE: the upper case 'F'
+
+            self.treeview.copy_entries_files_to_clipboard()
+
         elif ctrl_shift and keyval == Gdk.KEY_T:
 
             self.treeview.switch_tooltips()
 
         elif ctrl and keyval == Gdk.KEY_s:
 
-            if gpod('bib_auto_save'):
-                # propagate signal, we do not need to save.
-                return True
-
-            LOGGER.info('Control-S pressed (no action yet).')
+            if not gpod('bib_auto_save'):
+                LOGGER.info('Control-S pressed (no action yet).')
 
             # TODO: save selected files.
 
@@ -665,8 +728,8 @@ class BibedWindow(Gtk.ApplicationWindow):
             with self.block_signals():
                 # Don't let combo change and update “memories” while we
                 # just reload files to attain same conditions as now.
-                self.application.reload_files(
-                    _('Reloaded all open files at user request.')
+                self.application.reload_databases(
+                    _('Reloaded all open databases at user request.')
                 )
 
             # restore memory / session
@@ -718,54 +781,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
             for database in tuple(
                     self.application.files.selected_user_databases):
-                self.application.close_file(database.filename)
-
-        elif search_text and (
-            keyval in (Gdk.KEY_Down, Gdk.KEY_Up) or (
-                ctrl and keyval in (Gdk.KEY_j, Gdk.KEY_k)
-            )
-        ):
-            # we limit on search_text, else we grab the genuine
-            # up/down keys already handled by the treeview.
-
-            # TODO: refactor this block and create
-            #       treeview.select_next() and treeview.select_previous()
-            select = self.treeview.get_selection()
-            model, treeiter = select.get_selected()
-
-            # Here we iterate through the SORTER,
-            # (first level under the TreeView),
-            # not the filter. This is INTENDED.
-            # It doesn't work on the filter.
-            store = self.application.sorter
-
-            if keyval in (Gdk.KEY_j, Gdk.KEY_Down):
-
-                if treeiter is not None:
-                    select.unselect_iter(treeiter)
-                    treeiter_next = store.iter_next(treeiter)
-
-                    if treeiter_next is None:
-                        # We hit last row.
-                        treeiter_next = treeiter
-
-                else:
-                    treeiter_next = store[0].iter
-
-            else:
-                # Key up / Control-K (backward)
-
-                if treeiter is not None:
-                    select.unselect_iter(treeiter)
-                    treeiter_next = store.iter_previous(treeiter)
-
-                    if treeiter_next is None:
-                        # We hit first row.
-                        treeiter_next = treeiter
-                else:
-                    treeiter_next = store[-1].iter
-
-            select.select_iter(treeiter_next)
+                self.application.close_database(database)
 
         elif not ctrl and keyval == Gdk.KEY_Escape:
 
@@ -808,10 +824,10 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         else:
             # The keycode combination was not handled, propagate.
-            return False
+            return Gdk.EVENT_PROPAGATE
 
         # Stop propagation of signal, we handled it.
-        return True
+        return Gdk.EVENT_STOP
 
     # ——————————————————————————————————————————————————————————— Files buttons
 
@@ -868,10 +884,9 @@ class BibedWindow(Gtk.ApplicationWindow):
             with self.block_signals():
                 for filename in filenames:
                     databases_to_select.append(
-                        self.application.open_file(filename, recompute=False)
+                        self.application.open_file(filename)
                     )
 
-            self.treeview.main_model.do_recompute_global_ids()
             self.set_selected_databases(databases_to_select)
 
             self.do_activate()
@@ -1127,7 +1142,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 message_base = _('{entry} modified in {database}.')
 
             message = message_base.format(
-                entry=response, database=friendly_filename(response.database.filename))
+                entry=response, database=database.friendly_filename)
 
             self.do_status_change(message)
 
@@ -1167,7 +1182,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         return filter_bib
 
-    def get_selected_filenames(self, with_type=False):
+    def get_selected_databases(self, with_type=False, only_ids=False):
 
         selected_databases = tuple(self.application.files.selected_databases)
 
@@ -1177,10 +1192,13 @@ class BibedWindow(Gtk.ApplicationWindow):
                 for database in selected_databases
             ]
 
-        return [
-            database.filename
-            for database in selected_databases
-        ]
+        if only_ids:
+            return [
+                database.objectid
+                for database in selected_databases
+            ]
+
+        return selected_databases
 
     def set_selected_databases(self, databases_to_select):
 
@@ -1250,7 +1268,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 del memories.search_text
 
         def refilter():
-            self.matched_files = set()
+            self.matched_databases = set()
             self.treeview.set_model(self.application.sorter)
             self.application.filter.refilter()
 

@@ -1,5 +1,6 @@
 
 import logging
+import urllib
 import webbrowser
 import subprocess
 
@@ -11,19 +12,39 @@ from bibed.ltrace import (  # NOQA
     lprint_function_name,
 )
 
-from bibed.foundations import (
+from bibed.system import (
     is_osx, is_windows,
 )
 
 LOGGER = logging.getLogger(__name__)
 
 
-# ————————————————————————————————————————————————————————————— Functions
+# ——————————————————————————————————————————————————————————————————— Functions
+
 
 def open_urls_in_web_browser(urls):
 
+    returning_urls = []
+
     for url in urls:
+        returning_urls.append(urllib.parse.unquote(url))
+
         webbrowser.open_new_tab(url)
+
+    return returning_urls
+
+
+def normalize_filename(filename):
+
+    if filename.startswith(':') and filename.lower().endswith(':pdf'):
+        # get rid of older filenames like “:/home/olive/myfile.pdf:PDF”
+        filename = filename[1:-4]
+
+    if '%' in filename and '//' in filename:
+        parsed = urllib.parse.urlparse(filename)
+        filename = urllib.parse.unquote(parsed.path)
+
+    return filename
 
 
 def open_with_system_launcher(filenames):
@@ -38,10 +59,11 @@ def open_with_system_launcher(filenames):
         # Linux
         base_command = ['xdg-open']
 
+    returning_filenames = []
+
     for filename in filenames:
-        if filename.startswith(':') and filename.lower().endswith(':pdf'):
-            # get rid of older filenames like “:/home/olive/myfile.pdf:PDF”
-            filename = filename[1:-4]
+        filename = normalize_filename(filename)
+        returning_filenames.append(filename)
 
         command = base_command + [filename]
 
@@ -52,5 +74,6 @@ def open_with_system_launcher(filenames):
         except Exception:
             raise ActionError(' '.join(command))
 
+    return returning_filenames
 
 # ———————————————————————————————————————————————————————————————— Classes

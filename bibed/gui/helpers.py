@@ -1,7 +1,7 @@
 import os
 import logging
 
-from bibed.ltrace import ldebug
+from bibed.ltrace import ldebug, lprint_caller_name
 
 from bibed.constants import (
     FileTypes,
@@ -15,6 +15,7 @@ from bibed.constants import (
     HELP_POPOVER_LABEL_MARGIN,
 )
 
+from bibed.locale import _
 from bibed.preferences import preferences
 from bibed.gtk import GLib, Gtk, Gdk, Gio
 
@@ -56,7 +57,7 @@ def is_dark_theme():
     pass
 
 
-def get_screen_resolution():
+def get_screen_size(window=None):
 
     if os.name != 'posix':
         import ctypes
@@ -72,10 +73,40 @@ def get_screen_resolution():
         # Multi-monitor setup.
         # screensize = user32.GetSystemMetrics(78), user32.GetSystemMetrics(79)
 
-    else:
-        Gdk.Display.get_primary_monitor()
+        return screensize
 
-    return screensize
+    else:
+
+        if window is None:
+            display = Gdk.Display.get_default()
+            # monitors_count = screen.get_n_monitors()
+
+        else:
+            display = window.get_screen().get_display()
+
+            # This needs a Gdk.Window, thus comparisons of sizes and positions
+            # of all Gdk.Window and `window`, which is a Gtk one, to find the
+            # right monitor.
+            # TODO: implement the comparison / finding.
+            #
+            # monitor_num = display.get_monitor_at_window(window)
+            # geometry = display.get_monitor_geometry(monitor_num)
+
+        monitor = display.get_primary_monitor()
+
+        if monitor is None:
+            monitor = display.get_monitor(0)
+
+        geometry = monitor.get_geometry()
+        scale_factor = monitor.get_scale_factor()
+
+        if int(scale_factor) != 1:
+            return (
+                geometry.width * scale_factor,
+                geometry.height * scale_factor,
+            )
+
+        return geometry.width, geometry.height
 
 
 def get_children_recursive(start_node, reverse=True):
@@ -282,22 +313,22 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
 
     if with_folder:
         if dirname == working_folder:
-            folder = 'Working folder'
+            folder = _('Working folder')
 
         elif dirname.startswith(working_folder):
             remaining = dirname[len(working_folder):]
 
-            folder = '<i>Working folder</i> {remaining}'.format(
-                remaining=remaining)
+            folder = _('<i>Working folder</i> {remaining}').format(
+                remaining=GLib.markup_escape_text(remaining))
 
         elif dirname.startswith(home_folder):
             remaining = dirname[len(home_folder):]
 
-            folder = '<i>Home directory</i> {remaining}'.format(
-                remaining=remaining)
+            folder = _('<i>Home directory</i> {remaining}').format(
+                remaining=GLib.markup_escape_text(remaining))
 
         else:
-            folder = dirname
+            folder = GLib.markup_escape_text(dirname)
 
     else:
         folder = None
@@ -322,7 +353,7 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
         format_kwargs = {
             'separator': ' ' if same_line else '\n',
             'basename': GLib.markup_escape_text(basename),
-            'folder': GLib.markup_escape_text(folder),
+            'folder': folder,  # already escaped before
         }
 
     else:
@@ -509,7 +540,34 @@ def widgets_hide(widgets):
         widget.hide()
 
 
-def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=False, no_show_all=False, can_focus=None, debug=False):
+def widget_replace(old, new):
+    # Via https://stackoverflow.com/a/50522344/654755
+    # from https://stackoverflow.com/a/27587282/654755
+
+    # assert lprint_caller_name(levels=5)
+
+    parent = old.get_parent()
+
+    if parent is None:
+        # No need to replace, it seems already done…
+        return
+
+    # print('PARENT:', parent, type(parent), parent.get_parent())
+
+    props = {}
+
+    # Gtk.ContainerClass.list_child_properties(parent)
+    for key in parent.list_child_properties():
+        props[key.name] = parent.child_get_property(old, key.name)
+
+    parent.remove(old)
+    parent.add(new)
+
+    for name, value in props.items():
+        parent.child_set_property(new, name, value)
+
+
+def widget_properties(widget, expand=False, halign=None, valign=None, margin=None, margin_top=None, margin_bottom=None, margin_left=None, margin_right=None, margin_start=None, margin_end=None, width=None, height=None, classes=None, connect_to=None, connect_signal=None, connect_args=None, connect_kwargs=None, default=False, activates_default=None, no_show_all=False, can_focus=None, selectable=None, debug=False):
 
     if __debug__ and debug: mp('WIDGET', widget)  # NOQA
 
@@ -589,10 +647,15 @@ def widget_properties(widget, expand=False, halign=None, valign=None, margin=Non
 
         widget.set_receives_default(True)
 
-    if activates_default:
-        if __debug__ and debug: mp('SET activate default')  # NOQA
+    if activates_default is not None:
+        if __debug__ and debug: mp('SET activates_default', activates_default)  # NOQA
 
-        widget.set_activates_default(True)
+        widget.set_activates_default(activates_default)
+
+    if selectable is not None:
+        if __debug__ and debug: mp('SET selectable', selectable)  # NOQA
+
+        widget.set_selectable(selectable)
 
     if classes:
         if __debug__ and debug: mp('classes', classes)  # NOQA
@@ -962,7 +1025,8 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
 
     lbl.set_markup_with_mnemonic(
         '{label}{help}'.format(
-            label=field_label if field_label else field_name.title(),
+            # HEADS UP: OTF translation.
+            label=_(field_label) if field_label else field_name.title(),
             help=GENERIC_HELP_SYMBOL
             if field_doc else ''))
 
@@ -976,14 +1040,16 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
     )
 
     etr.set_name(field_name)
+
     if entry is not None:
         etr.set_text(entry.get_field(field_name, ''))
 
     lbl.set_mnemonic_widget(etr)
 
     if field_doc:
-        lbl.set_tooltip_markup(field_doc)
-        etr.set_tooltip_markup(field_doc)
+        # HEADS UP: OTF translation.
+        lbl.set_tooltip_markup(_(field_doc))
+        etr.set_tooltip_markup(_(field_doc))
 
     return lbl, etr
 
@@ -1003,7 +1069,8 @@ def build_entry_field_textview(fields_docs, field_name, entry):
     field_help = getattr(fields_docs, field_name)
 
     if field_help:
-        textview.set_tooltip_markup(field_help)
+        # HEADS UP: OTF translation.
+        textview.set_tooltip_markup(_(field_help))
 
     return scrolled, textview
 

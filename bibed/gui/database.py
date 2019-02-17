@@ -171,7 +171,7 @@ class BibedDatabaseListBox(Gtk.ListBox):
         # Data store will be cleared anyway.
         # And listbox WILL update the selected_rows() too.
 
-        self.application.close_file(database.filename)
+        self.application.close_database(database)
         # self.popdown()
 
         if self.all_files.num_user:
@@ -236,12 +236,6 @@ class BibedDatabaseListBox(Gtk.ListBox):
             return selected_system
 
         return []
-
-    def get_selected_filenames(self):
-
-        return [
-            x.filename for x in self.get_selected_databases()
-        ]
 
 
 class BibedDatabasePopover(Gtk.Popover):
@@ -453,6 +447,6 @@ class BibedDatabasePopover(Gtk.Popover):
         ''' Close current selected file. '''
 
         for database in tuple(self.all_files.user_databases):
-            self.application.close_file(database.filename)
+            self.application.close_database(database)
 
         self.sync_buttons_states()

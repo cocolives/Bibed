@@ -2,14 +2,16 @@
 import sys
 import os
 from os import environ
+import logging
 import locale
 import gettext
 
 from bibed.foundations import (
+    Anything,
     BIBED_DATA_DIR,
-    xdg_get_system_data_dirs,
 )
-from bibed.ltrace import lprint
+from bibed.system import xdg_get_system_data_dirs
+# from bibed.ltrace import lprint
 from bibed.utils import (
     is_windows,
     is_osx,
@@ -17,6 +19,7 @@ from bibed.utils import (
 
 # —————————————————————————————————————————————————————————————— Module globals
 
+LOGGER = logging.getLogger(__name__)
 __translation = None
 
 # ————————————————————————————————————————————————————————————————————— Classes
@@ -90,7 +93,52 @@ class GlibTranslations(gettext.GNUTranslations):
         raise NotImplementedError("We no longer do builtins")
 
 
-# ——————————————————————————————————————————————————————————————————— functions
+# —————————————————————————————————————————————————— Babel extractors functions
+
+def extract_yaml(fileobj, keywords, comment_tags, options):
+    """Extract messages from XXX files.
+
+    :param fileobj: the file-like object the messages should be extracted
+                    from
+    :param keywords: a list of keywords (i.e. function names) that should
+                     be recognized as translation functions
+    :param comment_tags: a list of translator tags to search for and
+                         include in the results
+    :param options: a dictionary of additional options (optional)
+    :return: an iterator over ``(lineno, funcname, message, comments)``
+             tuples
+    :rtype: ``iterator``
+    """
+
+    # Import Gtk just to avoid a warning on the console.
+    from bibed.gtk import Gtk  # NOQA
+    from bibed.foundations import AttributeDict
+    from bibed.preferences import defaults
+
+    myglobal = Anything()
+    myglobal.index = 0
+    depth_level = 0
+
+    def recurse_yaml(thing, depth_level):
+
+        for key, value in thing.items():
+
+            if isinstance(value, AttributeDict) \
+                    and depth_level > 0 or key in ('fields',
+                                                   'types',
+                                                   'docs', ):
+                yield from recurse_yaml(value, depth_level + 1)
+
+            elif isinstance(value, str):
+                if depth_level > 0:
+                    # print('YIELD', myglobal.index, value)
+                    yield (myglobal.index, '_', value, '', )
+
+            myglobal.index += 1
+
+    yield from recurse_yaml(defaults, depth_level)
+
+# ——————————————————————————————————————————————————————— Application functions
 
 
 def bcp47_to_language(code):
@@ -241,7 +289,7 @@ def register_translation(domain, localedir=None):
         iterdirs = lambda: iter([localedir])  # NOQA
 
     for dir_ in iterdirs():
-        lprint('TRY', dir_)
+        # lprint('TRY', dir_)
 
         try:
             t = gettext.translation(domain, dir_, class_=GlibTranslations)
@@ -250,10 +298,10 @@ def register_translation(domain, localedir=None):
             continue
 
         else:
-            lprint('Translations loaded: {}', t.path)
+            LOGGER.debug('Translations loaded: {}'.format(t.path))
             break
     else:
-        lprint('No translation found for the domain {}', domain)
+        LOGGER.debug('No translation found for the domain {}'.format(domain))
         t = GlibTranslations()
 
     return t
@@ -266,8 +314,8 @@ def init():
     set_i18n_envvars()
     fixup_i18n_envvars()
 
-    lprint('LANGUAGE: {}'.format(environ.get('LANGUAGE')))
-    lprint('LANG: {}'.format(environ.get('LANG')))
+    LOGGER.debug('LANGUAGE: {}'.format(environ.get('LANGUAGE')))
+    LOGGER.debug('LANG: {}'.format(environ.get('LANG')))
 
     try:
         locale.setlocale(locale.LC_ALL, '')
@@ -301,7 +349,7 @@ def _(message):
     """
     try:
         return __translation.wrap_text(__translation.ugettext(message))
-        
+
     except AttributeError:
         return message
 

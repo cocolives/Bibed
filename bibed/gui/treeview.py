@@ -67,6 +67,13 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         except AttributeError:
             pass
 
+        try:
+            # Not required neither.
+            self.connect('size-allocate', self.on_size_allocate)
+
+        except AttributeError:
+            pass
+
         self.selection = self.get_selection()
         self.selection.set_mode(self.SELECTION_MODE)
 
@@ -77,7 +84,7 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         except AttributeError:
             pass
 
-    def setup_text_column(self, name, store_num, attributes=None, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None):  # NOQA
+    def setup_text_column(self, name, store_num, attributes=None, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None, tooltip=None):  # NOQA
 
         if ellipsize is None:
             ellipsize = Pango.EllipsizeMode.NONE
@@ -103,16 +110,25 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         column.set_sort_column_id(store_num)
 
         column.set_reorderable(True)
-        column.set_resizable(False)
         column.set_sizing(Gtk.TreeViewColumnSizing.FIXED)
 
+        if resizable:
+            column.set_expand(True)
+
         column.connect('clicked', self.on_treeview_column_clicked)
+
+        if tooltip is not None:
+            try:
+                column.get_widget().set_tooltip_markup(tooltip)
+
+            except Exception:
+                LOGGER.exception('SHIT')
 
         self.append_column(column)
 
         return column
 
-    def setup_pixbuf_column(self, title, store_num, renderer_method, signal_method=None):
+    def setup_pixbuf_column(self, title, store_num, renderer_method, signal_method=None, tooltip=None):
 
         if signal_method:
             renderer = CellRendererTogglePixbuf()
@@ -138,6 +154,13 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
             renderer.connect('clicked', signal_method)
 
         column.connect('clicked', self.on_treeview_column_clicked)
+
+        if tooltip is not None:
+            try:
+                column.get_widget().set_tooltip_markup(tooltip)
+
+            except Exception:
+                LOGGER.exception('SHIT')
 
         self.append_column(column)
 
@@ -213,7 +236,7 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         return model, treeiter
 
     def get_selected_row(self):
-
+        ''' Only usable in SINGLE selection mode. '''
         # Code to add to connect a method to new selection.
         # selection.connect('changed', self.on_treeview_selection_changed)
         # selection.unselect_all()
@@ -239,6 +262,16 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
             return None
 
     # ————————————————————————————————————————————————————————————————— Signals
+
+    def do_keynav_failed(self, direction):
+
+        if direction == Gtk.DirectionType.UP:
+            if self.window.searchbar.get_search_mode():
+                print('FOCUS SEARCH')
+                self.window.searchbar.search.grab_focus()
+            return False
+
+        return Gtk.TreeView.do_keynav_failed(self, direction)
 
     def on_treeview_column_clicked(self, column):
 
