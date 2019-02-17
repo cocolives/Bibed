@@ -263,16 +263,6 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
 
     # ————————————————————————————————————————————————————————————————— Signals
 
-    def do_keynav_failed(self, direction):
-
-        if direction == Gtk.DirectionType.UP:
-            if self.window.searchbar.get_search_mode():
-                print('FOCUS SEARCH')
-                self.window.searchbar.search.grab_focus()
-            return False
-
-        return Gtk.TreeView.do_keynav_failed(self, direction)
-
     def on_treeview_column_clicked(self, column):
 
         coltit = column.props.title
