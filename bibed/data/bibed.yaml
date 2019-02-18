@@ -560,6 +560,103 @@ fields:
       - abstract
       - comment
       - keywords
+    inproceedings:
+      optional:
+      - editor
+      - subtitle
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - booksubtitle
+      - booktitleaddon
+      - eventtitle
+      - eventtitleaddon
+      - eventdate
+      - venue
+      - language
+      - volume
+      - part
+      - volumes
+      - series
+      - number
+      - note
+      - organization
+      - publisher
+      - location
+      - month
+      - isbn
+      - chapter
+      - pages
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - author
+      - title
+      - booktitle
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    inreference:
+      optional:
+      - editor
+      - editora
+      - editorb
+      - editorc
+      - translator
+      - annotator
+      - commentator
+      - introduction
+      - foreword
+      - afterword
+      - subtitle
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - booksubtitle
+      - booktitleaddon
+      - language
+      - origlanguage
+      - volume
+      - part
+      - edition
+      - volumes
+      - series
+      - number
+      - note
+      - publisher
+      - location
+      - isbn
+      - chapter
+      - pages
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - editor
+      - title
+      - booktitle
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
     jurisdiction:
       optional:
       - subtitle
@@ -893,6 +990,83 @@ fields:
       - abstract
       - comment
       - keywords
+    mvproceedings:
+      optional:
+      - editor
+      - subtitle
+      - titleaddon
+      - eventtitle
+      - eventtitleaddon
+      - eventdate
+      - venue
+      - language
+      - volumes
+      - series
+      - number
+      - note
+      - organization
+      - publisher
+      - location
+      - month
+      - isbn
+      - pagetotal
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - title
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    mvreference:
+      optional:
+      - editora
+      - editorb
+      - editorc
+      - translator
+      - annotator
+      - commentator
+      - introduction
+      - foreword
+      - afterword
+      - subtitle
+      - titleaddon
+      - language
+      - origlanguage
+      - edition
+      - volumes
+      - series
+      - number
+      - note
+      - publisher
+      - location
+      - isbn
+      - pagetotal
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - editor
+      - title
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
     online:
       optional:
       - subtitle
@@ -1009,6 +1183,97 @@ fields:
       - title
       - - date
         - year
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    proceedings:
+      optional:
+      - editor
+      - subtitle
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - eventtitle
+      - eventtitleaddon
+      - eventdate
+      - venue
+      - language
+      - volume
+      - part
+      - volumes
+      - series
+      - number
+      - note
+      - organization
+      - publisher
+      - location
+      - month
+      - isbn
+      - chapter
+      - pages
+      - pagetotal
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - title
+      - - year
+        - date
+      stacked:
+      - abstract
+      - comment
+      - keywords
+    reference:
+      optional:
+      - editora
+      - editorb
+      - editorc
+      - translator
+      - annotator
+      - commentator
+      - introduction
+      - foreword
+      - afterword
+      - subtitle
+      - titleaddon
+      - maintitle
+      - mainsubtitle
+      - maintitleaddon
+      - language
+      - origlanguage
+      - volume
+      - part
+      - edition
+      - volumes
+      - series
+      - number
+      - note
+      - publisher
+      - location
+      - isbn
+      - chapter
+      - pages
+      - pagetotal
+      - addendum
+      - pubstate
+      - doi
+      - eprint
+      - eprintclass
+      - eprinttype
+      - url
+      - urldate
+      required:
+      - editor
+      - title
+      - - year
+        - date
       stacked:
       - abstract
       - comment
@@ -1430,7 +1695,10 @@ fields:
       content: '@@@import{2.3.6}.'
       title: Editorial Roles
     eid: The electronic identifier of an <span weight="bold" face="monospace">@article</span>.
-    eprint: The electronic identifier of an online publication. This is roughly comparable to a DOI but specific to a certain archive, repository, service, or system. @@@seealso{3.13.7} for details. Also see <span face="monospace">eprinttype</span> and <span face="monospace">eprintclass</span>.
+    eprint: The electronic identifier of an online publication. This is roughly
+      comparable to a DOI but specific to a certain archive, repository, service,
+      or system. @@@seealso{3.13.7} for details. Also see <span face="monospace">eprinttype</span>
+      and <span face="monospace">eprintclass</span>.
     journaltitle: The name of a journal, a newspaper, or some other periodical.
     key: The bibliography entry unique key.
     title: The title of the work.
@@ -1442,6 +1710,7 @@ fields:
   labels:
     abstract: Abstract
     addendum: Addendum
+    afterword: Afterword
     annotator: Annotator(s)
     author: Author(s)
     chapter: Chapter
@@ -1449,6 +1718,7 @@ fields:
     commentator: Commentator(s)
     date: Date
     doi: DOI
+    edition: Edition
     editor: Editor(s)
     editora: Editor(s) (type A)
     editorb: Editor(s) (type B)
@@ -1459,7 +1729,9 @@ fields:
     eprintclass: E-Print class
     eprinttype: E-Print type
     file: File
+    foreword: Foreword
     howpublished: How published?
+    introduction: Introduction
     isbn: ISBN
     issn: ISSN
     issue: Issue
@@ -1471,6 +1743,9 @@ fields:
     keywords: Keywords
     language: Language
     location: Location
+    mainsubtitle: Main subtitle
+    maintitleaddon: Main title add-on
+    maintitle: Main title
     month: Month
     note: Note(s)
     number: Number
@@ -1478,6 +1753,8 @@ fields:
     origlanguage: Origin language
     pages: Page(s)
     pagetotal: Total page count
+    part: Part
+    publisher: Publisher
     pubstate: Publish state
     series: Series
     subtitle: Subtitle
@@ -1489,6 +1766,7 @@ fields:
     urldate: URL date
     version: Version
     volume: Volume
+    volumes: Volumes
     year: Year
 keep_recent_files: 10
 remember_last_destination: true
@@ -1527,19 +1805,20 @@ types:
       face="monospace">bib</span> file like other types. It is provided for
       third-party packages like <span face="monospace">notes2bib</span> which
       merge notes into the bibliography. The notes should go into the <span
-      face="monospace">note</span> field. Be advised that the <span weight="bold" face="monospace">@bibnote</span> type
-      is not related to the <span face="monospace">\defbibnote</span> command
-      in any way. <span face="monospace">\defbibnote</span> is for adding
-      comments at the beginning or the end of the bibliography, whereas the
-      <span weight="bold" face="monospace">@bibnote</span> type
-      is meant for packages which render endnotes as bibliography entries.
+      face="monospace">note</span> field. Be advised that the <span weight="bold"
+      face="monospace">@bibnote</span> type is not related to the <span face="monospace">\defbibnote</span>
+      command in any way. <span face="monospace">\defbibnote</span> is for
+      adding comments at the beginning or the end of the bibliography, whereas
+      the <span weight="bold" face="monospace">@bibnote</span> type is meant
+      for packages which render endnotes as bibliography entries.
     book: A single-volume book with one or more authors where the authors
       share credit for the work as a whole. This entry type also covers the
       function of the <span weight="bold" face="monospace">@inbook</span>
       type of traditional <span face="monospace">BibTeX</span>.
     booklet: A book-like work without a formal publisher or sponsoring institution.
       Use the field <span face="monospace">howpublished</span> to supply publishing
-      information in free format, if applicable. The field <span face="monospace">type</span> may be useful as well.
+      information in free format, if applicable. The field <span face="monospace">type</span>
+      may be useful as well.
     collection: A single-volume collection with multiple, self-contained contributions
       by distinct authors which have their own title. The work as a whole
       has no overall author but it will usually have an editor.
@@ -1670,9 +1949,9 @@ types:
     commentary: Commentary
     conference: Co_nference
     image: Ima_ge
-    inbook: "In book (C_hapter, part\u2026)"
+    inbook: In book
     incollection: In collection
-    inproceedings: In proceedings
+    inproceedings: In proceedi_ngs
     inreference: In reference
     jurisdiction: _Jurisdiction
     legal: Legal
