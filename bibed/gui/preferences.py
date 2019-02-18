@@ -59,8 +59,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
         box.add(self.notebook)
 
         box.add(widget_properties(label_with_markup(
-            _('<span foreground="grey">Preferences are automatically saved; '
-              'just hit <span face="monospace">ESC</span> when you are done.'
+            _('<span foreground="grey">Preferences are automatically saved. '
+              'Hit <span face="monospace">Esc</span> when you are done.'
               '</span>'),
             xalign=0.5),
             expand=Gtk.Orientation.HORIZONTAL,
@@ -126,8 +126,9 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.fcb_working_folder = build_fcbwf()
         self.lbl_working_folder = widget_properties(label_with_markup(
             _('<b>Working folder</b>\n'
-             '<span foreground="grey" size="small">'
-             'Where your BIB files are stored.</span>')),
+              '<span foreground="grey" size="small">'
+              'Where your BIB files are stored.</span>'),
+            line_wrap=True),
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.START,
             valign=Gtk.Align.CENTER,
@@ -149,11 +150,12 @@ class BibedPreferencesDialog(Gtk.Dialog):
         (self.lbl_bib_auto_save,
          self.swi_bib_auto_save) = build_label_and_switch(
             _('<b>Automatic save</b>\n'
-             '<span foreground="grey" size="small">'
-             'Save BIB changes automatically while editing.</span>'),
+              '<span foreground="grey" size="small">'
+              'Save BIB changes automatically while editing.</span>'),
             self.on_switch_activated,
             gpod('bib_auto_save'),
             func_args=('bib_auto_save', ),
+            label_options={'line_wrap': True},
         )
 
         pg.attach_next_to(
@@ -174,14 +176,14 @@ class BibedPreferencesDialog(Gtk.Dialog):
          self.swi_ensure_biblatex_checks) = build_label_and_switch(
             _('<b>Ensure BibLaTeX requirements</b>\n'
               '<span foreground="grey" size="small">'
-              'Before saving new entries, ensure that BibLaTeX conditions\n'
+              'Before saving new entries, ensure that BibLaTeX conditions '
               'and requirements are met (for example one of <span '
               'face="monospace">date</span> or <span face="monospace">'
-              'year</span>\n'
-              'fields are filled on articles).</span>'),
+              'year</span> fields are filled on articles).</span>'),
             self.on_switch_activated,
             gpod('ensure_biblatex_checks'),
-            func_args=('ensure_biblatex_checks', )
+            func_args=('ensure_biblatex_checks', ),
+            label_options={'line_wrap': True},
         )
 
         # TODO: implement the feature and enable the switch.
@@ -206,7 +208,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
             _('<b>Remember recent files</b>\n'
               '<span foreground="grey" size="small">'
               'Remember this much BIB files recently opened.\n'
-              'Set to 0 to disable remembering, or -1 for infinite.</span>')),
+              'Set to 0 to disable remembering, or -1 for infinite.</span>'),
+            line_wrap=True),
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.START,
             valign=Gtk.Align.CENTER,
@@ -230,12 +233,13 @@ class BibedPreferencesDialog(Gtk.Dialog):
          self.swi_remember_open_files) = build_label_and_switch(
             _('<b>Remember session</b>\n'
               '<span foreground="grey" size="small">'
-              'When launching application, automatically re-open files\n'
-              'which were previously opened before quitting last session,\n'
+              'When launching application, automatically re-open files '
+              'which were previously opened before quitting last session, '
               'restore search query, filters and sorting.</span>'),
             self.on_switch_activated,
             gpod('remember_open_files'),
-            func_args=('remember_open_files', )
+            func_args=('remember_open_files', ),
+            label_options={'line_wrap': True},
         )
 
         pg.attach_next_to(
@@ -256,12 +260,12 @@ class BibedPreferencesDialog(Gtk.Dialog):
          self.swi_remember_windows_states) = build_label_and_switch(
             _('<b>Remember windows states</b>\n'
               '<span foreground="grey" size="small">'
-              'Restore main window and dialogs sizes and positions\n'
+              'Restore main window and dialogs sizes and positions '
               'across sessions.</span>'),
             self.on_switch_activated,
             gpod('remember_windows_states'),
-            func_args=('remember_windows_states', )
-
+            func_args=('remember_windows_states', ),
+            label_options={'line_wrap': True},
         )
 
         pg.attach_next_to(
@@ -283,16 +287,16 @@ class BibedPreferencesDialog(Gtk.Dialog):
             _('<b>Report issues to developers</b>\n'
               '<span foreground="grey" size="small">'
               'Enabling this will automatically send errors, crashes and '
-              'debugging data to developpers, anonymously.\n'
+              'debugging data to developpers, anonymously. '
               'We use <span face="monospace">sentry</span> at address '
               '<a href="{website}">{website}</a>, on which you can create an '
-              'account to help.\nGet in touch if you want to send errors to '
+              'account to help.\n\nGet in touch if you want to send errors to '
               'your own <span face="monospace">sentry</span>.'
               '</span>').format(website=gpod('sentry_url')),
             self.on_switch_activated,
             gpod('use_sentry'),
-            func_args=('use_sentry', )
-
+            func_args=('use_sentry', ),
+            label_options={'line_wrap': True},
         )
 
         pg.attach_next_to(
@@ -316,13 +320,13 @@ class BibedPreferencesDialog(Gtk.Dialog):
          self.swi_treeview_show_tooltips) = build_label_and_switch(
             _('<b>Display tooltips in main view</b>\n'
               '<span foreground="grey" size="small">'
-              'Show bibliographic entries preview as you hover them with'
+              'Show bibliographic entries preview as you hover them with '
               'your mouse cursor. Use <span face="monospace">Shift-Control-T'
               '</span> to toggle this setting while in the main view.</span>'),
             self.on_switch_activated,
             gpod('treeview_show_tooltips'),
-            func_args=('treeview_show_tooltips', )
-
+            func_args=('treeview_show_tooltips', ),
+            label_options={'line_wrap': True},
         )
 
         pg.attach_next_to(
@@ -343,13 +347,13 @@ class BibedPreferencesDialog(Gtk.Dialog):
          self.swi_use_treeview_background) = build_label_and_switch(
             _('<b>Use Bibed backgrounds</b>\n'
               '<span foreground="grey" size="small">'
-              'Display light background in the main table view. Use '
-              '<span face="monospace">Shift-Control-R</span> to\n'
+              'Display light background in the main table view.\n'
+              'Use <span face="monospace">Shift-Control-R</span> to '
               'randomly cycle backgrounds.</span>'),
             self.on_switch_activated,
             gpod('use_treeview_background'),
-            func_args=('use_treeview_background', )
-
+            func_args=('use_treeview_background', ),
+            label_options={'line_wrap': True},
         )
 
         pg.attach_next_to(
@@ -419,7 +423,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.lbl_copy_single = widget_properties(label_with_markup(
             _('<b>Single selection copy to clipboard</b>\n'
               '<span size="small" color="grey">'
-              'When you select only one entry in the list.</span>')),
+              'When you select only one entry in the list.</span>'),
+            line_wrap=True),
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.START,
             valign=Gtk.Align.CENTER,
@@ -434,7 +439,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
               '<span color="grey">any error in your pattern will '
               'make it replaced with application default, '
               'aka <span color="lightgrey"><tt>{default}</tt></span>.'
-              '</span></span>').format(default=defsigval)),
+              '</span></span>').format(default=defsigval),
+            line_wrap=True),
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.START,
             valign=Gtk.Align.CENTER,  # TODO: not START ?
@@ -463,14 +469,15 @@ class BibedPreferencesDialog(Gtk.Dialog):
             _('<b>URLs open in browser</b>\n'
               '<span foreground="grey" size="small">'
               'Enabling this makes <span face="monospace">Control-U</span> '
-              'and URL-icon click open the url directly\n'
+              'and URL-icon click open the url directly '
               'in a new tab of your prefered web browser, while <span '
-              'face="monospace">Shift-Control-U</span> will\n'
+              'face="monospace">Shift-Control-U</span> will '
               'copy the URL to clipboard. Disabling it makes the '
               'opposite.</span>'),
             self.on_switch_activated,
             gpod('url_action_opens_browser'),
-            func_args=('url_action_opens_browser', )
+            func_args=('url_action_opens_browser', ),
+            label_options={'line_wrap': True},
         )
 
         pa.attach_next_to(
@@ -508,13 +515,13 @@ class BibedPreferencesDialog(Gtk.Dialog):
          self.swi_bib_add_timestamp) = build_label_and_switch(
             _('<b>Add creation timestamp</b>\n'
               '<span foreground="grey" size="small">'
-              'When adding a new bibliographic entry to database,\n'
+              'When adding a new bibliographic entry to database, '
               'stamp it with the date of today in the '
-              '<span face="monospace">timestamp</span> field.'
-              '</span>'),
+              '<span face="monospace">timestamp</span> field.</span>'),
             self.on_switch_activated,
             gpod('bib_add_timestamp'),
             func_args=('bib_add_timestamp', ),
+            label_options={'line_wrap': True},
         )
 
         pce.attach(
@@ -536,7 +543,8 @@ class BibedPreferencesDialog(Gtk.Dialog):
               '<span face="monospace">timestamp</span>.</span>'),
             self.on_switch_activated,
             gpod('bib_update_timestamp'),
-            func_args=('bib_update_timestamp', )
+            func_args=('bib_update_timestamp', ),
+            label_options={'line_wrap': True},
         )
 
         pce.attach_next_to(
@@ -558,12 +566,13 @@ class BibedPreferencesDialog(Gtk.Dialog):
             _('<b>Add owner at creation</b>\n'
               '<span foreground="grey" size="small">'
               'When creating a bibliographic entry, automatically add '
-              'an <span face="monospace">owner</span> field.\n'
-              'You have to specify it in the field below, else nothing '
+              'an <span face="monospace">owner</span> field. '
+              'You have to specify a name in the field below, else nothing '
               'will be added.</span>'),
             self.on_switch_activated,
             gpod('bib_add_owner'),
-            func_args=('bib_add_owner', )
+            func_args=('bib_add_owner', ),
+            label_options={'line_wrap': True},
         )
 
         pce.attach_next_to(
@@ -585,12 +594,12 @@ class BibedPreferencesDialog(Gtk.Dialog):
             _('<b>Update owner on change</b>\n'
               '<span foreground="grey" size="small">'
               'When changing a bibliographic entry that was not created '
-              'by you,\noverwrite the previous <span face="monospace">'
+              'by you, overwrite the previous <span face="monospace">'
               'owner</span> with you own value.</span>'),
             self.on_switch_activated,
             gpod('bib_update_owner'),
-            func_args=('bib_update_owner', )
-
+            func_args=('bib_update_owner', ),
+            label_options={'line_wrap': True},
         )
 
         pce.attach_next_to(
@@ -617,14 +626,19 @@ class BibedPreferencesDialog(Gtk.Dialog):
             _('<b>Owner name</b>\n'
               '<span foreground="grey" size="small">'
               'Can be one or more words, including an email address.\n'
-              'Valid characters include [a-z], [0-9] and “-”, “__”, “@” '
-              'and “:”.</span>'),
+              'Valid characters include <span face="monospace">[a-z]</span>, '
+              '<span face="monospace">[0-9]</span> and “<span '
+              'face="monospace">-</span>”, “<span '
+              'face="monospace">__</span>”, “<span '
+              'face="monospace">@</span>” and “<span '
+              'face="monospace">:</span>”.</span>'),
 
             # Field name.
             'bib_owner_name',
 
             # entry. We use None becaure we are not in entry editor.
             None,
+            label_options={'line_wrap': True},
         )
 
         self.etr_bib_owner_name.set_text(preferences.bib_owner_name)
@@ -666,18 +680,21 @@ class BibedPreferencesDialog(Gtk.Dialog):
             pref_main  = preferences.types.main
             pref_other = preferences.types.other
 
-            (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
-                name=qualify, title=title, dialog=self,
-                child_type='type', child_widget='icon'
-                if qualify == 'main' else 'simple',
-                connect_to=self.on_flowbox_type_item_activated)
-
             if qualify == 'main':
                 children = defl_main if pref_main is None else pref_main
+                min_max_children_per_line = (2, 3)
 
             else:
                 children = defl_other if pref_other is None else pref_other
                 # dnd_area.drag_source_set_icon_name(Gtk.STOCK_GO_BACK)
+                min_max_children_per_line = (1, 2)
+
+            (frame, scrolled, dnd_area) = dnd_scrolled_flowbox(
+                name=qualify, title=title, dialog=self,
+                child_type='type', child_widget='icon'
+                if qualify == 'main' else 'simple',
+                connect_to=self.on_flowbox_type_item_activated,
+                min_max=min_max_children_per_line)
 
             dnd_area.add_items(children)
 
@@ -703,15 +720,15 @@ class BibedPreferencesDialog(Gtk.Dialog):
         self.lbl_creator = widget_properties(label_with_markup(
             _('<big>Main and other entry types</big>\n'
               '<span foreground="grey">'
-              'Drag and drop items from one side to another\n'
+              'Drag and drop items from one side to another '
               'to have</span> main <span foreground="grey">'
-              'items displayed first in entry\n'
+              'items displayed first in entry '
               'creator assistant, and</span> other '
-              '<span foreground="grey">accessible\n'
+              '<span foreground="grey">accessible '
               'in a folded area of the assistant.\n\n'
-              'Note: they will appear in the exact order\n'
-              'you organize them into.'
-              '</span>')),
+              'Note: they will appear in the exact order '
+              'you organize them into.</span>'),
+            line_wrap=True),
             expand=False,
             halign=Gtk.Align.START,
             valign=Gtk.Align.START)
