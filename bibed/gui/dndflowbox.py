@@ -7,7 +7,7 @@ from bibed.ltrace import (  # NOQA
 )
 
 from bibed.preferences import defaults
-
+from bibed.locale import _
 from bibed.gtk import Gtk, Gdk
 
 from bibed.gui.helpers import (
@@ -36,7 +36,14 @@ def get_child_name(child):
         return None
 
 
-def dnd_scrolled_flowbox(name=None, title=None, dialog=None, child_type=None, child_widget=None, connect_to=None):
+def dnd_scrolled_flowbox(name=None, title=None, dialog=None, child_type=None, child_widget=None, connect_to=None, min_max=None):
+
+    if min_max is None:
+        min_children_per_line = 2
+        max_children_per_line = 3
+    else:
+        (min_children_per_line,
+         max_children_per_line) = min_max
 
     if title is None:
         title = name.title()
@@ -63,8 +70,8 @@ def dnd_scrolled_flowbox(name=None, title=None, dialog=None, child_type=None, ch
         expand=False,
     )
 
-    flowbox.set_min_children_per_line(2)
-    flowbox.set_max_children_per_line(3)
+    flowbox.set_min_children_per_line(min_children_per_line)
+    flowbox.set_max_children_per_line(max_children_per_line)
 
     flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
     flowbox.set_activate_on_single_click(False)
@@ -111,7 +118,7 @@ class DnDFlowBox(Gtk.FlowBox):
         labels.update(defaults.fields.labels.copy())
 
         # TODO: translate this.
-        labels[DROP_TEXT_CODE] = 'Drop here!'
+        labels[DROP_TEXT_CODE] = _('Drop here!')
 
         # DROP_ICON_NAME =
         # 'insert-object-symbolic'
@@ -123,7 +130,10 @@ class DnDFlowBox(Gtk.FlowBox):
 
     def get_label(self, name):
 
-        return self.children_labels[name].replace('_', '')
+        # HEADS UP: we have to translate *before* removing mnemonic underscore,
+        #           to call the translation on a label that *has* a translation.
+        #           see bibed.locale.extract_yaml() and `bibed.yaml` defaults.
+        return _(self.children_labels[name]).replace('_', '')
 
     def build_child_flat(self, child_name):
 
@@ -219,7 +229,7 @@ class DnDFlowBox(Gtk.FlowBox):
         # or a child name (as string).
         is_str = isinstance(child_name, str)
 
-        for index, _ in enumerate(self.get_children()):
+        for index, dummy in enumerate(self.get_children()):
 
             child_at_index = self.get_child_at_index(index)
 
