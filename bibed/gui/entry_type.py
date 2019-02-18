@@ -73,7 +73,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
             grid = Gtk.Grid()
             grid.set_border_width(BOXES_BORDER_WIDTH / 2)
-
+            grid.set_column_homogeneous(True)
             grid.set_column_spacing(GRID_COLS_SPACING / 4)
             grid.set_row_spacing(GRID_ROWS_SPACING / 4)
 
@@ -102,7 +102,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                     expand=True,
                     margin=button_margin,
                     halign=button_halign,
-                    valign=Gtk.Align.CENTER,
+                    valign=Gtk.Align.END,
                 )
                 btn.add(button_generator(
                     child_name, btn_markup.format(
