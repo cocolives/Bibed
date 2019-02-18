@@ -271,7 +271,7 @@ def stack_switch_next(stack, reverse=False):
                 make_next_visible = True
 
 
-def label_with_markup(text, name=None, xalign=None, yalign=None, justify=None, ellipsize=None, line_wrap=False, debug=None):
+def label_with_markup(text, name=None, xalign=None, yalign=None, justify=None, ellipsize=None, line_wrap=None, debug=None):
 
     label = Gtk.Label(name=name)
     label.set_markup_with_mnemonic(text)
@@ -334,8 +334,10 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
         folder = None
 
     if missing:
-        # Notice the ending space.
-        format_template = '<span color="red" size="{file_size}">missing file</span> '
+        # NOTE: notice the ending space (required).
+        format_template = _(
+            '<span color="red" size="{file_size}">missing file</span> '
+        )
 
     else:
         format_template = ''
@@ -344,8 +346,8 @@ def markup_bib_filename(filename, filetype, with_folder=True, same_line=True, sm
         format_template += (
             '<span size="{file_size}"><b>{basename}</b></span>{separator}'
             + (
-                '<span size="{folder_size}" color="grey">'
-                '{par_left}in {folder}{par_right}</span>'
+                _('<span size="{folder_size}" color="grey">'
+                  '{par_left}in {folder}{par_right}</span>')
                 if with_folder else ''
             )
         )
@@ -965,13 +967,16 @@ def frame_defaults(title):
     return frame
 
 
-def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state, func_args=None):
+def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state, func_args=None, label_options=None):
 
     if func_args is None:
         func_args = ()
 
+    if label_options is None:
+        label_options = {}
+
     label = widget_properties(label_with_markup(
-        lbl_text),
+        lbl_text, **label_options),
         expand=Gtk.Orientation.HORIZONTAL,
         halign=Gtk.Align.START,
         valign=Gtk.Align.CENTER,
@@ -994,7 +999,7 @@ def build_label_and_switch(lbl_text, swi_notify_func, swi_initial_state, func_ar
     return label, switch
 
 
-def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, entry):
+def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, entry, label_options=None):
 
     if isinstance(fields_labels, str):
         field_label = fields_labels
@@ -1014,21 +1019,24 @@ def build_entry_field_labelled_entry(fields_docs, fields_labels, field_name, ent
     if field_doc is None:
         ldebug('\t>>> Field {} has no documentation', field_name)
 
+    if label_options is None:
+        label_options = {}
+
     lbl = widget_properties(
-        Gtk.Label(),
+        label_with_markup(
+            '{label}{help}'.format(
+                # HEADS UP: OTF translation.
+                label=_(field_label) if field_label else field_name.title(),
+                help=GENERIC_HELP_SYMBOL
+                if field_doc else ''),
+            **label_options,
+        ),
         expand=False,
         margin=BOXES_BORDER_WIDTH,
         halign=Gtk.Align.START,
         valign=Gtk.Align.CENTER,
         width=50,
     )
-
-    lbl.set_markup_with_mnemonic(
-        '{label}{help}'.format(
-            # HEADS UP: OTF translation.
-            label=_(field_label) if field_label else field_name.title(),
-            help=GENERIC_HELP_SYMBOL
-            if field_doc else ''))
 
     etr = widget_properties(
         Gtk.Entry(),
