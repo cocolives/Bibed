@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-02-17 23:54+0100\n"
+"POT-Creation-Date: 2019-02-18 08:56+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1074,6 +1074,22 @@ msgid ""
 "description.</span>"
 msgstr ""
 
+#: bibed/gui/entry_type.py:213
+msgid "{app}'s main types"
+msgstr ""
+
+#: bibed/gui/entry_type.py:214
+msgid "Other bibliographic types"
+msgstr ""
+
+#: bibed/gui/entry_type.py:217
+msgid "Your main types"
+msgstr ""
+
+#: bibed/gui/entry_type.py:218
+msgid "Other types"
+msgstr ""
+
 #: bibed/gui/helpers.py:316
 msgid "Working folder"
 msgstr ""
@@ -1084,6 +1100,212 @@ msgstr ""
 
 #: bibed/gui/helpers.py:327
 msgid "<i>Home directory</i> {remaining}"
+msgstr ""
+
+#: bibed/gui/preferences.py:40
+msgid "{app} Preferences"
+msgstr ""
+
+#: bibed/gui/preferences.py:62
+msgid ""
+"<span foreground=\"grey\">Preferences are automatically saved; just hit "
+"<span face=\"monospace\">ESC</span> when you are done.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:85
+msgid "Select working folder"
+msgstr ""
+
+#: bibed/gui/preferences.py:128
+msgid ""
+"<b>Working folder</b>\n"
+"<span foreground=\"grey\" size=\"small\">Where your BIB files are "
+"stored.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:151
+msgid ""
+"<b>Automatic save</b>\n"
+"<span foreground=\"grey\" size=\"small\">Save BIB changes automatically "
+"while editing.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:175
+msgid ""
+"<b>Ensure BibLaTeX requirements</b>\n"
+"<span foreground=\"grey\" size=\"small\">Before saving new entries, "
+"ensure that BibLaTeX conditions\n"
+"and requirements are met (for example one of <span "
+"face=\"monospace\">date</span> or <span face=\"monospace\">year</span>\n"
+"fields are filled on articles).</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:206
+msgid ""
+"<b>Remember recent files</b>\n"
+"<span foreground=\"grey\" size=\"small\">Remember this much BIB files "
+"recently opened.\n"
+"Set to 0 to disable remembering, or -1 for infinite.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:231
+msgid ""
+"<b>Remember session</b>\n"
+"<span foreground=\"grey\" size=\"small\">When launching application, "
+"automatically re-open files\n"
+"which were previously opened before quitting last session,\n"
+"restore search query, filters and sorting.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:257
+msgid ""
+"<b>Remember windows states</b>\n"
+"<span foreground=\"grey\" size=\"small\">Restore main window and dialogs "
+"sizes and positions\n"
+"across sessions.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:283
+msgid ""
+"<b>Report issues to developers</b>\n"
+"<span foreground=\"grey\" size=\"small\">Enabling this will automatically"
+" send errors, crashes and debugging data to developpers, anonymously.\n"
+"We use <span face=\"monospace\">sentry</span> at address <a "
+"href=\"{website}\">{website}</a>, on which you can create an account to "
+"help.\n"
+"Get in touch if you want to send errors to your own <span "
+"face=\"monospace\">sentry</span>.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:317
+msgid ""
+"<b>Display tooltips in main view</b>\n"
+"<span foreground=\"grey\" size=\"small\">Show bibliographic entries "
+"preview as you hover them withyour mouse cursor. Use <span "
+"face=\"monospace\">Shift-Control-T</span> to toggle this setting while in"
+" the main view.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:344
+msgid ""
+"<b>Use Bibed backgrounds</b>\n"
+"<span foreground=\"grey\" size=\"small\">Display light background in the "
+"main table view. Use <span face=\"monospace\">Shift-Control-R</span> to\n"
+"randomly cycle backgrounds.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:375
+msgid "General"
+msgstr ""
+
+#: bibed/gui/preferences.py:420
+msgid ""
+"<b>Single selection copy to clipboard</b>\n"
+"<span size=\"small\" color=\"grey\">When you select only one entry in the"
+" list.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:429
+msgid ""
+"<span size=\"small\"><span color=\"grey\">Type any other pattern to "
+"create your own, using <span color=\"lightgrey\"><tt>@@key@@</tt></span> "
+"anywhere inside.</span>\n"
+"<span color=\"red\">WARNING: </span><span color=\"grey\">any error in "
+"your pattern will make it replaced with application default, aka <span "
+"color=\"lightgrey\"><tt>{default}</tt></span>.</span></span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:463
+msgid ""
+"<b>URLs open in browser</b>\n"
+"<span foreground=\"grey\" size=\"small\">Enabling this makes <span "
+"face=\"monospace\">Control-U</span> and URL-icon click open the url "
+"directly\n"
+"in a new tab of your prefered web browser, while <span face=\"monospace"
+"\">Shift-Control-U</span> will\n"
+"copy the URL to clipboard. Disabling it makes the opposite.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:496
+msgid "Accelerators"
+msgstr ""
+
+#: bibed/gui/preferences.py:509
+msgid ""
+"<b>Add creation timestamp</b>\n"
+"<span foreground=\"grey\" size=\"small\">When adding a new bibliographic "
+"entry to database,\n"
+"stamp it with the date of today in the <span "
+"face=\"monospace\">timestamp</span> field.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:533
+msgid ""
+"<b>Update timestamp on change</b>\n"
+"<span foreground=\"grey\" size=\"small\">When modifiying a bibliographic "
+"entry, update <span face=\"monospace\">timestamp</span>.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:558
+msgid ""
+"<b>Add owner at creation</b>\n"
+"<span foreground=\"grey\" size=\"small\">When creating a bibliographic "
+"entry, automatically add an <span face=\"monospace\">owner</span> field."
+"\n"
+"You have to specify it in the field below, else nothing will be "
+"added.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:585
+msgid ""
+"<b>Update owner on change</b>\n"
+"<span foreground=\"grey\" size=\"small\">When changing a bibliographic "
+"entry that was not created by you,\n"
+"overwrite the previous <span face=\"monospace\">owner</span> with you own"
+" value.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:617
+msgid ""
+"<b>Owner name</b>\n"
+"<span foreground=\"grey\" size=\"small\">Can be one or more words, "
+"including an email address.\n"
+"Valid characters include [a-z], [0-9] and “-”, “__”, “@” and “:”.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:655
+msgid "Creator / Editor"
+msgstr ""
+
+#. NOTE: spaces and non-breaking spaces are important.
+#: bibed/gui/preferences.py:693
+msgid "   Main types   "
+msgstr ""
+
+#. NOTE: spaces and non-breaking spaces are important.
+#: bibed/gui/preferences.py:700
+msgid "   Other types   "
+msgstr ""
+
+#: bibed/gui/preferences.py:704
+msgid ""
+"<big>Main and other entry types</big>\n"
+"<span foreground=\"grey\">Drag and drop items from one side to another\n"
+"to have</span> main <span foreground=\"grey\">items displayed first in "
+"entry\n"
+"creator assistant, and</span> other <span foreground=\"grey\">accessible\n"
+"in a folded area of the assistant.\n"
+"\n"
+"Note: they will appear in the exact order\n"
+"you organize them into.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:722
+msgid "Reset to defaults"
+msgstr ""
+
+#: bibed/gui/preferences.py:768
+msgid "Interface customization"
 msgstr ""
 
 #: bibed/gui/splash.py:75
@@ -1179,59 +1401,59 @@ msgid_plural "Selected entries {key}."
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:172
+#: bibed/gui/window.py:171
 msgid "bibliography assistant"
 msgstr ""
 
-#: bibed/gui/window.py:182
+#: bibed/gui/window.py:181
 msgid "Upcoming feature"
 msgstr ""
 
-#: bibed/gui/window.py:211
+#: bibed/gui/window.py:210
 msgid "Ready. Waiting for action…"
 msgstr ""
 
-#: bibed/gui/window.py:231
+#: bibed/gui/window.py:230
 msgid "Create an empty BIB database"
 msgstr ""
 
-#: bibed/gui/window.py:243
+#: bibed/gui/window.py:242
 msgid "Open an existing BIB database"
 msgstr ""
 
-#: bibed/gui/window.py:258
+#: bibed/gui/window.py:257
 msgid "Select databases to display in main view"
 msgstr ""
 
-#: bibed/gui/window.py:261
+#: bibed/gui/window.py:260
 msgid "Library"
 msgstr ""
 
-#: bibed/gui/window.py:284
+#: bibed/gui/window.py:283
 msgid "Add a bibliography entry"
 msgstr ""
 
-#: bibed/gui/window.py:295
+#: bibed/gui/window.py:294
 msgid "Duplicate a bibliography entry into a new one"
 msgstr ""
 
-#: bibed/gui/window.py:315
+#: bibed/gui/window.py:314
 msgid "Move selected entries to another database"
 msgstr ""
 
-#: bibed/gui/window.py:326
+#: bibed/gui/window.py:325
 msgid "Trash or delete selected entries"
 msgstr ""
 
-#: bibed/gui/window.py:341
+#: bibed/gui/window.py:340
 msgid "Show application preferences"
 msgstr ""
 
-#: bibed/gui/window.py:355
+#: bibed/gui/window.py:354
 msgid "Start searching in selected databases"
 msgstr ""
 
-#: bibed/gui/window.py:370
+#: bibed/gui/window.py:369
 msgid ""
 "<big>Something will be here</big>\n"
 "\n"
@@ -1240,7 +1462,7 @@ msgid ""
 "<a href=\"{discuss_en}\">Come discuss it on Telegram</a> if you wish."
 msgstr ""
 
-#: bibed/gui/window.py:413
+#: bibed/gui/window.py:412
 msgid ""
 "<big>Welcome to Bibed!</big>\n"
 "\n"
@@ -1256,103 +1478,103 @@ msgid ""
 "and all Bibed contributors"
 msgstr ""
 
-#: bibed/gui/window.py:470
+#: bibed/gui/window.py:469
 msgid "{count} file selected"
 msgid_plural "{count} files selected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:477
+#: bibed/gui/window.py:476
 msgid "{items} in {files}"
 msgstr ""
 
-#: bibed/gui/window.py:478
+#: bibed/gui/window.py:477
 msgid "{count} item"
 msgid_plural "{count} items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:483
+#: bibed/gui/window.py:482
 msgid "{count} file"
 msgid_plural "{count} files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:492
+#: bibed/gui/window.py:491
 msgid "{app} – no file selected"
 msgstr ""
 
-#: bibed/gui/window.py:493
+#: bibed/gui/window.py:492
 msgid "select at least one file to display in your library"
 msgstr ""
 
-#: bibed/gui/window.py:495
+#: bibed/gui/window.py:494
 msgid "{0} – Welcome!"
 msgstr ""
 
-#: bibed/gui/window.py:732
+#: bibed/gui/window.py:731
 msgid "Reloaded all open databases at user request."
 msgstr ""
 
-#: bibed/gui/window.py:838
+#: bibed/gui/window.py:837
 msgid "Please create a new BIB file"
 msgstr ""
 
-#: bibed/gui/window.py:843
+#: bibed/gui/window.py:842
 msgid "Untitled bibliography.bib"
 msgstr ""
 
-#: bibed/gui/window.py:862
+#: bibed/gui/window.py:861
 msgid "Please choose one or more BIB file"
 msgstr ""
 
-#: bibed/gui/window.py:974 bibed/gui/window.py:984
+#: bibed/gui/window.py:975 bibed/gui/window.py:985
 msgid "{entry} added to {database}."
 msgstr ""
 
-#: bibed/gui/window.py:998
+#: bibed/gui/window.py:999
 msgid "{count} entry moved to {destination}{unchanged}."
 msgid_plural "{count} entries moved to {destination}{unchanged}."
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:1005
+#: bibed/gui/window.py:1006
 msgid ", and {count} already there"
 msgstr ""
 
-#: bibed/gui/window.py:1037
+#: bibed/gui/window.py:1038
 msgid "{count} entry {what}."
 msgid_plural "{count} entries {what}."
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:1043
+#: bibed/gui/window.py:1044
 msgid "trashed"
 msgstr ""
 
-#: bibed/gui/window.py:1045
+#: bibed/gui/window.py:1046
 msgid "definitively deleted"
 msgstr ""
 
-#: bibed/gui/window.py:1055
+#: bibed/gui/window.py:1056
 msgid "{count} previously trashed entry definitively deleted."
 msgid_plural "{count} previously trashed entries definitively deleted."
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:1086
+#: bibed/gui/window.py:1083
 msgid "Wipe {count} entry from trash?"
 msgid_plural "Wipe {count} entries from trash?"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:1093
+#: bibed/gui/window.py:1090
 msgid "Delete {count} entry?"
 msgid_plural "Delete {count} entries?"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:1107
+#: bibed/gui/window.py:1104
 msgid "This will permanently delete {entry} from your database."
 msgid_plural ""
 "This will permanently delete the following entries:\n"
@@ -1361,24 +1583,24 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:1115
+#: bibed/gui/window.py:1112
 msgid "{count} database"
 msgid_plural "{count} databases"
 msgstr[0] ""
 msgstr[1] ""
 
-#: bibed/gui/window.py:1123
+#: bibed/gui/window.py:1120
 msgid ""
 "\n"
 "\n"
 "This action cannot be undone. Are you sure?"
 msgstr ""
 
-#: bibed/gui/window.py:1142
+#: bibed/gui/window.py:1139
 msgid "{entry} modified in {database}."
 msgstr ""
 
-#: bibed/gui/window.py:1180
+#: bibed/gui/window.py:1177
 msgid "Bib(La)Tex files"
 msgstr ""
 
