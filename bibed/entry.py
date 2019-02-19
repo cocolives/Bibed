@@ -878,6 +878,11 @@ class EntryFieldCheckMixin:
             'Please type a date in the format YYYY-MM-DD.'
         )
 
+        if fu.value_is_empty(field_value):
+            # User has removed the date after having
+            # typed something. Everything is fine.
+            return
+
         if len(field_value) < 10:
             return error_message
 
