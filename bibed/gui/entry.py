@@ -1234,6 +1234,23 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         LOGGER.debug('Field {} changed and OK, marking it.'.format(field_name))
 
+        if self.get_field_value(field_name) == '':
+            # In cas of a new entry, don't save it if has no field filled.
+            # If the user fills a field, then empties if, we must consider
+            # it hasn't changed, else this will create an empty entry, which
+            # can be considered as some sort of “false positive”.
+            if self.brand_new:
+                LOGGER.debug(
+                    'Field {} was emptyed on a new entry, unmarking it.'.format(
+                        field_name))
+                try:
+                    self.changed_fields.remove(field_name)
+
+                except ValueError:
+                    pass
+
+                return
+
         # Multiple updates to same widget will be
         # recorded only once, thanks to the set.
         self.changed_fields.add(field_name)
