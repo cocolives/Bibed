@@ -24,6 +24,7 @@ from bibed.constants import (
 )
 
 from bibed.strings import asciize
+from bibed.locale import _
 from bibed.fields import FieldUtils as fu
 from bibed.preferences import defaults, preferences, gpod
 from bibed.exceptions import FileNotFoundError
@@ -323,6 +324,12 @@ class BibedEntry:
 
     def set_field(self, name, value):
 
+        if value in (None, '', ):
+            # remove field. Doing this here is
+            # required by field mechanics in GUI.
+            del self.bib_dict[name]
+            return
+
         name = self.__internal_translate(name)
 
         try:
@@ -341,10 +348,17 @@ class BibedEntry:
         self.__internal_keywords = kw + [self.read_status] + [self.quality]
 
         # Flatten for bibtexparser
-        self.bib_dict['keywords'] = ','.join(
+        final_keywords = ','.join(
             # If no read_status or quality, we need to “re-cleanup”
             kw for kw in self.__internal_keywords if kw.strip() != ''
         )
+
+        if final_keywords != '':
+            self.bib_dict['keywords'] = final_keywords
+
+        else:
+            # remove now-empty field.
+            del self.bib_dict['keywords']
 
     # —————————————————————————————————————————————————————————————— properties
 
