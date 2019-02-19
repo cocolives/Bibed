@@ -296,7 +296,10 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     def preselect_destination(self):
 
-        if self.entry.database:
+        # HEADS UP: we cannot just test `if self.entry.database`, because in
+        #           case of an empty database, it will return False. See
+        #           https://pythontic.com/functions/built-in/bool for details.
+        if self.entry.database is not None:
             combo = self.cmb_destination
             destination_filename = self.entry.database.filename
 
