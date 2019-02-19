@@ -247,8 +247,10 @@ QUALITY_STATUS_PIXBUFS = {
 }
 
 COMMENT_PIXBUFS = {
-    False: None,
-    True: 'bibed-property-comment',
+    '': None,
+    'abstract': 'bibed-type-book-1',
+    'comment': 'bibed-property-comment',
+    'both': 'bibed-property-comment',
 }
 
 URL_PIXBUFS = {
@@ -258,5 +260,57 @@ URL_PIXBUFS = {
 
 FILE_PIXBUFS = {
     False: None,
-    True: 'bibed-property-pdf',
+    'default': 'bibed-property-pdf',
+    'audio': 'bibed-type-music',
+    'music': 'bibed-type-music',
+}
+
+TYPE_PIXBUFS = {
+    'article': 'bibed-type-article',
+    'artwork': 'bibed-type-artwork',
+    'audio': 'bibed-type-audio',
+    'bibnote': 'bibed-type-bibnote',
+    'book': 'bibed-type-book',
+    'bookinbook': 'bibed-type-bookinbook',
+    'booklet': 'bibed-type-booklet',
+    'collection': 'bibed-type-collection',
+    'commentary': 'bibed-type-commentary',
+    'conference': 'bibed-type-conference',
+    'image': 'bibed-type-image',
+    'inbook': 'bibed-type-inbook',
+    'incollection': 'bibed-type-incollection',
+    'inproceedings': 'bibed-type-inproceedings',
+    'inreference': 'bibed-type-inreference',
+    'jurisdiction': 'bibed-type-jurisdiction',
+    'legal': 'bibed-type-legal',
+    'legislation': 'bibed-type-legislation',
+    'letter': 'bibed-type-letter',
+    'manual': 'bibed-type-manual',
+    'mastersthesis': 'bibed-type-mastersthesis',
+    'misc': 'bibed-type-misc',
+    'movie': 'bibed-type-movie',
+    'music': 'bibed-type-music',
+    'mvbook': 'bibed-type-mvbook',
+    'mvcollection': 'bibed-type-mvcollection',
+    'mvproceedings': 'bibed-type-mvproceedings',
+    'mvreference': 'bibed-type-mvreference',
+    'online': 'bibed-type-online',
+    'patent': 'bibed-type-patent',
+    'performance': 'bibed-type-performance',
+    'periodical': 'bibed-type-periodical',
+    'phdthesis': 'bibed-type-phdthesis',
+    'proceedings': 'bibed-type-proceedings',
+    'reference': 'bibed-type-reference',
+    'report': 'bibed-type-report',
+    'review': 'bibed-type-review',
+    'set': 'bibed-type-set',
+    'software': 'bibed-type-software',
+    'standard': 'bibed-type-standard',
+    'suppbook': 'bibed-type-suppbook',
+    'suppcollection': 'bibed-type-suppcollection',
+    'suppperiodical': 'bibed-type-suppperiodical',
+    'thesis': 'bibed-type-thesis',
+    'unpublished': 'bibed-type-unpublished',
+    'video': 'bibed-type-video',
+    'xdata': 'bibed-type-xdata',
 }
