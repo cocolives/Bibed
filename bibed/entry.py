@@ -24,6 +24,7 @@ from bibed.constants import (
 )
 
 from bibed.strings import asciize
+from bibed.fields import FieldUtils as fu
 from bibed.preferences import defaults, preferences, gpod
 from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
@@ -894,6 +895,16 @@ class EntryFieldCheckMixin:
                 error_message=error_message, exception=e)
 
     check_field_urldate = check_field_date
+
+    def check_field_url(self, all_fields, field_name, field, field_value):
+
+        if fu.value_is_empty(field_value):
+            # The URL was made empty after beiing set. Empty the date.
+            fu.field_make_empty(all_fields['urldate'])
+            return
+
+        fu.field_set_date_today(all_fields['urldate'])
+
     # ————————————————————————————————————————————————————————————— Fix methods
 
     def fix_field_key(self, all_fields, field_name, field, field_value, entry, files):
