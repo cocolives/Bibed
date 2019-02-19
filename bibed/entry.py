@@ -770,7 +770,7 @@ class BibedEntry:
 
         return (
             '{type} <b><i>{title}</i></b> '
-            'by <b>{author}</b>{journal}{year}{trashed}'.format(
+            'by <b>{author}</b>{in_or_by}{year}{trashed}'.format(
                 type=getattr(defaults.types.labels,
                              self.type).replace('_', ''),
 
