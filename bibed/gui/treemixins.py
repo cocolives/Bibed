@@ -13,7 +13,7 @@ from bibed.constants import (
     COL_YEAR_WIDTH,
     # COL_PIXBUF_WIDTH,
     COL_AUTHOR_WIDTH,
-    COL_JOURNAL_WIDTH,
+    COL_IN_OR_BY_WIDTH,
     # COL_SEPARATOR_WIDTH,
 )
 
@@ -113,8 +113,8 @@ class BibedEntryTreeViewMixin:
             ellipsize=Pango.EllipsizeMode.MIDDLE,
             attributes={'foreground': BibAttrs.COLOR},
         )
-        self.col_journal = self.setup_text_column(
-            _('Journal'), BibAttrs.JOURNAL,
+        self.col_in_or_by = self.setup_text_column(
+            _('In, by or how'), BibAttrs.IN_OR_BY,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
@@ -140,12 +140,12 @@ class BibedEntryTreeViewMixin:
         col_key_width     = round(width * COL_KEY_WIDTH)
         col_type_width    = round(width * COL_TYPE_WIDTH)
         col_author_width  = round(width * COL_AUTHOR_WIDTH)
-        col_journal_width = round(width * COL_JOURNAL_WIDTH)
+        col_in_or_by_width = round(width * COL_IN_OR_BY_WIDTH)
         col_year_width    = round(width * COL_YEAR_WIDTH)
 
         # col_title_width   = round(width - (
         #     col_key_width + col_author_width
-        #     + col_journal_width + col_year_width
+        #     + col_in_or_by_width + col_year_width
         #     + col_type_width
         #     + 5 * COL_PIXBUF_WIDTH
         # ) - COL_SEPARATOR_WIDTH * 10)
@@ -154,7 +154,7 @@ class BibedEntryTreeViewMixin:
         #     col_key_width,
         #     col_type_width,
         #     col_author_width,
-        #     col_journal_width,
+        #     col_in_or_by_width,
         #     col_year_width,
         #     # col_title_width,
         # )
@@ -166,7 +166,7 @@ class BibedEntryTreeViewMixin:
         self.col_key.set_fixed_width(col_key_width)
         self.col_type.set_fixed_width(col_type_width)
         self.col_author.set_fixed_width(col_author_width)
-        self.col_journal.set_fixed_width(col_journal_width)
+        self.col_in_or_by.set_fixed_width(col_in_or_by_width)
         self.col_year.set_fixed_width(col_year_width)
 
     # ————————————————————————————————————————————————————————— Pixbufs columns

@@ -45,7 +45,7 @@ BibAttrs = Anything((
     ('AUTHOR', str, ),  # author
     ('TITLE', str, ),  # title
     ('SUBTITLE', str, ),  # subtitle (not displayed, but used for searches)
-    ('JOURNAL', str, ),  # journal (or booktitle, howpublished… see entry.py)
+    ('IN_OR_BY', str, ),  # journal (or booktitle, howpublished… see entry.py)
     ('YEAR', int, ),  # year
     ('DATE', str, ),  # date
     ('QUALITY', str, ),  # quality
@@ -92,9 +92,9 @@ SEARCH_SPECIALS = (
     (C_('search field', 't'),
      BibAttrs.TITLE,
      C_('search field', 'title'), ),
-    (C_('search field', 'j'),
-     BibAttrs.JOURNAL,
-     C_('search field', 'journal'), ),
+    (C_('search field', 'i'),
+     BibAttrs.IN_OR_BY,
+     C_('search field', 'in_or_by'), ),
     (C_('search field', 'y'),
      BibAttrs.YEAR,
      C_('search field', 'year'), ),
@@ -180,7 +180,7 @@ RESIZE_SIZE_MULTIPLIER = 0.20
 COL_KEY_WIDTH     = 0.10
 COL_TYPE_WIDTH    = 0.06
 COL_AUTHOR_WIDTH  = 0.15
-COL_JOURNAL_WIDTH = 0.15
+COL_IN_OR_BY_WIDTH = 0.15
 COL_YEAR_WIDTH    = 0.04
 # NOTE: col_title_width will be computed from remaining space.
 

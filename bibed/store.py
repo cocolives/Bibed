@@ -699,7 +699,7 @@ class BibedDataStore(Gtk.ListStore):
             GLib.markup_escape_text(entry.author),
             GLib.markup_escape_text(entry.title),
             entry.get_field('subtitle', ''),
-            GLib.markup_escape_text(entry.journal),
+            entry.col_in_or_by,
             entry.year,
             entry.get_field('date', ''),
             entry.quality,

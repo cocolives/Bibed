@@ -560,16 +560,55 @@ class BibedEntry:
         return '\n\n'.join(tooltips)
 
     @property
-    def journal(self):
+    def col_in_or_by(self):
 
-        # TODO: use journaltitle / handle aliased fields.
+        if self.bib_dict['ENTRYTYPE'] == 'article':
+            fields_names = (
+                'journaltitle', 'booktitle',
+                # backward compatible field name for JabRef.
+                'journal',
+            )
 
-        for field_name in ('journaltitle', 'booktitle',
-                           'journal', 'howpublished', ):
-            field_value = self.__clean_for_display(field_name)
+        elif 'book' in self.bib_dict['ENTRYTYPE']:
+            fields_names = (
+                'publisher',
+                'booktitle',
+                'isbn',
+            )
 
-            if field_value:
-                return field_value
+        else:
+            fields_names = (
+                'howpublished',
+                'institution',
+                'school',
+                'organization',
+            )
+
+        for field_name in fields_names:
+
+            if isinstance(field_name, tuple):
+                values = []
+
+                for subfield_name in field_name:
+                    field_value = self.__clean_for_display(subfield_name)
+
+                    if field_value:
+                        if subfield_name == 'edition':
+                            values.append(
+                                '<span color="grey">{}</span>'.format(
+                                    format_edition(field_value, short=True)))
+
+                        else:
+                            values.append(markup_escape_text(field_value))
+
+                if values:
+                    return ', '.join(values)
+
+            else:
+                field_value = self.__clean_for_display(field_name)
+
+                if field_value:
+                    return markup_escape_text(field_value)
 
         return ''
 
@@ -653,8 +692,8 @@ class BibedEntry:
                 title=self.title[:24] + (self.title[24:] and ' […]'),
                 author=self.author,
 
-                journal=' in <i>{}</i>'.format(self.journal)
-                if self.journal else '',
+                in_or_by=' in <i>{}</i>'.format(self.col_in_or_by)
+                if self.col_in_or_by else '',
 
                 year=' ({})'.format(self.year)
                 if self.year else '',

@@ -199,7 +199,7 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         model_full_text_data = [
             to_lower_if_not_none(row[BibAttrs.AUTHOR]),
             to_lower_if_not_none(row[BibAttrs.TITLE]),
-            to_lower_if_not_none(row[BibAttrs.JOURNAL]),
+            to_lower_if_not_none(row[BibAttrs.IN_OR_BY]),
             to_lower_if_not_none(row[BibAttrs.SUBTITLE]),
             to_lower_if_not_none(row[BibAttrs.COMMENT]),
             to_lower_if_not_none(row[BibAttrs.KEYWORDS]),
