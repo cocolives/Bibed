@@ -44,7 +44,7 @@ BibAttrs = Anything((
     ('DOI', str, ),  # DOI
     ('AUTHOR', str, ),  # author
     ('TITLE', str, ),  # title
-    ('SUBTITLE', str, ),  # subtitle
+    ('SUBTITLE', str, ),  # subtitle (not displayed, but used for searches)
     ('JOURNAL', str, ),  # journal (or booktitle, howpublished… see entry.py)
     ('YEAR', int, ),  # year
     ('DATE', str, ),  # date
