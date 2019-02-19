@@ -315,7 +315,7 @@ class BibedEntry:
 
         # .replace('& ', '&amp; ')
 
-        text = GLib.markup_escape_text(text)
+        text = markup_escape_text(text)
 
         # TODO: re.sub() sur texttt, emph, url, etc.
         #       probably some sort of TeX → Gtk Markup.
@@ -489,7 +489,25 @@ class BibedEntry:
     @property
     def title(self):
 
-        return self.bib_dict.get('title', '')
+        return self.__clean_for_display('title')
+
+    @property
+    def col_title(self):
+
+        title = markup_escape_text(self.title)
+
+        edition = self.bib_dict.get('edition', None)
+
+        if edition is not None and edition != '':
+            title += ' <span color="grey">({})</span>'.format(
+                format_edition(edition, short=True))
+
+        return title
+
+    @property
+    def col_subtitle(self):
+
+        return markup_escape_text(self.bib_dict.get('subtitle', ''))
 
     @property
     def comment(self):
@@ -502,7 +520,7 @@ class BibedEntry:
         self.bib_dict['comment'] = value
 
     @property
-    def tooltip(self):
+    def col_tooltip(self):
 
         esc = self.__escape_for_tooltip
         is_trashed = self.is_trashed
@@ -528,9 +546,9 @@ class BibedEntry:
             )
         )
 
-        if self.journal:
-            base_tooltip += ', published in <b><i>{journal}</i></b>'.format(
-                journal=esc(self.journal))
+        if self.col_in_or_by:
+            base_tooltip += ', published in <b><i>{in_or_by}</i></b>'.format(
+                in_or_by=esc(self.col_in_or_by))
 
         if year:
             base_tooltip += ' ({year})'.format(year=year)
@@ -678,6 +696,13 @@ class BibedEntry:
         # TODO: handle {and}, "and", and other author particularities.
 
         return self.__clean_for_display('author')
+
+    @property
+    def col_author(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return markup_escape_text(self.author)
 
     @property
     def year(self):

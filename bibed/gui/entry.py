@@ -780,7 +780,10 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
             grid.set_row_spacing(GRID_ROWS_SPACING)
 
             if len(fields) == 1:
+                # Only one field in the group, we
+                # fill the stack with a text view.
                 field_name = fields[0]
+
                 scr, txv = build_entry_field_textview(
                     fields_docs, field_name, entry)
 
