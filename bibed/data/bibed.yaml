@@ -73,6 +73,180 @@ fields:
     - address
     sortkey:
     - key
+  all:
+    - abstract
+    - addendum
+    - afterword
+    - annotation
+    - annotator
+    - author
+    - authortype
+    - bookauthor
+    - bookpagination
+    - booksubtitle
+    - booktitle
+    - booktitleaddon
+    - chapter
+    - commentator
+    - crossref
+    - day
+    - doi
+    - edition
+    - editor
+    - editora
+    - editoratype
+    - editorb
+    - editorbtype
+    - editorc
+    - editorctype
+    - editortype
+    - eid
+    - endday
+    - endhour
+    - endminute
+    - endmonth
+    - endseason
+    - endsecond
+    - endtimezone
+    - endyear
+    - entryset
+    - entrysubtype
+    - eprint
+    - eprintclass
+    - eprinttype
+    - eventtitle
+    - eventtitleaddon
+    - execute
+    - file
+    - foreword
+    - gender
+    - holder
+    - hour
+    - howpublished
+    - ids
+    - indexsorttitle
+    - indextitle
+    - institution
+    - introduction
+    - isan
+    - isbn
+    - ismn
+    - isrn
+    - issn
+    - issue
+    - issuesubtitle
+    - issuetitle
+    - iswc
+    - journalsubtitle
+    - journaltitle
+    - keywords
+    - label
+    - langid
+    - langidopts
+    - language
+    - library
+    - lista
+    - listb
+    - listc
+    - listd
+    - liste
+    - listf
+    - location
+    - mainsubtitle
+    - maintitle
+    - maintitleaddon
+    - minute
+    - month
+    - namea
+    - nameaddon
+    - nameatype
+    - nameb
+    - namebtype
+    - namec
+    - namectype
+    - note
+    - number
+    - options
+    - organization
+    - origday
+    - origendday
+    - origendhour
+    - origendminute
+    - origendmonth
+    - origendseason
+    - origendsecond
+    - origendtimezone
+    - origendyear
+    - orighour
+    - origlanguage
+    - origlocation
+    - origminute
+    - origmonth
+    - origpublisher
+    - origseason
+    - origsecond
+    - origtimezone
+    - origtitle
+    - origyear
+    - pages
+    - pagetotal
+    - pagination
+    - part
+    - presort
+    - publisher
+    - pubstate
+    - related
+    - relatedoptions
+    - relatedstring
+    - relatedtype
+    - reprinttitle
+    - season
+    - second
+    - series
+    - shortauthor
+    - shorteditor
+    - shorthand
+    - shorthandintro
+    - shortjournal
+    - shortseries
+    - shorttitle
+    - sortkey
+    - sortname
+    - sortshorthand
+    - sorttitle
+    - sortyear
+    - subtitle
+    - timezone
+    - title
+    - titleaddon
+    - translator
+    - type
+    - url
+    - urlday
+    - urlendday
+    - urlendhour
+    - urlendminute
+    - urlendmonth
+    - urlendsecond
+    - urlendtimezone
+    - urlendyear
+    - urlhour
+    - urlminute
+    - urlmonth
+    - urlsecond
+    - urltimezone
+    - urlyear
+    - usera
+    - userb
+    - userc
+    - userd
+    - usere
+    - userf
+    - venue
+    - version
+    - xdata
+    - xref
+    - year
   by_type:
     article:
       optional:
@@ -157,6 +331,8 @@ fields:
       - type
       - url
       - urldate
+      - journaltitle
+      - journalsubtitle
       - file
       - addendum
       - doi
@@ -1768,6 +1944,15 @@ fields:
     volume: Volume
     volumes: Volumes
     year: Year
+  data_types:
+    integer:
+      - sortyear
+      - volume
+      - volumes
+  protected:
+    - verba
+    - verbb
+    - verbc
 keep_recent_files: 10
 remember_last_destination: true
 remember_open_files: true
