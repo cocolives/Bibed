@@ -111,16 +111,15 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
     def __init__(self, parent, entry):
 
+        type_label = _(getattr(defaults.types.labels,
+                               entry.type)).replace('_', '').lower()
+
         if entry.key is None:
-            title = "Create new @{0}".format(entry.type)
+            title = _('Create new {type}').format(type=type_label)
+
         else:
-            label = getattr(defaults.fields.labels, entry.type)
-
-            if label is None:
-                # Poor man's solution.
-                label = entry.type.title()
-
-            title = "Edit {0} {1}".format(label, entry.key)
+            title = _('Edit {type} {key}').format(
+                type=type_label, key=entry.key)
 
         super().__init__(title, parent, use_header_bar=True)
 

@@ -35,7 +35,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
     def __init__(self, parent, add_new=False):
 
-        super().__init__('Choose new entry type', parent, 0)
+        super().__init__(_('Choose new entry type'), parent, 0)
 
         self.set_modal(True)
         self.set_default_size(300, 300)

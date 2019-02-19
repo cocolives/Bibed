@@ -231,7 +231,8 @@ class BibedEntry:
         if name == 'key':
             return 'ID'
 
-        # NO !!! we have type for thesis, etc.
+        # Do not translate `type`.
+        # We have a `type` field for thesis, etc.
         # elif name == 'type':
         #     return 'ENTRYTYPE'
 
