@@ -45,13 +45,19 @@ BibAttrs = Anything((
     ('AUTHOR', str, ),  # author
     ('TITLE', str, ),  # title
     ('SUBTITLE', str, ),  # subtitle (not displayed, but used for searches)
-    ('IN_OR_BY', str, ),  # journal (or booktitle, howpublished… see entry.py)
+    ('IN_OR_BY', str, ),  # journal, booktitle, howpublished… see entry.py)
     ('YEAR', int, ),  # year
     ('DATE', str, ),  # date
     ('QUALITY', str, ),  # quality
     ('READ', str, ),  # read status
     ('COMMENT', str, ),  # comment (text field)
     ('KEYWORDS', str, ),  # keywords (for search/filter only)
+
+    # Fields used for completions.
+    ('JOURNAL', str, ),  # journaltitle (only)
+    ('EDITOR', str, ),  # editor
+    ('PUBLISHER', str, ),  # publisher
+    ('SERIES', str, ),  # series
 ))
 
 

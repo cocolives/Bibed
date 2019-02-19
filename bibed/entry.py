@@ -791,6 +791,36 @@ class BibedEntry:
             )
         )
 
+    # ——————————————————————————————————————————————————— Completion properties
+
+    @property
+    def comp_journaltitle(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return self.__clean_for_display('journaltitle')
+
+    @property
+    def comp_editor(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return self.__clean_for_display('editor')
+
+    @property
+    def comp_publisher(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return self.__clean_for_display('publisher')
+
+    @property
+    def comp_series(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return self.__clean_for_display('series')
+
     # ————————————————————————————————————————————————————————————————— Methods
 
     def update_fields(self, **kwargs):

@@ -706,6 +706,12 @@ class BibedDataStore(Gtk.ListStore):
             entry.read_status,
             entry.comment,
             ','.join(entry.keywords),  # flatten for search / filter.
+
+            # Completion fields.
+            entry.comp_journaltitle,
+            entry.comp_editor,
+            entry.comp_publisher,
+            entry.comp_series,
         )
 
     def append(self, entry):
