@@ -94,7 +94,7 @@ if __name__ == '__main__':
     from bibed.strings import seconds_to_string
     from bibed.gtk import Gtk  # NOQA
     from bibed.gui.splash import start_splash
-    from bibed.app import BibEdApplication
+    from bibed.app import BibedApplication
     from bibed.preferences import gpod
     from bibed.sentry import sentry
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         LOGGER.debug('Sentry startup time: {}'.format(
             seconds_to_string(time.time() - time_start)))
 
-    app = BibEdApplication(time_start=time_start, splash=splash,
+    app = BibedApplication(time_start=time_start, splash=splash,
                            logging_handlers=logging_handlers)
 
     exit_status = app.run(sys.argv)

@@ -55,7 +55,7 @@ GLib.idle_add(set_process_title, APP_NAME)
 GLib.set_application_name(APP_NAME)
 
 
-class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
+class BibedApplication(Gtk.Application, GtkCssAwareMixin):
 
     def __init__(self, *args, **kwargs):
 
