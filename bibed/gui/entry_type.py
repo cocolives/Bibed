@@ -35,7 +35,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
     def __init__(self, parent, add_new=False):
 
-        super().__init__('Choose new entry type', parent, 0)
+        super().__init__(_('Choose new entry type'), parent, 0)
 
         self.set_modal(True)
         self.set_default_size(300, 300)
@@ -73,7 +73,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
 
             grid = Gtk.Grid()
             grid.set_border_width(BOXES_BORDER_WIDTH / 2)
-
+            grid.set_column_homogeneous(True)
             grid.set_column_spacing(GRID_COLS_SPACING / 4)
             grid.set_row_spacing(GRID_ROWS_SPACING / 4)
 
@@ -102,7 +102,7 @@ class BibedEntryTypeDialog(Gtk.Dialog):
                     expand=True,
                     margin=button_margin,
                     halign=button_halign,
-                    valign=Gtk.Align.CENTER,
+                    valign=Gtk.Align.END,
                 )
                 btn.add(button_generator(
                     child_name, btn_markup.format(
@@ -210,12 +210,12 @@ class BibedEntryTypeDialog(Gtk.Dialog):
         stack_switcher.set_stack(stack)
 
         if preferences.types.main is None:
-            main_stack_label = "{}'s main types".format(APP_NAME)
-            other_stack_label = "Other bibliographic types"
+            main_stack_label = _("{app}'s main types").format(app=APP_NAME)
+            other_stack_label = _('Other bibliographic types')
 
         else:
-            main_stack_label = "Your main types"
-            other_stack_label = "Other types"
+            main_stack_label = _('Your main types')
+            other_stack_label = _('Other types')
 
         stack.add_titled(
             self.grid_types_main,

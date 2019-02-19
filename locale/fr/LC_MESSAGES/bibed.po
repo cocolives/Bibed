@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2019-02-17 23:54+0100\n"
-"PO-Revision-Date: 2019-02-17 23:56+0100\n"
+"POT-Creation-Date: 2019-02-19 01:01+0100\n"
+"PO-Revision-Date: 2019-02-19 01:02+0100\n"
 "Last-Translator: \n"
 "Language: fr\n"
 "Language-Team: fr <LL@li.org>\n"
@@ -185,11 +185,11 @@ msgstr ""
 msgid "Missing and omissible data"
 msgstr ""
 
-#: bibed/data/bibed.yaml:171
+#: bibed/data/bibed.yaml:195
 msgid "The author(s) of the <span face=\"monospace\">title</span>."
 msgstr "L'auteurice ou les auteurice(s) du <span face=\"monospace\">titre</span>."
 
-#: bibed/data/bibed.yaml:172
+#: bibed/data/bibed.yaml:196
 msgid ""
 "The subtitle related to the <span face=\"monospace\">booktitle</span>. If the "
 "<span face=\"monospace\">subtitle</span> field refers to a work which is part of "
@@ -197,15 +197,23 @@ msgid ""
 "main work is given in this field. See also @@@seealso{defaults.fields.doc."
 "subtitle}."
 msgstr ""
+"Le sous-titre relatif au <span face=\"monospace\">titre de livre</span>. Si le "
+"champ <span face=\"monospace\">sous-titre</span> fait référence à une œuvre qui "
+"est une partie d'une publication plus large, alors ici vous pouvez saisir le "
+"<span face=\"monospace\">sous-titre</span> de l'œuvre principale. Voyez aussi "
+"@@@seealso{defaults.fields.doc.subtitle}."
 
-#: bibed/data/bibed.yaml:173
+#: bibed/data/bibed.yaml:197
 msgid ""
 "If the <span face=\"monospace\">title</span> field indicates the title of a work "
 "which is part of a larger publication, the title of the main work is given in "
 "this field. See also @@@seealso{defaults.fields.doc.title}."
 msgstr ""
+"Si le champ <span face=\"monospace\">titre</span> indique le titre d'une œuvre "
+"qui fait partie d'une plus large publication, alors ce champ doit contenir le "
+"titre de l'œuvre principale. See also @@@seealso{defaults.fields.doc.title}."
 
-#: bibed/data/bibed.yaml:174
+#: bibed/data/bibed.yaml:198
 msgid ""
 "An annex to the <span face=\"monospace\">booktitle</span>, to be printed in a "
 "different font."
@@ -213,21 +221,25 @@ msgstr ""
 "Une annexe au champ <span face=\"monospace\">booktitle</span>, qui sera affichée "
 "dans une police différente."
 
-#: bibed/data/bibed.yaml:175
+#: bibed/data/bibed.yaml:199
 msgid ""
 "The publication date. See also <span face=\"monospace\">month</span> and <span "
 "face=\"monospace\">year</span>.\n"
 "\n"
 "@@@import{2.3.8}"
 msgstr ""
+"La date de publication. Voyez aussi les champs <span face=\"monospace\">mois</"
+"span> et <span face=\"monospace\">année</span>.\n"
+"\n"
+"@@@import{2.3.8}"
 
-#: bibed/data/bibed.yaml:176
+#: bibed/data/bibed.yaml:200
 msgid "The Digital Object Identifier of the work."
 msgstr ""
 "L'Identifiant d'Objet Numérique (D.O.I = <i>Digital Object Identifier</i>) de "
 "l'œuvre."
 
-#: bibed/data/bibed.yaml:177
+#: bibed/data/bibed.yaml:201
 msgid ""
 "The edition of a printed publication. This must be an integer, not an ordinal. "
 "Don’t say <span face=\"monospace\">edition={First}</span> or <span face="
@@ -236,42 +248,57 @@ msgid ""
 "is also possible to give the edition as a literal string, for example “Third, "
 "revised and expanded edition”."
 msgstr ""
+"L'édition d'une publication imprimée. La valeur doit être un nombre entier, pas "
+"un ordinal. N'écrivez pas <span face=\"monospace\">edition=Première</span> ni "
+"<span face=\"monospace\">edition=1ère</span> mais plutôs <span face=\"monospace"
+"\">edition=1</span>. Les style bibliographique convertira le nombre en une "
+"valeur ordinale dépendante de la langue utilisée dans votre document. Il est "
+"aussi possible de saisir une chaîne de texte littérale complète, comme par "
+"exemple « Trosième édition, révisée et étendue” ; mais dans ce cas la chaîne "
+"sera laissée telle quelle par le moteur de style, et ne sera donc pas traduite."
 
-#: bibed/data/bibed.yaml:178
+#: bibed/data/bibed.yaml:202
 msgid "@@@import{2.3.6}."
 msgstr ""
 
-#: bibed/data/bibed.yaml:179
+#: bibed/data/bibed.yaml:203
 msgid "Editorial Roles"
 msgstr ""
 
-#: bibed/data/bibed.yaml:181
+#: bibed/data/bibed.yaml:205
 msgid ""
 "The electronic identifier of an <span weight=\"bold\" face=\"monospace"
 "\">@article</span>."
 msgstr ""
+"L'identifiant électronique de l'<span weight=\"bold\" face=\"monospace"
+"\">@article</span>."
 
-#: bibed/data/bibed.yaml:182
+#: bibed/data/bibed.yaml:206
 msgid ""
 "The electronic identifier of an online publication. This is roughly comparable "
 "to a DOI but specific to a certain archive, repository, service, or system. "
 "@@@seealso{3.13.7} for details. Also see <span face=\"monospace\">eprinttype</"
 "span> and <span face=\"monospace\">eprintclass</span>."
 msgstr ""
+"L'identifiant électronique d'une publication en ligne. C'est sensiblement "
+"comparable au <span face=\"monospace\">D.O.I</span>, mais plus spécifique de "
+"certaines archives, dépôts, services ou systèmes. Voyez aussi @@@seealso{3.13.7} "
+"pour des détails. Voyez aussi les champs <span face=\"monospace\">type e-Print</"
+"span> et <span face=\"monospace\">classe e-Print</span>."
 
-#: bibed/data/bibed.yaml:183
+#: bibed/data/bibed.yaml:207
 msgid "The name of a journal, a newspaper, or some other periodical."
 msgstr "Le nom d'un journal en ligne ou papier, ou d'un périodique."
 
-#: bibed/data/bibed.yaml:184
+#: bibed/data/bibed.yaml:208
 msgid "The bibliography entry unique key."
 msgstr "La clef unique de l'entrée de bibliographie."
 
-#: bibed/data/bibed.yaml:185
+#: bibed/data/bibed.yaml:209
 msgid "The title of the work."
 msgstr "Le titre de l'œuvre."
 
-#: bibed/data/bibed.yaml:186
+#: bibed/data/bibed.yaml:210
 msgid ""
 "The year of publication. This field is a literal field only when given "
 "explicitly in the data (for plain BibTeX compatibility for example). It is "
@@ -284,207 +311,247 @@ msgstr ""
 "moteur peut en extraire l'année, et propose plus de fonctionnalités à partir de "
 "la date. @@@import{2.3.8}"
 
-#: bibed/data/bibed.yaml:188
+#: bibed/data/bibed.yaml:212
 msgid "Abstract"
 msgstr "Résumé"
 
-#: bibed/data/bibed.yaml:189
+#: bibed/data/bibed.yaml:213
 msgid "Addendum"
 msgstr "Addendum"
 
-#: bibed/data/bibed.yaml:190
+#: bibed/data/bibed.yaml:214
+msgid "Afterword"
+msgstr "Postface"
+
+#: bibed/data/bibed.yaml:215
 msgid "Annotator(s)"
 msgstr "Annotateurice(s)"
 
-#: bibed/data/bibed.yaml:191 bibed/gui/treemixins.py:107
+#: bibed/data/bibed.yaml:216 bibed/gui/treemixins.py:107
 msgid "Author(s)"
 msgstr "Auteurice(s)"
 
-#: bibed/data/bibed.yaml:192
+#: bibed/data/bibed.yaml:217
 msgid "Chapter"
 msgstr "Chapitre"
 
-#: bibed/data/bibed.yaml:193
+#: bibed/data/bibed.yaml:218
 msgid "Comment(s)"
 msgstr "Commentaire(s)"
 
-#: bibed/data/bibed.yaml:194
+#: bibed/data/bibed.yaml:219
 msgid "Commentator(s)"
 msgstr "Commentateurice(s)"
 
-#: bibed/data/bibed.yaml:195
+#: bibed/data/bibed.yaml:220
 msgid "Date"
 msgstr "Date"
 
-#: bibed/data/bibed.yaml:196
+#: bibed/data/bibed.yaml:221
 msgid "DOI"
 msgstr "D.O.I"
 
-#: bibed/data/bibed.yaml:197
+#: bibed/data/bibed.yaml:222
+msgid "Edition"
+msgstr "Édition"
+
+#: bibed/data/bibed.yaml:223
 msgid "Editor(s)"
-msgstr "Éditeurice(s)"
+msgstr "Rédacteurice(s) en chef"
 
-#: bibed/data/bibed.yaml:198
+#: bibed/data/bibed.yaml:224
 msgid "Editor(s) (type A)"
-msgstr "Éditeurice(s) (type A)"
+msgstr "Rédacteurice(s) en chef (type A)"
 
-#: bibed/data/bibed.yaml:199
+#: bibed/data/bibed.yaml:225
 msgid "Editor(s) (type B)"
-msgstr "Éditeurice(s) (type B)"
+msgstr "Rédacteurice(s) en chef (type B)"
 
-#: bibed/data/bibed.yaml:200
+#: bibed/data/bibed.yaml:226
 msgid "Editor(s) (type C)"
-msgstr "Éditeurice(s) (type C)"
+msgstr "Rédacteurice(s) en chef (type C)"
 
-#: bibed/data/bibed.yaml:201
+#: bibed/data/bibed.yaml:227
 msgid "EID"
 msgstr "Identifiant électronique"
 
-#: bibed/data/bibed.yaml:202
+#: bibed/data/bibed.yaml:228
 msgid "Entries set"
 msgstr "Ensemble d'éléments"
 
-#: bibed/data/bibed.yaml:203
+#: bibed/data/bibed.yaml:229
 msgid "E-Print"
 msgstr "identifiant e-Print"
 
-#: bibed/data/bibed.yaml:204
+#: bibed/data/bibed.yaml:230
 msgid "E-Print class"
 msgstr "Classe e-Print"
 
-#: bibed/data/bibed.yaml:205
+#: bibed/data/bibed.yaml:231
 msgid "E-Print type"
 msgstr "Type e-Print"
 
-#: bibed/data/bibed.yaml:206
+#: bibed/data/bibed.yaml:232
 msgid "File"
 msgstr "Fichier"
 
-#: bibed/data/bibed.yaml:207
+#: bibed/data/bibed.yaml:233
+msgid "Foreword"
+msgstr "Préface"
+
+#: bibed/data/bibed.yaml:234
 msgid "How published?"
 msgstr "Publié comment ?"
 
-#: bibed/data/bibed.yaml:208
+#: bibed/data/bibed.yaml:235
+msgid "Introduction"
+msgstr "Introduction"
+
+#: bibed/data/bibed.yaml:236
 msgid "ISBN"
 msgstr "I.S.B.N"
 
-#: bibed/data/bibed.yaml:209
+#: bibed/data/bibed.yaml:237
 msgid "ISSN"
 msgstr "I.S.S.N"
 
-#: bibed/data/bibed.yaml:210
+#: bibed/data/bibed.yaml:238
 msgid "Issue"
 msgstr "Parution"
 
-#: bibed/data/bibed.yaml:211
+#: bibed/data/bibed.yaml:239
 msgid "Issue sub-title"
 msgstr "Sous-titre de parution"
 
-#: bibed/data/bibed.yaml:212
+#: bibed/data/bibed.yaml:240
 msgid "Issue title"
 msgstr "Titre de parution"
 
-#: bibed/data/bibed.yaml:213
+#: bibed/data/bibed.yaml:241
 msgid "Journal sub-title"
 msgstr "Sous-titre du journal"
 
-#: bibed/data/bibed.yaml:214
+#: bibed/data/bibed.yaml:242
 msgid "Journal title"
 msgstr "Titre du journal"
 
-#: bibed/data/bibed.yaml:215
+#: bibed/data/bibed.yaml:243
 msgid "Entry key"
 msgstr "Clef"
 
-#: bibed/data/bibed.yaml:216
+#: bibed/data/bibed.yaml:244
 msgid "Keywords"
 msgstr "Mots-clefs"
 
-#: bibed/data/bibed.yaml:217
+#: bibed/data/bibed.yaml:245
 msgid "Language"
 msgstr "Langue"
 
-#: bibed/data/bibed.yaml:218
+#: bibed/data/bibed.yaml:246
 msgid "Location"
 msgstr "Localisation"
 
-#: bibed/data/bibed.yaml:219
+#: bibed/data/bibed.yaml:247
+msgid "Main subtitle"
+msgstr "Sous-titre principal"
+
+#: bibed/data/bibed.yaml:248
+msgid "Main title add-on"
+msgstr "Ajout au titre principal"
+
+#: bibed/data/bibed.yaml:249
+msgid "Main title"
+msgstr "Titre principal"
+
+#: bibed/data/bibed.yaml:250
 msgid "Month"
 msgstr "Mois"
 
-#: bibed/data/bibed.yaml:220
+#: bibed/data/bibed.yaml:251
 msgid "Note(s)"
 msgstr "Note(s)"
 
-#: bibed/data/bibed.yaml:221
+#: bibed/data/bibed.yaml:252
 msgid "Number"
 msgstr "Numéro"
 
-#: bibed/data/bibed.yaml:222
+#: bibed/data/bibed.yaml:253
 msgid "Organization"
 msgstr "Organisme"
 
-#: bibed/data/bibed.yaml:223
+#: bibed/data/bibed.yaml:254
 msgid "Origin language"
 msgstr "Langue d'origine"
 
-#: bibed/data/bibed.yaml:224
+#: bibed/data/bibed.yaml:255
 msgid "Page(s)"
 msgstr "Page(s)"
 
-#: bibed/data/bibed.yaml:225
+#: bibed/data/bibed.yaml:256
 msgid "Total page count"
 msgstr "Nombre total de pages"
 
-#: bibed/data/bibed.yaml:226
+#: bibed/data/bibed.yaml:257
+msgid "Part"
+msgstr "Partie"
+
+#: bibed/data/bibed.yaml:258
+msgid "Publisher"
+msgstr "Éditeurice(s)"
+
+#: bibed/data/bibed.yaml:259
 msgid "Publish state"
 msgstr "État de publication"
 
-#: bibed/data/bibed.yaml:227
+#: bibed/data/bibed.yaml:260
 msgid "Series"
 msgstr "Collection"
 
-#: bibed/data/bibed.yaml:228
+#: bibed/data/bibed.yaml:261
 msgid "Subtitle"
 msgstr "Sous-titre"
 
-#: bibed/data/bibed.yaml:229 bibed/gui/treemixins.py:112
+#: bibed/data/bibed.yaml:262 bibed/gui/treemixins.py:112
 msgid "Title"
 msgstr "Titre"
 
-#: bibed/data/bibed.yaml:230
+#: bibed/data/bibed.yaml:263
 msgid "Title add-on"
 msgstr "Ajout au titre"
 
-#: bibed/data/bibed.yaml:231
+#: bibed/data/bibed.yaml:264
 msgid "Translator(s)"
 msgstr "Traducteurice(s)"
 
-#: bibed/data/bibed.yaml:232
+#: bibed/data/bibed.yaml:265
 msgid "Entry subtype"
 msgstr "Sous-type d'entrée"
 
-#: bibed/data/bibed.yaml:233
+#: bibed/data/bibed.yaml:266
 msgid "URL"
 msgstr "URL"
 
-#: bibed/data/bibed.yaml:234
+#: bibed/data/bibed.yaml:267
 msgid "URL date"
 msgstr "Date de visite de l'URL"
 
-#: bibed/data/bibed.yaml:235
+#: bibed/data/bibed.yaml:268
 msgid "Version"
 msgstr "Version"
 
-#: bibed/data/bibed.yaml:236
+#: bibed/data/bibed.yaml:269
 msgid "Volume"
 msgstr "Volume"
 
-#: bibed/data/bibed.yaml:237 bibed/gui/treemixins.py:123
+#: bibed/data/bibed.yaml:270
+msgid "Volumes"
+msgstr "Volumes"
+
+#: bibed/data/bibed.yaml:271 bibed/gui/treemixins.py:123
 msgid "Year"
 msgstr "Année"
 
-#: bibed/data/bibed.yaml:248
+#: bibed/data/bibed.yaml:282
 msgid ""
 "An article in a journal, magazine, newspaper, or other periodical which forms a "
 "self-contained unit with its own title. The title of the periodical is given in "
@@ -495,11 +562,11 @@ msgid ""
 "\"monospace\">translator</span> and related fields refer to the article."
 msgstr ""
 
-#: bibed/data/bibed.yaml:249
+#: bibed/data/bibed.yaml:283
 msgid "Works of the visual arts such as paintings, sculpture, and installations."
 msgstr "Travaux d'arts visuels comme des toiles, des sculptures, des installation."
 
-#: bibed/data/bibed.yaml:250
+#: bibed/data/bibed.yaml:284
 msgid ""
 "Audio recordings, typically on audio cd, dvd, audio cassette, or similar media. "
 "See also <span weight=\"bold\" face=\"monospace\">@music</span>."
@@ -508,7 +575,7 @@ msgstr ""
 "media similaire. Voyez aussi le type <span weight=\"bold\" face=\"monospace"
 "\">@music</span>."
 
-#: bibed/data/bibed.yaml:251
+#: bibed/data/bibed.yaml:285
 msgid ""
 "This special entry type is not meant to be used in the <span face=\"monospace"
 "\">bib</span> file like other types. It is provided for third-party packages "
@@ -522,7 +589,7 @@ msgid ""
 "which render endnotes as bibliography entries."
 msgstr ""
 
-#: bibed/data/bibed.yaml:252
+#: bibed/data/bibed.yaml:286
 msgid ""
 "A single-volume book with one or more authors where the authors share credit for "
 "the work as a whole. This entry type also covers the function of the <span "
@@ -530,7 +597,7 @@ msgid ""
 "\"monospace\">BibTeX</span>."
 msgstr ""
 
-#: bibed/data/bibed.yaml:253
+#: bibed/data/bibed.yaml:287
 msgid ""
 "A book-like work without a formal publisher or sponsoring institution. Use the "
 "field <span face=\"monospace\">howpublished</span> to supply publishing "
@@ -538,14 +605,17 @@ msgid ""
 "\">type</span> may be useful as well."
 msgstr ""
 
-#: bibed/data/bibed.yaml:254
+#: bibed/data/bibed.yaml:288
 msgid ""
 "A single-volume collection with multiple, self-contained contributions by "
 "distinct authors which have their own title. The work as a whole has no overall "
 "author but it will usually have an editor."
 msgstr ""
+"Une collection en un seul volume, contenant des contributions d'auteurices "
+"distinctes, avec leurs propres titres. L'œuvre en tant que tel n'a pas "
+"d'auteurice générale, mais elle aura dans la plupart des cas une éditeurice."
 
-#: bibed/data/bibed.yaml:255
+#: bibed/data/bibed.yaml:289
 msgid ""
 "Commentaries which have a status different from regular books, such as legal "
 "commentaries."
@@ -553,21 +623,24 @@ msgstr ""
 "Commentaires qui ont un statut différent des livres standard, comme des "
 "commentaires légaux."
 
-#: bibed/data/bibed.yaml:256
+#: bibed/data/bibed.yaml:290
 msgid ""
 "A legacy alias for <span weight=\"bold\" face=\"monospace\">@inproceedings</"
 "span>."
 msgstr ""
+"Un alias rétro-compatible du type <span weight=\"bold\" face=\"monospace"
+"\">@élément de colloque</span>."
 
-#: bibed/data/bibed.yaml:257
+#: bibed/data/bibed.yaml:291
 msgid "An alias for <span weight=\"bold\" face=\"monospace\">@online</span>."
 msgstr ""
+"Un alias pour le type <span weight=\"bold\" face=\"monospace\">@en ligne</span>."
 
-#: bibed/data/bibed.yaml:258
+#: bibed/data/bibed.yaml:292
 msgid "Images, pictures, photographs, and similar media."
 msgstr "Images, dessins, photographies et media similaires."
 
-#: bibed/data/bibed.yaml:259
+#: bibed/data/bibed.yaml:293
 msgid ""
 "Use the <span weight=\"bold\" face=\"monospace\">@inbook</span> entry type for a "
 "self-contained part of a book with its own title only. It relates to <span "
@@ -579,7 +652,7 @@ msgid ""
 "is controversial because a chapter is not a bibliographic entity."
 msgstr ""
 
-#: bibed/data/bibed.yaml:260
+#: bibed/data/bibed.yaml:294
 msgid ""
 "A contribution to a collection which forms a self-contained unit with a distinct "
 "author and title. The <span face=\"monospace\">author</span> refers to the <span "
@@ -587,27 +660,32 @@ msgid ""
 "the <span face=\"monospace\">booktitle</span>, i. e., the title of the "
 "collection."
 msgstr ""
+"Une contribution à une collection qui forme une unité auto-contenue, avec un "
+"titre et une auteurice distincts. Le champ <span face=\"monospace"
+"\">auteurice(s)</span> fait référence au champ <span face=\"monospace\">titre</"
+"span>, le champ <span face=\"monospace\">éditeurice(s)</span> au champ <span "
+"face=\"monospace\">titre de livre</span>, c'est à dire le titre de la collection."
 
-#: bibed/data/bibed.yaml:261
+#: bibed/data/bibed.yaml:295
 msgid "Court decisions, court recordings, and similar things."
 msgstr ""
 "Décisions de justice, enregistrements judiciaires and choses du même accabit."
 
-#: bibed/data/bibed.yaml:262
+#: bibed/data/bibed.yaml:296
 msgid "Legal documents such as treaties."
 msgstr "Documents légaux comme les traités ou les constitutions."
 
-#: bibed/data/bibed.yaml:263
+#: bibed/data/bibed.yaml:297
 msgid "Laws, bills, legislative proposals, and similar things."
 msgstr ""
 "Lois, projets de loi, propositions législatives et autres choses du même genre."
 
-#: bibed/data/bibed.yaml:264
+#: bibed/data/bibed.yaml:298
 msgid "Personal correspondence such as letters, emails, memoranda, etc."
 msgstr ""
 "Correspondance personnelle telle que lettres, courriels, notes de service, etc."
 
-#: bibed/data/bibed.yaml:265
+#: bibed/data/bibed.yaml:299
 msgid ""
 "Technical or other documentation, not necessarily in printed form. The <span "
 "face=\"monospace\">author</span> or <span face=\"monospace\">editor</span> is "
@@ -617,7 +695,7 @@ msgstr ""
 "L'<span face=\"monospace\">auteur</span> ou l'<span face=\"monospace\">éditeur</"
 "span> est omissible selon les termes de @@@import{2.3.2}."
 
-#: bibed/data/bibed.yaml:266
+#: bibed/data/bibed.yaml:300
 msgid ""
 "A fallback type for entries which do not fit into any other category. Use the "
 "field <span face=\"monospace\">howpublished</span> to supply publishing "
@@ -634,14 +712,14 @@ msgstr ""
 "\">éditeurice(s)</span> et <span face=\"monospace\">année</span> sont omissibles "
 "selon les termes de @@@cite{defaults.fields.doc.missing_and_omissible_data}."
 
-#: bibed/data/bibed.yaml:267
+#: bibed/data/bibed.yaml:301
 msgid ""
 "Motion pictures. See also <span weight=\"bold\" face=\"monospace\">@video</span>."
 msgstr ""
 "Œuvre cinématographiques telles que des films. Voyez aussi le type <span weight="
 "\"bold\" face=\"monospace\">@video</span>."
 
-#: bibed/data/bibed.yaml:268
+#: bibed/data/bibed.yaml:302
 msgid ""
 "Musical recordings. This is a more specific variant of <span weight=\"bold\" "
 "face=\"monospace\">@audio</span>."
@@ -649,7 +727,7 @@ msgstr ""
 "Enregistrements musicaux, chansons. C'est une variante plus spéficique du type "
 "<span weight=\"bold\" face=\"monospace\">@audio</span>."
 
-#: bibed/data/bibed.yaml:269
+#: bibed/data/bibed.yaml:303
 msgid ""
 "A multi-volume <span weight=\"bold\" face=\"monospace\">@book</span>. For "
 "backwards compatibility, multi-volume books are also supported by the entry type "
@@ -658,7 +736,7 @@ msgid ""
 "\">@mvbook</span>."
 msgstr ""
 
-#: bibed/data/bibed.yaml:270
+#: bibed/data/bibed.yaml:304
 msgid ""
 "A multi-volume <span weight=\"bold\" face=\"monospace\">@collection</span>. For "
 "backwards compatibility, multi-volume collections are also supported by the "
@@ -667,7 +745,7 @@ msgid ""
 "face=\"monospace\">@mvcollection</span>."
 msgstr ""
 
-#: bibed/data/bibed.yaml:271
+#: bibed/data/bibed.yaml:305
 msgid ""
 "An online resource. <span face=\"monospace\">author</span>, <span face="
 "\"monospace\">editor</span>, and <span face=\"monospace\">year</span> are "
@@ -690,7 +768,7 @@ msgstr ""
 "listé dans la bibliographie de manière spécifique et détaillée, alors qu'une "
 "ressource en ligne sera présentée de manière plus générique."
 
-#: bibed/data/bibed.yaml:272
+#: bibed/data/bibed.yaml:306
 msgid ""
 "A patent or patent request. The number or record token is given in the number "
 "field. Use the <span face=\"monospace\">type</span> field to specify the type "
@@ -700,14 +778,17 @@ msgid ""
 "treated as a key list with this entry type, see @@@import{2.2.1} for details."
 msgstr ""
 
-#: bibed/data/bibed.yaml:273
+#: bibed/data/bibed.yaml:307
 msgid ""
 "Musical and theatrical performances as well as other works of the performing "
 "arts. This type refers to the event as opposed to a recording, a score, or a "
 "printed play."
 msgstr ""
+"Performances musicales et théâtrales, et aussi toutes œuvres d'arts "
+"performatifs. Ce type se réfère à des évènements, par opposition aux "
+"enregistrements, aux partititions et aux pièces imprimées."
 
-#: bibed/data/bibed.yaml:274
+#: bibed/data/bibed.yaml:308
 msgid ""
 "An complete issue of a periodical, such as a special issue of a journal. The "
 "title of the periodical is given in the <span face=\"monospace\">title</span> "
@@ -717,15 +798,19 @@ msgid ""
 "fields.doc.missing_and_omissible_data}."
 msgstr ""
 
-#: bibed/data/bibed.yaml:275
+#: bibed/data/bibed.yaml:309
 msgid ""
 "A technical report, research report, or white paper published by a university or "
 "some other institution. Use the <span face=\"monospace\">type</span> field to "
 "specify the type of report. The sponsoring institution goes in the <span face="
 "\"monospace\">institution</span> field."
 msgstr ""
+"Un rapport technique, rapport de recherches, ou livre blanc publié par une "
+"université ou une autre institution. Utilisez le champ <span face=\"monospace"
+"\">type</span> pour spécifier le type de rapport. L'institution sponsor sera "
+"nommée dans le champ <span face=\"monospace\">institution</span>."
 
-#: bibed/data/bibed.yaml:276
+#: bibed/data/bibed.yaml:310
 msgid ""
 "Reviews of some other work. This is a more specific variant of the <span weight="
 "\"bold\" face=\"monospace\">@article</span> type. The standard styles will treat "
@@ -733,17 +818,20 @@ msgid ""
 "\">@article</span>."
 msgstr ""
 
-#: bibed/data/bibed.yaml:277
+#: bibed/data/bibed.yaml:311
 msgid "Computer software."
 msgstr "Programmes informatiques."
 
-#: bibed/data/bibed.yaml:278
+#: bibed/data/bibed.yaml:312
 msgid ""
 "National and international standards issued by a standards body such as the "
 "International Organization for Standardization."
 msgstr ""
+"Standards nationaux et internationaux publiés par des institutions comme l'ISO "
+"(<i>International Standards Organization</i>), l'Organisation Internationale des "
+"Standards."
 
-#: bibed/data/bibed.yaml:279
+#: bibed/data/bibed.yaml:313
 msgid ""
 "Supplemental material in a <span weight=\"bold\" face=\"monospace\">@book</"
 "span>. This type is closely related to the <span weight=\"bold\" face=\"monospace"
@@ -757,7 +845,7 @@ msgid ""
 "alias for <span weight=\"bold\" face=\"monospace\">@inbook</span>."
 msgstr ""
 
-#: bibed/data/bibed.yaml:280
+#: bibed/data/bibed.yaml:314
 msgid ""
 "Supplemental material in a <span weight=\"bold\" face=\"monospace\">@collection</"
 "span>. This type is similar to <span weight=\"bold\" face=\"monospace"
@@ -766,7 +854,7 @@ msgid ""
 "as an alias for <span weight=\"bold\" face=\"monospace\">@incollection</span>."
 msgstr ""
 
-#: bibed/data/bibed.yaml:281
+#: bibed/data/bibed.yaml:315
 msgid ""
 "Supplemental material in a <span weight=\"bold\" face=\"monospace\">@periodical</"
 "span>. This type is similar to @suppbook but related to the <span weight=\"bold"
@@ -781,14 +869,17 @@ msgid ""
 "\">@article</span>."
 msgstr ""
 
-#: bibed/data/bibed.yaml:282
+#: bibed/data/bibed.yaml:316
 msgid ""
 "A thesis written for an educational institution to satisfy the requirements for "
 "a degree. Use the <span face=\"monospace\">type</span> field to specify the type "
 "of thesis."
 msgstr ""
+"Une thèse écrite pour une institution éducative afin d'obtenir un diplôme. "
+"Utilisez le champ <span face=\"monospace\">type</span> pour spécifier le type de "
+"thèse."
 
-#: bibed/data/bibed.yaml:283
+#: bibed/data/bibed.yaml:317
 msgid ""
 "A work with an author and a title which has not been formally published, such as "
 "a manuscript or the script of a talk. Use the fields <span face=\"monospace"
@@ -796,7 +887,7 @@ msgid ""
 "additional information in free format, if applicable."
 msgstr ""
 
-#: bibed/data/bibed.yaml:284
+#: bibed/data/bibed.yaml:318
 msgid ""
 "Audiovisual recordings, typically on dvd, vhs cassette, or similar media. See "
 "also <span weight=\"bold\" face=\"monospace\">@movie</span>."
@@ -805,191 +896,191 @@ msgstr ""
 "similaires. Voyez aussi le type <span weight=\"bold\" face=\"monospace\">@movie</"
 "span>."
 
-#: bibed/data/bibed.yaml:286
+#: bibed/data/bibed.yaml:320
 msgid "_Article"
 msgstr "_Article"
 
-#: bibed/data/bibed.yaml:287
+#: bibed/data/bibed.yaml:321
 msgid "Artwork"
-msgstr "Œuvre d'art"
+msgstr "Œuvre d'a_rt"
 
-#: bibed/data/bibed.yaml:288
+#: bibed/data/bibed.yaml:322
 msgid "Au_dio"
-msgstr "Enregistrement au_dio"
+msgstr "Œuvre a_udiophonique"
 
-#: bibed/data/bibed.yaml:289
+#: bibed/data/bibed.yaml:323
 msgid "Bibliographic Note"
 msgstr "Note bibliographique"
 
-#: bibed/data/bibed.yaml:290
+#: bibed/data/bibed.yaml:324
 msgid "_Book"
 msgstr "_Livre"
 
-#: bibed/data/bibed.yaml:291
+#: bibed/data/bibed.yaml:325
 msgid "Boo_k in book"
 msgstr "Livre dans un livre"
 
-#: bibed/data/bibed.yaml:292
+#: bibed/data/bibed.yaml:326
 msgid "Book_let"
-msgstr "B_rochure"
+msgstr "_Brochure"
 
-#: bibed/data/bibed.yaml:293
+#: bibed/data/bibed.yaml:327
 msgid "_Collection"
 msgstr "_Collection"
 
-#: bibed/data/bibed.yaml:294
+#: bibed/data/bibed.yaml:328
 msgid "Commentary"
 msgstr "Commentaire"
 
-#: bibed/data/bibed.yaml:295
+#: bibed/data/bibed.yaml:329
 msgid "Co_nference"
 msgstr "Co_nférence"
 
-#: bibed/data/bibed.yaml:296
+#: bibed/data/bibed.yaml:330
 msgid "Ima_ge"
-msgstr "Ima_ge"
+msgstr "I_mage"
 
-#: bibed/data/bibed.yaml:297
-msgid "In book (C_hapter, part…)"
+#: bibed/data/bibed.yaml:331
+msgid "In book"
 msgstr "Élément de livre"
 
-#: bibed/data/bibed.yaml:298
+#: bibed/data/bibed.yaml:332
 msgid "In collection"
 msgstr "Élément de collection"
 
-#: bibed/data/bibed.yaml:299
-msgid "In proceedings"
+#: bibed/data/bibed.yaml:333
+msgid "In proceedi_ngs"
 msgstr "Co_nférence"
 
-#: bibed/data/bibed.yaml:300
+#: bibed/data/bibed.yaml:334
 msgid "In reference"
 msgstr "Élément d'un ouvrage de référence"
 
-#: bibed/data/bibed.yaml:301
+#: bibed/data/bibed.yaml:335
 msgid "_Jurisdiction"
 msgstr "_Jurisprudence"
 
-#: bibed/data/bibed.yaml:302
+#: bibed/data/bibed.yaml:336
 msgid "Legal"
 msgstr "Traité"
 
-#: bibed/data/bibed.yaml:303
+#: bibed/data/bibed.yaml:337
 msgid "Le_gislation"
 msgstr "Lé_gislation, loi"
 
-#: bibed/data/bibed.yaml:304
+#: bibed/data/bibed.yaml:338
 msgid "Letter"
 msgstr "Lettre"
 
-#: bibed/data/bibed.yaml:305
+#: bibed/data/bibed.yaml:339
 msgid "Manual"
 msgstr "Manuel"
 
-#: bibed/data/bibed.yaml:306
+#: bibed/data/bibed.yaml:340
 msgid "Masters Thes_is"
 msgstr "Thèse de Master"
 
-#: bibed/data/bibed.yaml:307
-msgid "_Misc"
+#: bibed/data/bibed.yaml:341
+msgid "_Miscellaneous"
 msgstr "_Divers"
 
-#: bibed/data/bibed.yaml:308
+#: bibed/data/bibed.yaml:342
 msgid "Mov_ie"
-msgstr "F_ilm (œuvre cinématographique)"
+msgstr "Œuvre c_inématographique"
 
-#: bibed/data/bibed.yaml:309
+#: bibed/data/bibed.yaml:343
 msgid "M_usic"
-msgstr "Chanson"
+msgstr "Mu_sique"
 
-#: bibed/data/bibed.yaml:310
+#: bibed/data/bibed.yaml:344
 msgid "Multi-volume book"
 msgstr "Livre multi-volumes"
 
-#: bibed/data/bibed.yaml:311
+#: bibed/data/bibed.yaml:345
 msgid "Multi-volume collection"
 msgstr "Collection multi-volumes"
 
-#: bibed/data/bibed.yaml:312
+#: bibed/data/bibed.yaml:346
 msgid "Multi-volume proceedings"
 msgstr "Série de colloques"
 
-#: bibed/data/bibed.yaml:313
+#: bibed/data/bibed.yaml:347
 msgid "Multi-volume reference"
 msgstr "Ouvrage de référence multi-volumes"
 
-#: bibed/data/bibed.yaml:314
+#: bibed/data/bibed.yaml:348
 msgid "_Online"
-msgstr "Site en ligne"
+msgstr "Site en li_gne"
 
-#: bibed/data/bibed.yaml:315
+#: bibed/data/bibed.yaml:349
 msgid "Patent"
 msgstr "Brevet"
 
-#: bibed/data/bibed.yaml:316
+#: bibed/data/bibed.yaml:350
 msgid "Performance"
 msgstr "Représentation, spectacle"
 
-#: bibed/data/bibed.yaml:317
+#: bibed/data/bibed.yaml:351
 msgid "_Periodical"
 msgstr "_Périodique"
 
-#: bibed/data/bibed.yaml:318
+#: bibed/data/bibed.yaml:352
 msgid "Ph. _D. Thesis"
-msgstr "Thèse de _Doctorat"
+msgstr "Thèse de Doctorat"
 
-#: bibed/data/bibed.yaml:319
+#: bibed/data/bibed.yaml:353
 msgid "Proceedings"
 msgstr "Colloque"
 
-#: bibed/data/bibed.yaml:320
+#: bibed/data/bibed.yaml:354
 msgid "Re_ference"
 msgstr "Ouvrage de ré_férence"
 
-#: bibed/data/bibed.yaml:321
+#: bibed/data/bibed.yaml:355
 msgid "_Report"
 msgstr "_Rapport"
 
-#: bibed/data/bibed.yaml:322
+#: bibed/data/bibed.yaml:356
 msgid "Review"
 msgstr "Revue"
 
-#: bibed/data/bibed.yaml:323
+#: bibed/data/bibed.yaml:357
 msgid "Set of entries"
-msgstr "Ensemble d'entrées"
+msgstr "Ensemble d'éléments"
 
-#: bibed/data/bibed.yaml:324
+#: bibed/data/bibed.yaml:358
 msgid "Soft_ware"
 msgstr "Logiciel"
 
-#: bibed/data/bibed.yaml:325
+#: bibed/data/bibed.yaml:359
 msgid "Standard"
 msgstr "Standard"
 
-#: bibed/data/bibed.yaml:326
+#: bibed/data/bibed.yaml:360
 msgid "Supplement to book"
 msgstr "Supplément à un livre"
 
-#: bibed/data/bibed.yaml:327
+#: bibed/data/bibed.yaml:361
 msgid "Supplement to collection"
 msgstr "Supplément à une collection"
 
-#: bibed/data/bibed.yaml:328
+#: bibed/data/bibed.yaml:362
 msgid "Supplement to periodical"
 msgstr "Supplément à périodique"
 
-#: bibed/data/bibed.yaml:329
+#: bibed/data/bibed.yaml:363
 msgid "_Thesis"
 msgstr "_Thèse"
 
-#: bibed/data/bibed.yaml:330
+#: bibed/data/bibed.yaml:364
 msgid "Unpublished"
 msgstr "Non-publié"
 
-#: bibed/data/bibed.yaml:331
+#: bibed/data/bibed.yaml:365
 msgid "_Video"
 msgstr "_Vidéo"
 
-#: bibed/data/bibed.yaml:332
+#: bibed/data/bibed.yaml:366
 msgid "eXtended data"
 msgstr "Données étendues"
 
@@ -1013,27 +1104,39 @@ msgstr "En attente"
 msgid "Imported"
 msgstr "Importé"
 
-#: bibed/gui/entry.py:262
+#: bibed/gui/dndflowbox.py:121
+msgid "Drop here!"
+msgstr "Déposez ici !"
+
+#: bibed/gui/entry.py:115
+msgid "Create new {type}"
+msgstr "Nouvel élément de type {type}"
+
+#: bibed/gui/entry.py:122
+msgid "Edit {type} {key}"
+msgstr "Édition de l'élément {key} de type {type}"
+
+#: bibed/gui/entry.py:261
 msgid "Let empty for autogenerated"
 msgstr "Laissez vide pour une valeur auto-générée"
 
-#: bibed/gui/entry.py:375
+#: bibed/gui/entry.py:374
 msgid "Choose file to record entry into:"
 msgstr "Choisissez un fichier destination :"
 
-#: bibed/gui/entry.py:412 bibed/gui/entry.py:1034
+#: bibed/gui/entry.py:411 bibed/gui/entry.py:1033
 msgid "Set"
 msgstr "Choisir"
 
-#: bibed/gui/entry.py:469
+#: bibed/gui/entry.py:468
 msgid "Save"
 msgstr "Sauvegarder"
 
-#: bibed/gui/entry.py:485
+#: bibed/gui/entry.py:484
 msgid "Set or change BIB storage file"
 msgstr "Choisir ou changer la destination"
 
-#: bibed/gui/entry.py:521
+#: bibed/gui/entry.py:520
 msgid ""
 "<span foreground=\"grey\">Entry is automatically saved; just hit <span face="
 "\"monospace\">ESC</span> or close the window when you are done.</span>"
@@ -1042,7 +1145,7 @@ msgstr ""
 "simplement sur <span face=\"monospace\">Échap</span> ou fermez la fenêtre quand "
 "vous avez terminé.</span>"
 
-#: bibed/gui/entry.py:543
+#: bibed/gui/entry.py:542
 msgid ""
 "Type new entry key.\n"
 "Use button to generate\n"
@@ -1052,35 +1155,35 @@ msgstr ""
 "Utilisez le bouton ci-contre\n"
 "pour en générer une à partir des données."
 
-#: bibed/gui/entry.py:575
+#: bibed/gui/entry.py:574
 msgid "Compute a key from already filled entry fields."
 msgstr "Générer une clef à partir des champs déjà remplis."
 
-#: bibed/gui/entry.py:604
+#: bibed/gui/entry.py:603
 msgid "Change Key"
 msgstr "Modifier la clef"
 
-#: bibed/gui/entry.py:821
+#: bibed/gui/entry.py:820
 msgid "Required fields"
 msgstr "Champs obligatoires"
 
-#: bibed/gui/entry.py:827
+#: bibed/gui/entry.py:826
 msgid "Optional fields"
 msgstr "Champs optionnels"
 
-#: bibed/gui/entry.py:830
+#: bibed/gui/entry.py:829
 msgid "Main fields"
 msgstr "Champs principaux"
 
-#: bibed/gui/entry.py:831
+#: bibed/gui/entry.py:830
 msgid "Secondary fields"
 msgstr "Champs secondaires"
 
-#: bibed/gui/entry.py:832
+#: bibed/gui/entry.py:831
 msgid "Other fields"
 msgstr "Autres champs"
 
-#: bibed/gui/entry.py:987
+#: bibed/gui/entry.py:986
 msgid ""
 "Key already present in\n"
 "<span face=\"monospace\">{filename}</span>.\n"
@@ -1090,9 +1193,13 @@ msgstr ""
 "<span face=\"monospace\">{filename}</span>.\n"
 "Choisissez-en une autre."
 
-#: bibed/gui/entry.py:1031
+#: bibed/gui/entry.py:1030
 msgid "Close"
 msgstr "Fermer"
+
+#: bibed/gui/entry_type.py:38
+msgid "Choose new entry type"
+msgstr "Choisissez le type du nouvel élément"
 
 #: bibed/gui/entry_type.py:49
 msgid ""
@@ -1111,6 +1218,22 @@ msgstr ""
 "<span foreground=\"grey\">Survolez les types marqués d'un <span face=\"monospace"
 "\">(?)</span> pour afficher leur description.</span>"
 
+#: bibed/gui/entry_type.py:213
+msgid "{app}'s main types"
+msgstr "Types principaux de {app}"
+
+#: bibed/gui/entry_type.py:214
+msgid "Other bibliographic types"
+msgstr "Autres types bibliographiques"
+
+#: bibed/gui/entry_type.py:217
+msgid "Your main types"
+msgstr "Vos types principaux"
+
+#: bibed/gui/entry_type.py:218
+msgid "Other types"
+msgstr "Autres types d'éléments"
+
 #: bibed/gui/helpers.py:316
 msgid "Working folder"
 msgstr "Dossier de travail"
@@ -1122,6 +1245,290 @@ msgstr "<i>Dossier de travail</i> {remaining}"
 #: bibed/gui/helpers.py:327
 msgid "<i>Home directory</i> {remaining}"
 msgstr "<i>Dossier personnel</i> {remaining}"
+
+#. NOTE: notice the ending space (required).
+#: bibed/gui/helpers.py:338
+msgid "<span color=\"red\" size=\"{file_size}\">missing file</span> "
+msgstr "<span color=\"red\" size=\"{file_size}\">fichier manquant</span> "
+
+#: bibed/gui/helpers.py:349
+msgid ""
+"<span size=\"{folder_size}\" color=\"grey\">{par_left}in {folder}{par_right}</"
+"span>"
+msgstr ""
+"<span size=\"{folder_size}\" color=\"grey\">{par_left}dans {folder}{par_right}</"
+"span>"
+
+#: bibed/gui/preferences.py:40
+msgid "{app} Preferences"
+msgstr "Paramètres de {app}"
+
+#: bibed/gui/preferences.py:62
+msgid ""
+"<span foreground=\"grey\">Preferences are automatically saved. Hit <span face="
+"\"monospace\">Esc</span> when you are done.</span>"
+msgstr ""
+"<span foreground=\"grey\">Les paramètres sont automatiquement sauvegardés. "
+"Appuyez sur <span face=\"monospace\">Échap</span> ou fermez la fenêtre quand "
+"vous avez terminé.</span>"
+
+#: bibed/gui/preferences.py:85
+msgid "Select working folder"
+msgstr "Choisissez votre répertoire de travail"
+
+#: bibed/gui/preferences.py:128
+msgid ""
+"<b>Working folder</b>\n"
+"<span foreground=\"grey\" size=\"small\">Where your BIB files are stored.</span>"
+msgstr ""
+"<b>Répertoire de travail</b>\n"
+"<span foreground=\"grey\" size=\"small\">Où sont stockées vos fichiers <span "
+"font=\"monospace\">.BIB</span>, et créés les nouveaux.</span>"
+
+#: bibed/gui/preferences.py:152
+msgid ""
+"<b>Automatic save</b>\n"
+"<span foreground=\"grey\" size=\"small\">Save BIB changes automatically while "
+"editing.</span>"
+msgstr ""
+"<b>Enregistrement automatique</b>\n"
+"<span foreground=\"grey\" size=\"small\">Sauvegarder automatiquement toutes les "
+"modifications ou changements pendant l'édition des éléments.</span>"
+
+#: bibed/gui/preferences.py:177
+msgid ""
+"<b>Ensure BibLaTeX requirements</b>\n"
+"<span foreground=\"grey\" size=\"small\">Before saving new entries, ensure that "
+"BibLaTeX conditions and requirements are met (for example one of <span face="
+"\"monospace\">date</span> or <span face=\"monospace\">year</span> fields are "
+"filled on articles).</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:208
+msgid ""
+"<b>Remember recent files</b>\n"
+"<span foreground=\"grey\" size=\"small\">Remember this much BIB files recently "
+"opened.\n"
+"Set to 0 to disable remembering, or -1 for infinite.</span>"
+msgstr ""
+"<b>Mémoriser les fichiers récemment ouverts</b>\n"
+"<span foreground=\"grey\" size=\"small\">Garder en mémoire autant de fichiers "
+"<span font=\"monospace\">.BIB</span> récemment ouverts.\n"
+"Positionnez à 0 pour désactiver la mémorisation, ou -1 pour une mémorisation "
+"sans limite.</span>"
+
+#: bibed/gui/preferences.py:234
+msgid ""
+"<b>Remember session</b>\n"
+"<span foreground=\"grey\" size=\"small\">When launching application, "
+"automatically re-open files which were previously opened before quitting last "
+"session, restore search query, filters and sorting.</span>"
+msgstr ""
+"<b>Mémoriser la session</b>\n"
+"<span foreground=\"grey\" size=\"small\">Au lancement de l'application, ré-"
+"ouvrir automatiquement les fichiers précédemment ouverts à la session "
+"précédente, et rétablir aussi le champ de recherche, les filtres et le tri de la "
+"vue principale.</span>"
+
+#: bibed/gui/preferences.py:261
+msgid ""
+"<b>Remember windows states</b>\n"
+"<span foreground=\"grey\" size=\"small\">Restore main window and dialogs sizes "
+"and positions across sessions.</span>"
+msgstr ""
+"<b>Mémoriser l'état des fenêtres</b>\n"
+"<span foreground=\"grey\" size=\"small\">Rétablir les tailles et positions de "
+"toutes les fenêtres d'une session à l'autre.</span>"
+
+#: bibed/gui/preferences.py:287
+msgid ""
+"<b>Report issues to developers</b>\n"
+"<span foreground=\"grey\" size=\"small\">Enabling this will automatically send "
+"errors, crashes and debugging data to developpers, anonymously. We use <span "
+"face=\"monospace\">sentry</span> at address <a href=\"{website}\">{website}</a>, "
+"on which you can create an account to help.\n"
+"\n"
+"Get in touch if you want to send errors to your own <span face=\"monospace"
+"\">sentry</span>.</span>"
+msgstr ""
+"<b>Remonter les problèmes aux développeurs</b>\n"
+"<span foreground=\"grey\" size=\"small\">Activer cette option enverra "
+"automatiquement des rapports  d'erreur, de plantage et toutes les informations "
+"de débogage aux développeurs, anonymement. Nous utilisons <span face=\"monospace"
+"\">sentry</span> à l'adresse <a href=\"{website}\">{website}</a>, sur lequel "
+"vous pouvez créer un compte pour contribuer si vous le souhaitez.\n"
+"\n"
+"Contactez-vous si vous souhaitez envoyer les rapports à votre propre instance "
+"<span face=\"monospace\">sentry</span>.</span>"
+
+#: bibed/gui/preferences.py:321
+msgid ""
+"<b>Display tooltips in main view</b>\n"
+"<span foreground=\"grey\" size=\"small\">Show bibliographic entries preview as "
+"you hover them with your mouse cursor. Use <span face=\"monospace\">Shift-"
+"Control-T</span> to toggle this setting while in the main view.</span>"
+msgstr ""
+"<b>Afficher les infobulles dans la vue principale</b>\n"
+"<span foreground=\"grey\" size=\"small\">Afficher des prévisualisations des "
+"entrées bibliographiques lorsque vous les survolez avec votre dispositif de "
+"pointage. Utilisez <span face=\"monospace\">Shift-Control-T</span> pour basculer "
+"l'état de cette option directement depuis la vue principale.</span>"
+
+#: bibed/gui/preferences.py:348
+msgid ""
+"<b>Use Bibed backgrounds</b>\n"
+"<span foreground=\"grey\" size=\"small\">Display light background in the main "
+"table view.\n"
+"Use <span face=\"monospace\">Shift-Control-R</span> to randomly cycle "
+"backgrounds.</span>"
+msgstr ""
+"<b>Utiliser les fonds d'écran Bibed</b>\n"
+"<span foreground=\"grey\" size=\"small\">Afficher des fonds d'écrans légers dans "
+"la vue principale de l'application.\n"
+"Utilisez le raccourci <span face=\"monospace\">Shift-Control-R</span> pour "
+"changer aléatoirement de fond d'écran depuis la vue principale de l'application."
+"</span>"
+
+#: bibed/gui/preferences.py:379
+msgid "General"
+msgstr "Général"
+
+#: bibed/gui/preferences.py:424
+msgid ""
+"<b>Single selection copy to clipboard</b>\n"
+"<span size=\"small\" color=\"grey\">When you select only one entry in the list.</"
+"span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:434
+msgid ""
+"<span size=\"small\"><span color=\"grey\">Type any other pattern to create your "
+"own, using <span color=\"lightgrey\"><tt>@@key@@</tt></span> anywhere inside.</"
+"span>\n"
+"<span color=\"red\">WARNING: </span><span color=\"grey\">any error in your "
+"pattern will make it replaced with application default, aka <span color="
+"\"lightgrey\"><tt>{default}</tt></span>.</span></span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:469
+msgid ""
+"<b>URLs open in browser</b>\n"
+"<span foreground=\"grey\" size=\"small\">Enabling this makes <span face="
+"\"monospace\">Control-U</span> and URL-icon click open the url directly in a new "
+"tab of your prefered web browser, while <span face=\"monospace\">Shift-Control-"
+"U</span> will copy the URL to clipboard. Disabling it makes the opposite.</span>"
+msgstr ""
+
+#: bibed/gui/preferences.py:503
+msgid "Accelerators"
+msgstr "Accelérateurs"
+
+#: bibed/gui/preferences.py:516
+msgid ""
+"<b>Add creation timestamp</b>\n"
+"<span foreground=\"grey\" size=\"small\">When adding a new bibliographic entry "
+"to database, stamp it with the date of today in the <span face=\"monospace"
+"\">timestamp</span> field.</span>"
+msgstr ""
+"<b>Adjoindre la date aux nouveaux éléments</b>\n"
+"<span foreground=\"grey\" size=\"small\">Estampiller toutes les nouvelles "
+"entrées créées avec la date du jour dans le champ <span face=\"monospace"
+"\">timbre à date</span> (<i>timestamp</i>).</span>"
+
+#: bibed/gui/preferences.py:540
+msgid ""
+"<b>Update timestamp on change</b>\n"
+"<span foreground=\"grey\" size=\"small\">When modifiying a bibliographic entry, "
+"update <span face=\"monospace\">timestamp</span>.</span>"
+msgstr ""
+"<b>Mettre à jour le timbre à date lors des modifications</b>\n"
+"<span foreground=\"grey\" size=\"small\">Remplacer la valeur du champ <span face="
+"\"monospace\">timbre à date</span> (<i>timestamp</i>) par la date du jour lors "
+"des modifications des éléments.</span>"
+
+#: bibed/gui/preferences.py:566
+msgid ""
+"<b>Add owner at creation</b>\n"
+"<span foreground=\"grey\" size=\"small\">When creating a bibliographic entry, "
+"automatically add an <span face=\"monospace\">owner</span> field. You have to "
+"specify a name in the field below, else nothing will be added.</span>"
+msgstr ""
+"<b>Adjoindre un nom de propriétaire à la création</b>\n"
+"<span foreground=\"grey\" size=\"small\">Automatiquement ajouter un champ <span "
+"face=\"monospace\">propriétaire</span> (<i>owner</i>) à toutes les nouvelles "
+"entrées. Vous devez spécifier le nom de ce propriétaire dans le champ ci-après, "
+"sinon rien ne sera ajouté.</span>"
+
+#: bibed/gui/preferences.py:594
+msgid ""
+"<b>Update owner on change</b>\n"
+"<span foreground=\"grey\" size=\"small\">When changing a bibliographic entry "
+"that was not created by you, overwrite the previous <span face=\"monospace"
+"\">owner</span> with you own value.</span>"
+msgstr ""
+"<b>Mettre à jour le propriétaire lors des modifications</b>\n"
+"<span foreground=\"grey\" size=\"small\">Remplacer la valeur du champ <span face="
+"\"monospace\">propriétaire</span> (<i>owner</i>) lors des modifications "
+"d'entrées qui n'ont pas été crées par vous.</span>"
+
+#: bibed/gui/preferences.py:626
+msgid ""
+"<b>Owner name</b>\n"
+"<span foreground=\"grey\" size=\"small\">Can be one or more words, including an "
+"email address.\n"
+"Valid characters include <span face=\"monospace\">[a-z]</span>, <span face="
+"\"monospace\">[0-9]</span> and “<span face=\"monospace\">-</span>”, “<span face="
+"\"monospace\">__</span>”, “<span face=\"monospace\">@</span>” and “<span face="
+"\"monospace\">:</span>”.</span>"
+msgstr ""
+"<b>Nom de propriétaire</b>\n"
+"<span foreground=\"grey\" size=\"small\">Ça peut être un ou plusieurs mots, "
+"incluant une adresse courriel.\n"
+"Les caractères valides sont <span face=\"monospace\">[a-z]</span>, <span face="
+"\"monospace\">[0-9]</span> ainsi que « <span face=\"monospace\">-</span> », "
+"« <span face=\"monospace\">__</span> », « <span face=\"monospace\">@</span> » et "
+"« <span face=\"monospace\">:</span> ».</span>"
+
+#: bibed/gui/preferences.py:669
+msgid "Creator / Editor"
+msgstr "Créateur / Éditeur"
+
+#. NOTE: spaces and non-breaking spaces are important.
+#: bibed/gui/preferences.py:710
+msgid "   Main types   "
+msgstr "   Types principaux   "
+
+#. NOTE: spaces and non-breaking spaces are important.
+#: bibed/gui/preferences.py:717
+msgid "   Other types   "
+msgstr "   Autres types   "
+
+#: bibed/gui/preferences.py:721
+msgid ""
+"<big>Main and other entry types</big>\n"
+"<span foreground=\"grey\">Drag and drop items from one side to another to have</"
+"span> main <span foreground=\"grey\">items displayed first in entry creator "
+"assistant, and</span> other <span foreground=\"grey\">accessible in a folded "
+"area of the assistant.\n"
+"\n"
+"Note: they will appear in the exact order you organize them into.</span>"
+msgstr ""
+"<big>Main and other entry types</big>\n"
+"<span foreground=\"grey\">Glissez-déposez d'un côté à l'autre pour avoir les "
+"éléments</span> principaux <span foreground=\"grey\"> affichés en premier dans "
+"l'assistant du créateur d'entrées bibliographiques, et les</span> autres <span "
+"foreground=\"grey\">accessibles dans une partie secondaire de l'assistant.\n"
+"\n"
+"Note : les types d'éléments bibliographiques apparaîtront dans l'ordre exact "
+"dans lequel vous les positionnez.</span>"
+
+#: bibed/gui/preferences.py:739
+msgid "Reset to defaults"
+msgstr "Rétablir les valeurs d'usine"
+
+#: bibed/gui/preferences.py:785
+msgid "Interface customization"
+msgstr "Personnalisation d'interface"
 
 #: bibed/gui/splash.py:75
 msgid "Loading…"
@@ -1216,59 +1623,59 @@ msgid_plural "Selected entries {key}."
 msgstr[0] "Élément {key} sélectionné."
 msgstr[1] "Éléments {key} sélectionnés."
 
-#: bibed/gui/window.py:172
+#: bibed/gui/window.py:171
 msgid "bibliography assistant"
 msgstr "assistant de bibliographie"
 
-#: bibed/gui/window.py:182
+#: bibed/gui/window.py:181
 msgid "Upcoming feature"
 msgstr "Fonctionnalité en développement"
 
-#: bibed/gui/window.py:211
+#: bibed/gui/window.py:210
 msgid "Ready. Waiting for action…"
 msgstr "Prêt. En attente d'action…"
 
-#: bibed/gui/window.py:231
+#: bibed/gui/window.py:230
 msgid "Create an empty BIB database"
 msgstr "Créer une base de données bibliographique vide"
 
-#: bibed/gui/window.py:243
+#: bibed/gui/window.py:242
 msgid "Open an existing BIB database"
 msgstr "Ouvrir une base de données bibliographique existante"
 
-#: bibed/gui/window.py:258
+#: bibed/gui/window.py:257
 msgid "Select databases to display in main view"
 msgstr "Sélectionnez les bases de données à afficher"
 
-#: bibed/gui/window.py:261
+#: bibed/gui/window.py:260
 msgid "Library"
 msgstr "Bibliothèque"
 
-#: bibed/gui/window.py:284
+#: bibed/gui/window.py:283
 msgid "Add a bibliography entry"
 msgstr "Ajouter une entrée bibliographique"
 
-#: bibed/gui/window.py:295
+#: bibed/gui/window.py:294
 msgid "Duplicate a bibliography entry into a new one"
 msgstr "Dupliquer une entrée bibliographique"
 
-#: bibed/gui/window.py:315
+#: bibed/gui/window.py:314
 msgid "Move selected entries to another database"
 msgstr "Déplacer les entrées sélectionnées dans une autre base de données"
 
-#: bibed/gui/window.py:326
+#: bibed/gui/window.py:325
 msgid "Trash or delete selected entries"
 msgstr "Supprimer ou mettre à la corbeille les entrées sélectionnées"
 
-#: bibed/gui/window.py:341
+#: bibed/gui/window.py:340
 msgid "Show application preferences"
 msgstr "Afficher les paramètres de l'application"
 
-#: bibed/gui/window.py:355
+#: bibed/gui/window.py:354
 msgid "Start searching in selected databases"
 msgstr "Chercher dans les bases de données sélectionnées"
 
-#: bibed/gui/window.py:370
+#: bibed/gui/window.py:369
 msgid ""
 "<big>Something will be here</big>\n"
 "\n"
@@ -1282,7 +1689,7 @@ msgstr ""
 "(Vous n'avez pas le choix, de toute façon :-D)\n"
 "<a href=\"{discuss_fr}\">Venez en discuter sur Telegram</a> si vous le souhaitez."
 
-#: bibed/gui/window.py:413
+#: bibed/gui/window.py:412
 msgid ""
 "<big>Welcome to Bibed!</big>\n"
 "\n"
@@ -1310,104 +1717,104 @@ msgstr ""
 "Olivier, Corinne\n"
 "et toustes les contributeurices"
 
-#: bibed/gui/window.py:470
+#: bibed/gui/window.py:469
 msgid "{count} file selected"
 msgid_plural "{count} files selected"
 msgstr[0] "{count} fichier sélectionné"
 msgstr[1] "{count} fichiers sélectionnés"
 
-#: bibed/gui/window.py:477
+#: bibed/gui/window.py:476
 msgid "{items} in {files}"
 msgstr "{items} dans {files}"
 
-#: bibed/gui/window.py:478
+#: bibed/gui/window.py:477
 msgid "{count} item"
 msgid_plural "{count} items"
 msgstr[0] "{count} élément"
 msgstr[1] "{count} éléments"
 
-#: bibed/gui/window.py:483
+#: bibed/gui/window.py:482
 msgid "{count} file"
 msgid_plural "{count} files"
 msgstr[0] "{count} fichier"
 msgstr[1] "{count} fichiers"
 
-#: bibed/gui/window.py:492
+#: bibed/gui/window.py:491
 msgid "{app} – no file selected"
 msgstr "{app} – aucun fichier sélectionné"
 
-#: bibed/gui/window.py:493
+#: bibed/gui/window.py:492
 msgid "select at least one file to display in your library"
 msgstr "sélectionnez au moins un fichier à afficher dans votre bibliothèque"
 
-#: bibed/gui/window.py:495
+#: bibed/gui/window.py:494
 msgid "{0} – Welcome!"
 msgstr "{0} – Bienvenue !"
 
-#: bibed/gui/window.py:732
+#: bibed/gui/window.py:731
 msgid "Reloaded all open databases at user request."
 msgstr ""
 "Toutes les bases de données ont été rechargées à la demande de l'utilisateur."
 
-#: bibed/gui/window.py:838
+#: bibed/gui/window.py:837
 msgid "Please create a new BIB file"
 msgstr "Merci de créer une nouvelle base de données BIB"
 
-#: bibed/gui/window.py:843
+#: bibed/gui/window.py:842
 msgid "Untitled bibliography.bib"
 msgstr "Bibliographie sans nom.bib"
 
-#: bibed/gui/window.py:862
+#: bibed/gui/window.py:861
 msgid "Please choose one or more BIB file"
 msgstr "Merci de choisir un ou plusieurs fichier(s) BIB"
 
-#: bibed/gui/window.py:974 bibed/gui/window.py:984
+#: bibed/gui/window.py:975 bibed/gui/window.py:985
 msgid "{entry} added to {database}."
 msgstr "{entry} ajouté dans {database}."
 
-#: bibed/gui/window.py:998
+#: bibed/gui/window.py:999
 msgid "{count} entry moved to {destination}{unchanged}."
 msgid_plural "{count} entries moved to {destination}{unchanged}."
 msgstr[0] "{count} élément déplacé dans {destination}{unchanged}."
 msgstr[1] "{count} éléments déplacés dans {destination}{unchanged}."
 
-#: bibed/gui/window.py:1005
+#: bibed/gui/window.py:1006
 msgid ", and {count} already there"
 msgstr ", et {count} déjà à destination"
 
-#: bibed/gui/window.py:1037
+#: bibed/gui/window.py:1038
 msgid "{count} entry {what}."
 msgid_plural "{count} entries {what}."
 msgstr[0] "{count} élément {what}"
 msgstr[1] "{count} éléments {what}"
 
-#: bibed/gui/window.py:1043
+#: bibed/gui/window.py:1044
 msgid "trashed"
 msgstr "mis à la corbeille"
 
-#: bibed/gui/window.py:1045
+#: bibed/gui/window.py:1046
 msgid "definitively deleted"
 msgstr "définitivement supprimé(s)"
 
-#: bibed/gui/window.py:1055
+#: bibed/gui/window.py:1056
 msgid "{count} previously trashed entry definitively deleted."
 msgid_plural "{count} previously trashed entries definitively deleted."
 msgstr[0] "{count} entrée de corbeille définitivement supprimée."
 msgstr[1] "{count} entrées de corbeille définitivement supprimées."
 
-#: bibed/gui/window.py:1086
+#: bibed/gui/window.py:1083
 msgid "Wipe {count} entry from trash?"
 msgid_plural "Wipe {count} entries from trash?"
 msgstr[0] "Supprimer {count} entrée de la corbeille ?"
 msgstr[1] "Supprimer {count} entrées de la corbeille ?"
 
-#: bibed/gui/window.py:1093
+#: bibed/gui/window.py:1090
 msgid "Delete {count} entry?"
 msgid_plural "Delete {count} entries?"
 msgstr[0] "Supprimer {count} entrée ?"
 msgstr[1] "Supprimer {count} entrées ?"
 
-#: bibed/gui/window.py:1107
+#: bibed/gui/window.py:1104
 msgid "This will permanently delete {entry} from your database."
 msgid_plural ""
 "This will permanently delete the following entries:\n"
@@ -1419,13 +1826,13 @@ msgstr[1] ""
 "{entries_list}\n"
 "seront définitivement effacées de votre base de données."
 
-#: bibed/gui/window.py:1115
+#: bibed/gui/window.py:1112
 msgid "{count} database"
 msgid_plural "{count} databases"
 msgstr[0] "{count} base de données"
 msgstr[1] "{count} bases de données"
 
-#: bibed/gui/window.py:1123
+#: bibed/gui/window.py:1120
 msgid ""
 "\n"
 "\n"
@@ -1435,11 +1842,11 @@ msgstr ""
 "\n"
 "Cette action ne peut pas être annulée. Êtes-vous sur·e ?"
 
-#: bibed/gui/window.py:1142
+#: bibed/gui/window.py:1139
 msgid "{entry} modified in {database}."
 msgstr "{entry} modifié dans {database}."
 
-#: bibed/gui/window.py:1180
+#: bibed/gui/window.py:1177
 msgid "Bib(La)Tex files"
 msgstr "Fichiers Bib(La)TeX"
 
@@ -1578,3 +1985,89 @@ msgstr "Fichiers Bib(La)TeX"
 
 #~ msgid "Reloaded all open files at user request."
 #~ msgstr "Tous les fichiers ont été rechargés à la demande de l'utilisateur."
+
+#~ msgid ""
+#~ "<b>Use Bibed backgrounds</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Display light background in the main "
+#~ "table view. Use <span face=\"monospace\">Shift-Control-R</span> to\n"
+#~ "randomly cycle backgrounds.</span>"
+#~ msgstr ""
+#~ "<b>Utiliser les fonds d'écran Bibed</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Afficher des fonds d'écrans légers "
+#~ "dans la vue principale de l'application. Utilisez le raccourci <span face="
+#~ "\"monospace\">Shift-Control-R</span> pour\n"
+#~ "changer aléatoirement de fond d'écran depuis la vue principale de "
+#~ "l'application.</span>"
+
+#~ msgid "In book (C_hapter, part…)"
+#~ msgstr "Élément de livre"
+
+#~ msgid "In proceedings"
+#~ msgstr "Co_nférence"
+
+#~ msgid ""
+#~ "<span foreground=\"grey\">Preferences are automatically saved; just hit <span "
+#~ "face=\"monospace\">ESC</span> when you are done.</span>"
+#~ msgstr ""
+#~ "<span foreground=\"grey\">Les paramètres sont automatiquement sauvegardés ; "
+#~ "Appuyez sur <span face=\"monospace\">Échap</span> ou fermez la fenêtre quand "
+#~ "vous avez terminé.</span>"
+
+#~ msgid ""
+#~ "<b>Remember session</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">When launching application, "
+#~ "automatically re-open files\n"
+#~ "which were previously opened before quitting last session,\n"
+#~ "restore search query, filters and sorting.</span>"
+#~ msgstr ""
+#~ "<b>Mémoriser la session</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Au lancement de l'application, ré-"
+#~ "ouvrir automatiquement les fichiers\n"
+#~ "précédemment ouverts à la session précédente,\n"
+#~ "et rétablir aussi le champ de recherche, les filtres et le tri de la vue "
+#~ "principale.</span>"
+
+#~ msgid ""
+#~ "<b>Remember windows states</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Restore main window and dialogs "
+#~ "sizes and positions\n"
+#~ "across sessions.</span>"
+#~ msgstr ""
+#~ "<b>Mémoriser l'état des fenêtres</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Rétablir les tailles et positions de "
+#~ "toutes les fenêtres\n"
+#~ "d'une session à l'autre.</span>"
+
+#~ msgid ""
+#~ "<b>Report issues to developers</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Enabling this will automatically "
+#~ "send errors, crashes and debugging data to developpers, anonymously.\n"
+#~ "We use <span face=\"monospace\">sentry</span> at address <a href="
+#~ "\"{website}\">{website}</a>, on which you can create an account to help.\n"
+#~ "Get in touch if you want to send errors to your own <span face=\"monospace"
+#~ "\">sentry</span>.</span>"
+#~ msgstr ""
+#~ "<b>Remonter les problèmes aux développeurs</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Activer cette option enverra "
+#~ "automatiquement des rapports  d'erreur, de plantage et toutes les "
+#~ "informations de débogage aux développeurs, anonymement.\n"
+#~ "Nous utilisons <span face=\"monospace\">sentry</span> à l'adresse <a href="
+#~ "\"{website}\">{website}</a>, sur lequel vous pouvez créer un compte pour "
+#~ "contribuer si vous le souhaitez.\n"
+#~ "Contactez-vous si vous souhaitez envoyer les rapports à votre propre instance "
+#~ "<span face=\"monospace\">sentry</span>.</span>"
+
+#~ msgid ""
+#~ "<b>Display tooltips in main view</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Show bibliographic entries preview "
+#~ "as you hover them withyour mouse cursor. Use <span face=\"monospace\">Shift-"
+#~ "Control-T</span> to toggle this setting while in the main view.</span>"
+#~ msgstr ""
+#~ "<b>Afficher les infobulles dans la vue principale</b>\n"
+#~ "<span foreground=\"grey\" size=\"small\">Afficher des prévisualisations des "
+#~ "entrées bibliographiques lorsque vous les survolez avec votre dispositif de "
+#~ "pointage. Utilisez <span face=\"monospace\">Shift-Control-T</span> pour "
+#~ "basculer l'état de cette option directement depuis la vue principale.</span>"
+
+#~ msgid "_Misc"
+#~ msgstr "_Divers"

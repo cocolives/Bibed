@@ -1,7 +1,7 @@
 [Icon Theme]
 Name=Bibed
 Comment=Additions to current theme
-Directories=16x16/types,16x16/entry,24x24/types,24x24/entry,32x32/types,32x32/entry,48x48/types,48x48/entry,48x48/images,64x64/types,64x64/images,96x96/types,96x96/images,128x128/types,256x256/types,256x256/images,512x512/types,512x512/images,16x16@2/types,16x16@2/entry,24x24@2/types,24x24@2/entry,32x32@2/types,32x32@2/entry,48x48@2/types,48x48@2/entry,48x48@2/images,64x64@2/types,128x128@2/types,128x128@2/images,256x256@2/types,scalable/types,scalable/images
+Directories=16x16/types,16x16/entry,16x16/images,24x24/types,24x24/entry,24x24/images,32x32/types,32x32/entry,32x32/images,48x48/types,48x48/entry,48x48/images,64x64/types,64x64/entry,64x64/images,96x96/types,96x96/entry,96x96/images,128x128/types,128x128/entry,128x128/images,256x256/types,256x256/entry,256x256/images,512x512/types,512x512/entry,512x512/images,16x16@2/types,16x16@2/entry,16x16@2/images,24x24@2/types,24x24@2/entry,24x24@2/images,32x32@2/types,32x32@2/entry,32x32@2/images,48x48@2/types,48x48@2/entry,48x48@2/images,64x64@2/types,64x64@2/entry,64x64@2/images,128x128@2/types,128x128@2/entry,128x128@2/images,256x256@2/types,256x256@2/entry,256x256@2/images,scalable/types,scalable/entry,scalable/images
 
 [16x16/types]
 Size=16
@@ -20,6 +20,17 @@ Context=Bibed
 Type=Threshold
 
 [16x16@2/entry]
+Size=16
+Scale=2
+Context=Bibed
+Type=Threshold
+
+[16x16/images]
+Size=16
+Context=Bibed
+Type=Threshold
+
+[16x16@2/images]
 Size=16
 Scale=2
 Context=Bibed
@@ -47,6 +58,17 @@ Scale=2
 Context=Bibed
 Type=Threshold
 
+[24x24/images]
+Size=24
+Context=Bibed
+Type=Threshold
+
+[24x24@2/images]
+Size=24
+Scale=2
+Context=Bibed
+Type=Threshold
+
 [32x32/types]
 Size=32
 Context=Bibed
@@ -64,6 +86,17 @@ Context=Bibed
 Type=Threshold
 
 [32x32@2/entry]
+Size=32
+Scale=2
+Context=Bibed
+Type=Threshold
+
+[32x32/images]
+Size=32
+Context=Bibed
+Type=Threshold
+
+[32x32@2/images]
 Size=32
 Scale=2
 Context=Bibed
@@ -113,6 +146,17 @@ Scale=2
 Context=Bibed
 Type=Threshold
 
+[64x64/entry]
+Size=64
+Context=Bibed
+Type=Threshold
+
+[64x64@2/entry]
+Size=64
+Scale=2
+Context=Bibed
+Type=Threshold
+
 [64x64/images]
 Size=64
 Context=Bibed
@@ -129,6 +173,11 @@ Size=96
 Context=Bibed
 Type=Threshold
 
+[96x96/entry]
+Size=96
+Context=Bibed
+Type=Threshold
+
 [96x96/images]
 Size=96
 Context=Bibed
@@ -140,6 +189,17 @@ Context=Bibed
 Type=Threshold
 
 [128x128@2/types]
+Size=128
+Scale=2
+Context=Bibed
+Type=Threshold
+
+[128x128/entry]
+Size=128
+Context=Bibed
+Type=Threshold
+
+[128x128@2/entry]
 Size=128
 Scale=2
 Context=Bibed
@@ -167,6 +227,17 @@ Scale=2
 Context=Bibed
 Type=Threshold
 
+[256x256/entry]
+Size=256
+Context=Bibed
+Type=Threshold
+
+[256x256@2/entry]
+Size=256
+Scale=2
+Context=Bibed
+Type=Threshold
+
 [256x256/images]
 Size=256
 Context=Bibed
@@ -183,12 +254,24 @@ Size=512
 Context=Bibed
 Type=Threshold
 
+[512x512/entry]
+Size=512
+Context=Bibed
+Type=Threshold
+
 [512x512/images]
 Size=512
 Context=Bibed
 Type=Threshold
 
 [scalable/types]
+MinSize=1
+Size=128
+MaxSize=512
+Context=Bibed
+Type=Scalable
+
+[scalable/entry]
 MinSize=1
 Size=128
 MaxSize=512

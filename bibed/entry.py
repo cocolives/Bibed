@@ -231,7 +231,8 @@ class BibedEntry:
         if name == 'key':
             return 'ID'
 
-        # NO !!! we have type for thesis, etc.
+        # Do not translate `type`.
+        # We have a `type` field for thesis, etc.
         # elif name == 'type':
         #     return 'ENTRYTYPE'
 
@@ -339,7 +340,10 @@ class BibedEntry:
         self.__internal_keywords = kw + [self.read_status] + [self.quality]
 
         # Flatten for bibtexparser
-        self.bib_dict['keywords'] = ','.join(self.__internal_keywords)
+        self.bib_dict['keywords'] = ','.join(
+            # If no read_status or quality, we need to “re-cleanup”
+            kw for kw in self.__internal_keywords if kw.strip() != ''
+        )
 
     # —————————————————————————————————————————————————————————————— properties
 
@@ -660,7 +664,8 @@ class BibedEntry:
         LOGGER.debug('{0}.update_fields({1})'.format(self, kwargs))
 
         for field_name, field_value in kwargs.items():
-            self[field_name] = field_value
+            # Use set_field() to automatically handle special cases.
+            self.set_field(field_name, field_value)
 
         self.set_timestamp_and_owner()
 
