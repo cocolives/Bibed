@@ -1202,7 +1202,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
 
         field_value = self.get_field_value(field_name, field)
 
-        error = check_method(field_name, field, field_value)
+        error = check_method(self.fields, field_name, field, field_value)
 
         if error:
             add_classes(field, ['error'])
@@ -1289,7 +1289,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
                 fixed_value = None
 
             else:
-                fixed_value = fix_method(field_name, field, field_value,
+                fixed_value = fix_method(self.fields,
+                                         field_name, field, field_value,
                                          entry=copy_entry, files=self.files)
 
             # Block “changed” signal and update changed_fields ouselves,

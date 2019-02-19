@@ -833,7 +833,9 @@ class EntryFieldCheckMixin:
         .. seealso:: :class:`~bibed.gui.BibedEntryDialog`.
     '''
 
-    def check_field_year(self, field_name, field, field_value):
+    # ——————————————————————————————————————————————————————————— Check methods
+
+    def check_field_year(self, all_fields, field_name, field, field_value):
 
         field_value = field_value.strip()
 
@@ -850,7 +852,7 @@ class EntryFieldCheckMixin:
                 'Invalid year, not understood: {exc}.'.format(exc=e)
             )
 
-    def check_field_key(self, field_name, field, field_value):
+    def check_field_key(self, all_fields, field_name, field, field_value):
 
         field_value = field_value.strip()
 
@@ -869,23 +871,7 @@ class EntryFieldCheckMixin:
                     filename=os.path.basename(has_key)
             )
 
-    def fix_field_key(self, field_name, field, field_value, entry, files):
-        ''' Create a valid key. '''
-
-        assert entry
-        assert files
-
-        new_key = generate_new_key(entry)
-        counter = 1
-
-        while files.has_bib_key(new_key):
-
-            new_key = generate_new_key(entry, counter)
-            counter += 1
-
-        return new_key
-
-    def check_field_date(self, field_name, field, field_value):
+    def check_field_date(self, all_fields, field_name, field, field_value):
 
         error_message = (
             'Invalid ISO date. '
@@ -903,3 +889,20 @@ class EntryFieldCheckMixin:
                 error_message=error_message, exception=e)
 
     check_field_urldate = check_field_date
+    # ————————————————————————————————————————————————————————————— Fix methods
+
+    def fix_field_key(self, all_fields, field_name, field, field_value, entry, files):
+        ''' Create a valid key. '''
+
+        assert entry
+        assert files
+
+        new_key = generate_new_key(entry)
+        counter = 1
+
+        while files.has_bib_key(new_key):
+
+            new_key = generate_new_key(entry, counter)
+            counter += 1
+
+        return new_key
