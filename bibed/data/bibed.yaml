@@ -70,7 +70,7 @@ fields:
     journaltitle:
     - journal
     location:
-    - adress
+    - address
     sortkey:
     - key
   by_type:
