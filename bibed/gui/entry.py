@@ -18,7 +18,7 @@ from bibed.constants import (
 )
 
 from bibed.preferences import defaults, preferences, memories, gpod
-from bibed.entry import EntryFieldCheckMixin
+from bibed.entry import EntryFieldCheckMixin, EntryFieldBuildMixin
 from bibed.locale import _
 from bibed.gtk import Gtk, Gdk, Gio
 
@@ -51,7 +51,7 @@ class EntryBlockSignalContextManager:
         self.entry.handler_unblock_by_func(self.handler)
 
 
-class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
+class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
     @property
     def needs_save(self):
@@ -124,6 +124,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         super().__init__(title, parent, use_header_bar=True)
 
         self.files = parent.application.files
+
+        # Used for the field builder, which needs data store.
+        self.application = parent.application
 
         # TODO: This is probably a dupe with Gtk's get_parent(),
         #       but despite super() beiing given parent arg,
@@ -767,12 +770,20 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin):
         def build_fields_grid(entry, fields):
 
             def connect_and_attach_to_grid(label, entry, field_name):
+
                 entry.connect('changed',
                               self.on_field_changed,
                               field_name)
                 self.fields[field_name] = entry
                 grid.attach(label, 0, index, 1, 1)
                 grid.attach(entry, 1, index, 1, 1)
+
+                post_build_method = getattr(
+                    self, 'build_field_{}_post'.format(field_name), None)
+
+                if post_build_method is not None:
+                    post_build_method(self.fields, field_name, entry,
+                                      self.application.data)
 
             grid = Gtk.Grid()
             grid.set_border_width(BOXES_BORDER_WIDTH)

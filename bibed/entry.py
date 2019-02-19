@@ -26,6 +26,7 @@ from bibed.constants import (
 from bibed.strings import asciize
 from bibed.locale import _
 from bibed.fields import FieldUtils as fu
+from bibed.completion import DeduplicateCompletion
 from bibed.preferences import defaults, preferences, gpod
 from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
@@ -42,7 +43,6 @@ KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
 
 # There is a non-breaking space and an space.
 SPLIT_RE = re.compile(' | |:|,|;|\'|"|«|»|“|”|‘|’', re.IGNORECASE)
-
 
 # ———————————————————————————————————————————————————————————————— Functions
 
@@ -994,6 +994,48 @@ class EntryKeyGenerator:
 
 
 generate_new_key = EntryKeyGenerator.generate_new_key
+
+
+class EntryFieldBuildMixin:
+    ''' Helpers for field building. '''
+
+    def build_field_journaltitle_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicateCompletion(
+            field, field_name, store, BibAttrs.JOURNAL))
+
+    def build_field_editor_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicateCompletion(
+            field, field_name, store, BibAttrs.EDITOR))
+
+    def build_field_author_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicateCompletion(
+            field, field_name, store, BibAttrs.AUTHOR))
+
+    def build_field_series_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicateCompletion(
+            field, field_name, store, BibAttrs.SERIES))
+
+    def build_field_entryset_post(self, all_fields, field_name, field, store):
+
+        # TODO: add a custom entry key completer.
+
+        pass
+
+    def build_field_related_post(self, all_fields, field_name, field, store):
+
+        # TODO: add a custom entry key completer.
+
+        pass
+
+    def build_field_keywords_post(self, all_fields, field_name, field, store):
+
+        # TODO: add a custom keyword completer for a textview.
+
+        pass
 
 
 class EntryFieldCheckMixin:
