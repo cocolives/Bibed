@@ -5,7 +5,7 @@ import logging
 from yaml.representer import Representer
 
 # from bibed.ltrace import lprint, lprint_caller_name
-from bibed.decorators import only_one_when_idle
+from bibed.decorators import run_at_most_every  # only_one_when_idle
 from bibed.foundations import AttributeDict
 from bibed.system import touch_file
 
@@ -60,7 +60,7 @@ class AttributeDictFromYaml(AttributeDict):
         if self.auto_save:
             self.save()
 
-    @only_one_when_idle
+    @run_at_most_every(1000)  # once a second.
     def save(self):
 
         # assert lprint_caller_name(levels=4)
