@@ -23,10 +23,12 @@ from bibed.constants import (
     COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
-from bibed.strings import asciize
+from bibed.strings import asciize, friendly_filename
 from bibed.locale import _
 from bibed.fields import FieldUtils as fu
-from bibed.completion import DeduplicateCompletion
+from bibed.completion import (
+    DeduplicatedStoreColumnCompletion,
+)
 from bibed.preferences import defaults, preferences, gpod
 from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
@@ -1091,25 +1093,45 @@ generate_new_key = EntryKeyGenerator.generate_new_key
 class EntryFieldBuildMixin:
     ''' Helpers for field building. '''
 
+    def build_field_author_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.AUTHOR))
+
     def build_field_journaltitle_post(self, all_fields, field_name, field, store):
 
-        field.set_completion(DeduplicateCompletion(
-            field, field_name, store, BibAttrs.JOURNAL))
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.JOURNALTITLE))
 
     def build_field_editor_post(self, all_fields, field_name, field, store):
 
-        field.set_completion(DeduplicateCompletion(
-            field, field_name, store, BibAttrs.EDITOR))
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.EDITOR))
 
-    def build_field_author_post(self, all_fields, field_name, field, store):
+    def build_field_publisher_post(self, all_fields, field_name, field, store):
 
-        field.set_completion(DeduplicateCompletion(
-            field, field_name, store, BibAttrs.AUTHOR))
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.PUBLISHER))
 
     def build_field_series_post(self, all_fields, field_name, field, store):
 
-        field.set_completion(DeduplicateCompletion(
-            field, field_name, store, BibAttrs.SERIES))
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.SERIES))
+
+    def build_field_type_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.TYPEFIELD))
+
+    def build_field_howpublished_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.HOWPUBLISHED))
+
+    def build_field_entrysubtype_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.ENTRYSUBTYPE))
 
     def build_field_entryset_post(self, all_fields, field_name, field, store):
 
