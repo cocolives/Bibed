@@ -35,29 +35,39 @@ MINIMUM_BIB_KEY_LENGTH = 8
 BibAttrs = Anything((
     ('DBID', int, ),  # database ID (in file store)
     ('FILETYPE', int, ),  # file type
-    ('COLOR', str, ),  # foreground color
-    ('TOOLTIP', str, ),  # Row tooltip (for treeview)
-    ('TYPE', str, ),  # BIB entry type (article, book…)
-    ('KEY', str, ),  # BIB sort key
-    ('FILE', str, ),  # file (PDF)
-    ('URL', str, ),  # URL
-    ('DOI', str, ),  # DOI
-    ('AUTHOR', str, ),  # author
-    ('TITLE', str, ),  # title
-    ('SUBTITLE', str, ),  # subtitle (not displayed, but used for searches)
-    ('IN_OR_BY', str, ),  # journal, booktitle, howpublished… see entry.py)
-    ('YEAR', int, ),  # year
-    ('DATE', str, ),  # date
-    ('QUALITY', str, ),  # quality
-    ('READ', str, ),  # read status
-    ('COMMENT', str, ),  # comment (text field)
-    ('KEYWORDS', str, ),  # keywords (for search/filter only)
+
+    # Entry displayed (or converted) data.
+    ('TYPE', str, ),
+    ('KEY', str, ),
+    ('FILE', str, ),
+    ('URL', str, ),
+    ('DOI', str, ),
+    ('AUTHOR', str, ),
+    ('TITLE', str, ),
+    ('IN_OR_BY', str, ),
+    ('YEAR', int, ),
+    ('QUALITY', str, ),
+    ('READ', str, ),
+    ('ABSTRACT_OR_COMMENT', str, ),
+
+    # Fields used for search / filter
+    ('SUBTITLE', str, ),
+    ('COMMENT', str, ),
+    ('KEYWORDS', str, ),
+    ('ABSTRACT', str, ),
 
     # Fields used for completions.
-    ('JOURNAL', str, ),  # journaltitle (only)
-    ('EDITOR', str, ),  # editor
-    ('PUBLISHER', str, ),  # publisher
-    ('SERIES', str, ),  # series
+    ('JOURNALTITLE', str, ),
+    ('EDITOR', str, ),
+    ('PUBLISHER', str, ),
+    ('SERIES', str, ),
+    ('TYPEFIELD', str, ),
+    ('HOWPUBLISHED', str, ),
+    ('ENTRYSUBTYPE', str, ),
+
+    # specials.
+    ('COLOR', str, ),  # foreground color
+    ('TOOLTIP', str, ),  # Row tooltip (for treeview)
 ))
 
 
@@ -89,24 +99,31 @@ SEARCH_SPECIALS = (
     (C_('search field', 'p'),
      BibAttrs.TYPE,
      C_('search field', 'type'), ),
+
     (C_('search field', 'k'),
      BibAttrs.KEY,
      C_('search field', 'key'), ),
+
     (C_('search field', 'a'),
      BibAttrs.AUTHOR,
      C_('search field', 'author'), ),
+
     (C_('search field', 't'),
      BibAttrs.TITLE,
      C_('search field', 'title'), ),
+
     (C_('search field', 'i'),
      BibAttrs.IN_OR_BY,
      C_('search field', 'in_or_by'), ),
+
     (C_('search field', 'y'),
      BibAttrs.YEAR,
      C_('search field', 'year'), ),
+
     (C_('search field', 'f'),
      BibAttrs.FILE,
      C_('search field', 'file'), ),
+
     (C_('search field', 'u'),
      BibAttrs.URL,
      C_('search field', 'URL'), ),

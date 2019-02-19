@@ -689,29 +689,39 @@ class BibedDataStore(Gtk.ListStore):
         return (
             entry.database.objectid,
             entry.database.filetype,
-            FILETYPES_COLORS[entry.database.filetype],
-            entry.col_tooltip,
-            entry.type,
+
+            # Entry displayed (or converted) data.
+            entry.col_type,
             entry.key,
             entry.get_field('file', ''),
             entry.get_field('url', ''),
             entry.get_field('doi', ''),
             entry.col_author,
             entry.col_title,
-            entry.col_subtitle,
             entry.col_in_or_by,
             entry.year,
-            entry.get_field('date', ''),
             entry.quality,
             entry.read_status,
-            entry.comment,
-            ','.join(entry.keywords),  # flatten for search / filter.
+            entry.col_abstract_or_comment,
 
-            # Completion fields.
+            # search-only fields.
+            entry.col_subtitle,
+            entry.col_comment,
+            entry.col_keywords,
+            entry.col_abstract,
+
+            # completion fields.
             entry.comp_journaltitle,
             entry.comp_editor,
             entry.comp_publisher,
             entry.comp_series,
+            entry.comp_type,
+            entry.comp_howpublished,
+            entry.comp_entrysubtype,
+
+            # specials.
+            FILETYPES_COLORS[entry.database.filetype],
+            entry.col_tooltip,
         )
 
     def append(self, entry):

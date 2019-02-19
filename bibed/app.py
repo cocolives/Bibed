@@ -202,9 +202,8 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin):
             to_lower_if_not_none(row[BibAttrs.IN_OR_BY]),
             to_lower_if_not_none(row[BibAttrs.SUBTITLE]),
             to_lower_if_not_none(row[BibAttrs.COMMENT]),
+            to_lower_if_not_none(row[BibAttrs.ABSTRACT]),
             to_lower_if_not_none(row[BibAttrs.KEYWORDS]),
-            # NO abstract yet in data_store.
-            # to_lower_if_not_none(model[iter][BibAttrs.ABSTRACT])
         ]
 
         for word in full_text:
