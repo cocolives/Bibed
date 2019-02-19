@@ -4,9 +4,17 @@ import re
 from datetime import timedelta
 
 from bibed.exceptions import BibedStringException
+from bibed.gtk import GLib
+
+def utf8_normalise_translation_map(translation_map):
+
+    return tuple(
+        (GLib.utf8_normalize(to_trans, -1, GLib.NormalizeMode.DEFAULT), to_what, )
+        for to_trans, to_what in translation_map
+    )
 
 
-TRANSLATION_MAP = (
+TRANSLATION_MAP_LOWER = (
     # lower-case
     ('á', 'a'), ('à', 'a'), ('â', 'a'), ('ä', 'a'),
     ('ã', 'a'), ('å', 'a'), ('ă', 'a'), ('ā', 'a'), ('æ', 'ae'),
@@ -18,7 +26,9 @@ TRANSLATION_MAP = (
     ('õ', 'o'), ('ø', 'o'), ('œ', 'oe'),
     ('ú', 'u'), ('ù', 'u'), ('û', 'u'), ('ü', 'u'), ('ũ', 'u'),
     ('ý', 'y'), ('ỳ', 'y'), ('ŷ', 'y'), ('ÿ', 'y'), ('ỹ', 'y'),
+)
 
+TRANSLATION_MAP_UPPER = (
     # Upper-case
     ('Á', 'A'), ('À', 'A'), ('Â', 'A'), ('Ä', 'A'),
     ('Ã', 'A'), ('Å', 'A'), ('Ă', 'A'), ('Ā', 'A'), ('Æ', 'AE'),
@@ -30,11 +40,15 @@ TRANSLATION_MAP = (
     ('Õ', 'O'), ('Ø', 'O'), ('Œ', 'OE'),
     ('Ú', 'U'), ('Ù', 'U'), ('Û', 'U'), ('Ü', 'U'), ('Ũ', 'U'),
     ('Ý', 'Y'), ('Ỳ', 'Y'), ('Ŷ', 'Y'), ('Ÿ', 'Y'), ('Ỹ', 'Y'),
+)
 
+TRANSLATION_MAP_EXTENDED = (
     # no-special-case chars
     ('ß', 'ss'), ('þ', ''), ('ð', ''), ('µ', ''), ('$', ''),
     ('€', ''), ('§', ''), ('~', ''), ('&', ''), ('/', ''), ('=', ''),
+)
 
+TRANSLATION_MAP_TYPOGRAPHIC = (
     # typographic chars
     ("'", ''), ('"', ''), ('«', ''), ('»', ''),
     ('“', ''), ('”', ''), ('‘', ''), ('’', ''),
@@ -51,6 +65,52 @@ TRANSLATION_MAP = (
 )
 
 
+TRANSLATION_MAP_FULL = (
+    TRANSLATION_MAP_LOWER
+    + TRANSLATION_MAP_UPPER
+    + TRANSLATION_MAP_EXTENDED
+    + TRANSLATION_MAP_TYPOGRAPHIC
+)
+
+# The UTF8 normalized versions are because of
+# https://lazka.github.io/pgi-docs/GLib-2.0/functions.html#GLib.utf8_normalize
+# https://lazka.github.io/pgi-docs/Gtk-3.0/callbacks.html#Gtk.EntryCompletionMatchFunc
+
+TRANSLATION_MAP_LOWER_UTF8_NORM = \
+    utf8_normalise_translation_map(TRANSLATION_MAP_LOWER)
+
+TRANSLATION_MAP_UPPER_UTF8_NORM = \
+    utf8_normalise_translation_map(TRANSLATION_MAP_UPPER)
+
+TRANSLATION_MAP_EXTENDED_UTF8_NORM = \
+    utf8_normalise_translation_map(TRANSLATION_MAP_EXTENDED)
+
+TRANSLATION_MAP_TYPOGRAPHIC_UTF8_NORM = \
+    utf8_normalise_translation_map(TRANSLATION_MAP_TYPOGRAPHIC)
+
+TRANSLATION_MAP_FULL_UTF8_NORM = (
+    TRANSLATION_MAP_LOWER_UTF8_NORM
+    + TRANSLATION_MAP_UPPER_UTF8_NORM
+    + TRANSLATION_MAP_EXTENDED_UTF8_NORM
+    + TRANSLATION_MAP_TYPOGRAPHIC_UTF8_NORM
+)
+
+
+def lowunaccent(string_, normalized=False):
+
+    string_ = string_.lower()
+
+    tr_map = (
+        TRANSLATION_MAP_LOWER_UTF8_NORM
+        if normalized else TRANSLATION_MAP_LOWER
+    )
+
+    for elem, repl in tr_map:
+        string_ = string_.replace(elem, repl)
+
+    return string_
+
+
 def asciize(stest, aggressive=False, maxlenght=128, custom_keep=None, replace_by=None):
     ''' Remove all special characters from a string.
         Replace accentuated letters with non-accentuated ones, replace spaces,
@@ -63,7 +123,7 @@ def asciize(stest, aggressive=False, maxlenght=128, custom_keep=None, replace_by
     if custom_keep is None:
         custom_keep = '-.'
 
-    for elem, repl in TRANSLATION_MAP:
+    for elem, repl in TRANSLATION_MAP_FULL:
         stest = stest.replace(elem, repl)
 
     if not aggressive:
