@@ -55,7 +55,7 @@ GLib.idle_add(set_process_title, APP_NAME)
 GLib.set_application_name(APP_NAME)
 
 
-class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
+class BibedApplication(Gtk.Application, GtkCssAwareMixin):
 
     def __init__(self, *args, **kwargs):
 
@@ -199,12 +199,11 @@ class BibEdApplication(Gtk.Application, GtkCssAwareMixin):
         model_full_text_data = [
             to_lower_if_not_none(row[BibAttrs.AUTHOR]),
             to_lower_if_not_none(row[BibAttrs.TITLE]),
-            to_lower_if_not_none(row[BibAttrs.JOURNAL]),
+            to_lower_if_not_none(row[BibAttrs.IN_OR_BY]),
             to_lower_if_not_none(row[BibAttrs.SUBTITLE]),
             to_lower_if_not_none(row[BibAttrs.COMMENT]),
+            to_lower_if_not_none(row[BibAttrs.ABSTRACT]),
             to_lower_if_not_none(row[BibAttrs.KEYWORDS]),
-            # NO abstract yet in data_store.
-            # to_lower_if_not_none(model[iter][BibAttrs.ABSTRACT])
         ]
 
         for word in full_text:

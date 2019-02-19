@@ -5,6 +5,7 @@ from bibed.constants import (
     BibAttrs,
     URL_PIXBUFS,
     FILE_PIXBUFS,
+    TYPE_PIXBUFS,
     COMMENT_PIXBUFS,
     READ_STATUS_PIXBUFS,
     QUALITY_STATUS_PIXBUFS,
@@ -13,7 +14,7 @@ from bibed.constants import (
     COL_YEAR_WIDTH,
     # COL_PIXBUF_WIDTH,
     COL_AUTHOR_WIDTH,
-    COL_JOURNAL_WIDTH,
+    COL_IN_OR_BY_WIDTH,
     # COL_SEPARATOR_WIDTH,
 )
 
@@ -42,6 +43,7 @@ class BibedEntryTreeViewMixin:
             ('quality_status_pixbufs', QUALITY_STATUS_PIXBUFS),
             ('read_status_pixbufs', READ_STATUS_PIXBUFS),
             ('comment_pixbufs', COMMENT_PIXBUFS),
+            ('type_pixbufs', TYPE_PIXBUFS),
             ('file_pixbufs', FILE_PIXBUFS),
             ('url_pixbufs', URL_PIXBUFS),
         ):
@@ -57,16 +59,18 @@ class BibedEntryTreeViewMixin:
 
     def setup_treeview_columns(self):
 
+        self.col_type = self.setup_pixbuf_column(
+            C_('treeview header', 'T'), BibAttrs.TYPE,
+            self.get_type_cell_column,
+            # self.on_type_clicked,
+            # tooltip=_('Entry type'),
+        )
+
         self.col_key = self.setup_text_column(
             C_('treeview header', 'Key'), BibAttrs.KEY,
             ellipsize=Pango.EllipsizeMode.START,
             attributes={'foreground': BibAttrs.COLOR},
             # tooltip=_('Entry unique key across all databases'),
-        )
-
-        self.col_type = self.setup_text_column(
-            C_('treeview header', 'Type'), BibAttrs.TYPE,
-            attributes={'foreground': BibAttrs.COLOR},
         )
 
         # DOI column
@@ -98,7 +102,7 @@ class BibedEntryTreeViewMixin:
             # tooltip=_('Read status')
         )
         self.col_comment = self.setup_pixbuf_column(
-            C_('treeview header', 'C'), BibAttrs.COMMENT,
+            C_('treeview header', 'C'), BibAttrs.ABSTRACT_OR_COMMENT,
             self.get_comment_cell_column,
             # tooltip=_('Personal comment(s)')
         )
@@ -113,8 +117,8 @@ class BibedEntryTreeViewMixin:
             ellipsize=Pango.EllipsizeMode.MIDDLE,
             attributes={'foreground': BibAttrs.COLOR},
         )
-        self.col_journal = self.setup_text_column(
-            _('Journal'), BibAttrs.JOURNAL,
+        self.col_in_or_by = self.setup_text_column(
+            _('In, by or how'), BibAttrs.IN_OR_BY,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
@@ -138,14 +142,13 @@ class BibedEntryTreeViewMixin:
         # assert lprint_function_name()
 
         col_key_width     = round(width * COL_KEY_WIDTH)
-        col_type_width    = round(width * COL_TYPE_WIDTH)
         col_author_width  = round(width * COL_AUTHOR_WIDTH)
-        col_journal_width = round(width * COL_JOURNAL_WIDTH)
+        col_in_or_by_width = round(width * COL_IN_OR_BY_WIDTH)
         col_year_width    = round(width * COL_YEAR_WIDTH)
 
         # col_title_width   = round(width - (
         #     col_key_width + col_author_width
-        #     + col_journal_width + col_year_width
+        #     + col_in_or_by_width + col_year_width
         #     + col_type_width
         #     + 5 * COL_PIXBUF_WIDTH
         # ) - COL_SEPARATOR_WIDTH * 10)
@@ -154,7 +157,7 @@ class BibedEntryTreeViewMixin:
         #     col_key_width,
         #     col_type_width,
         #     col_author_width,
-        #     col_journal_width,
+        #     col_in_or_by_width,
         #     col_year_width,
         #     # col_title_width,
         # )
@@ -164,12 +167,18 @@ class BibedEntryTreeViewMixin:
         # self.col_title.set_max_width(col_title_width + 50)
 
         self.col_key.set_fixed_width(col_key_width)
-        self.col_type.set_fixed_width(col_type_width)
         self.col_author.set_fixed_width(col_author_width)
-        self.col_journal.set_fixed_width(col_journal_width)
+        self.col_in_or_by.set_fixed_width(col_in_or_by_width)
         self.col_year.set_fixed_width(col_year_width)
 
     # ————————————————————————————————————————————————————————— Pixbufs columns
+
+    def get_type_cell_column(self, col, cell, model, iter, user_data):
+        cell.set_property(
+            'gicon', self.type_pixbufs[
+                model.get_value(iter, BibAttrs.TYPE)
+            ]
+        )
 
     def get_read_cell_column(self, col, cell, model, iter, user_data):
         cell.set_property(
@@ -182,9 +191,12 @@ class BibedEntryTreeViewMixin:
                 model.get_value(iter, BibAttrs.QUALITY)])
 
     def get_comment_cell_column(self, col, cell, model, iter, user_data):
+
         cell.set_property(
             'gicon', self.comment_pixbufs[
-                model.get_value(iter, BibAttrs.COMMENT) != ''])
+                model.get_value(iter, BibAttrs.ABSTRACT_OR_COMMENT)
+            ]
+        )
 
     def get_url_cell_column(self, col, cell, model, iter, user_data):
         cell.set_property(
@@ -192,9 +204,16 @@ class BibedEntryTreeViewMixin:
                 model.get_value(iter, BibAttrs.URL) != ''])
 
     def get_file_cell_column(self, col, cell, model, iter, user_data):
+
+        entry_type = model.get_value(iter, BibAttrs.TYPE)
+        has_file = model.get_value(iter, BibAttrs.FILE) != ''
+
         cell.set_property(
-            'gicon', self.file_pixbufs[
-                model.get_value(iter, BibAttrs.FILE) != ''])
+            'gicon', self.file_pixbufs.get(
+                entry_type if has_file else False,
+                self.file_pixbufs['default']
+            )
+        )
 
     # ———————————————————————————————————————————————————————— Entry selection
 

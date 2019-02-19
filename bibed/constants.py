@@ -17,7 +17,7 @@ from bibed.locale import C_
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
-APP_VERSION = '0.9.12-develop'
+APP_VERSION = '0.9.13-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
@@ -35,23 +35,39 @@ MINIMUM_BIB_KEY_LENGTH = 8
 BibAttrs = Anything((
     ('DBID', int, ),  # database ID (in file store)
     ('FILETYPE', int, ),  # file type
+
+    # Entry displayed (or converted) data.
+    ('TYPE', str, ),
+    ('KEY', str, ),
+    ('FILE', str, ),
+    ('URL', str, ),
+    ('DOI', str, ),
+    ('AUTHOR', str, ),
+    ('TITLE', str, ),
+    ('IN_OR_BY', str, ),
+    ('YEAR', int, ),
+    ('QUALITY', str, ),
+    ('READ', str, ),
+    ('ABSTRACT_OR_COMMENT', str, ),
+
+    # Fields used for search / filter
+    ('SUBTITLE', str, ),
+    ('COMMENT', str, ),
+    ('KEYWORDS', str, ),
+    ('ABSTRACT', str, ),
+
+    # Fields used for completions.
+    ('JOURNALTITLE', str, ),
+    ('EDITOR', str, ),
+    ('PUBLISHER', str, ),
+    ('SERIES', str, ),
+    ('TYPEFIELD', str, ),
+    ('HOWPUBLISHED', str, ),
+    ('ENTRYSUBTYPE', str, ),
+
+    # specials.
     ('COLOR', str, ),  # foreground color
     ('TOOLTIP', str, ),  # Row tooltip (for treeview)
-    ('TYPE', str, ),  # BIB entry type (article, book…)
-    ('KEY', str, ),  # BIB sort key
-    ('FILE', str, ),  # file (PDF)
-    ('URL', str, ),  # URL
-    ('DOI', str, ),  # DOI
-    ('AUTHOR', str, ),  # author
-    ('TITLE', str, ),  # title
-    ('SUBTITLE', str, ),  # subtitle
-    ('JOURNAL', str, ),  # journal (or booktitle, howpublished… see entry.py)
-    ('YEAR', int, ),  # year
-    ('DATE', str, ),  # date
-    ('QUALITY', str, ),  # quality
-    ('READ', str, ),  # read status
-    ('COMMENT', str, ),  # comment (text field)
-    ('KEYWORDS', str, ),  # keywords (for search/filter only)
 ))
 
 
@@ -83,24 +99,31 @@ SEARCH_SPECIALS = (
     (C_('search field', 'p'),
      BibAttrs.TYPE,
      C_('search field', 'type'), ),
+
     (C_('search field', 'k'),
      BibAttrs.KEY,
      C_('search field', 'key'), ),
+
     (C_('search field', 'a'),
      BibAttrs.AUTHOR,
      C_('search field', 'author'), ),
+
     (C_('search field', 't'),
      BibAttrs.TITLE,
      C_('search field', 'title'), ),
-    (C_('search field', 'j'),
-     BibAttrs.JOURNAL,
-     C_('search field', 'journal'), ),
+
+    (C_('search field', 'i'),
+     BibAttrs.IN_OR_BY,
+     C_('search field', 'in_or_by'), ),
+
     (C_('search field', 'y'),
      BibAttrs.YEAR,
      C_('search field', 'year'), ),
+
     (C_('search field', 'f'),
      BibAttrs.FILE,
      C_('search field', 'file'), ),
+
     (C_('search field', 'u'),
      BibAttrs.URL,
      C_('search field', 'URL'), ),
@@ -180,7 +203,7 @@ RESIZE_SIZE_MULTIPLIER = 0.20
 COL_KEY_WIDTH     = 0.10
 COL_TYPE_WIDTH    = 0.06
 COL_AUTHOR_WIDTH  = 0.15
-COL_JOURNAL_WIDTH = 0.15
+COL_IN_OR_BY_WIDTH = 0.15
 COL_YEAR_WIDTH    = 0.04
 # NOTE: col_title_width will be computed from remaining space.
 
@@ -224,8 +247,10 @@ QUALITY_STATUS_PIXBUFS = {
 }
 
 COMMENT_PIXBUFS = {
-    False: None,
-    True: 'bibed-property-comment',
+    '': None,
+    'abstract': 'bibed-type-book-1',
+    'comment': 'bibed-property-comment',
+    'both': 'bibed-property-comment',
 }
 
 URL_PIXBUFS = {
@@ -235,5 +260,57 @@ URL_PIXBUFS = {
 
 FILE_PIXBUFS = {
     False: None,
-    True: 'bibed-property-pdf',
+    'default': 'bibed-property-pdf',
+    'audio': 'bibed-type-music',
+    'music': 'bibed-type-music',
+}
+
+TYPE_PIXBUFS = {
+    'article': 'bibed-type-article',
+    'artwork': 'bibed-type-artwork',
+    'audio': 'bibed-type-audio',
+    'bibnote': 'bibed-type-bibnote',
+    'book': 'bibed-type-book',
+    'bookinbook': 'bibed-type-bookinbook',
+    'booklet': 'bibed-type-booklet',
+    'collection': 'bibed-type-collection',
+    'commentary': 'bibed-type-commentary',
+    'conference': 'bibed-type-conference',
+    'image': 'bibed-type-image',
+    'inbook': 'bibed-type-inbook',
+    'incollection': 'bibed-type-incollection',
+    'inproceedings': 'bibed-type-inproceedings',
+    'inreference': 'bibed-type-inreference',
+    'jurisdiction': 'bibed-type-jurisdiction',
+    'legal': 'bibed-type-legal',
+    'legislation': 'bibed-type-legislation',
+    'letter': 'bibed-type-letter',
+    'manual': 'bibed-type-manual',
+    'mastersthesis': 'bibed-type-mastersthesis',
+    'misc': 'bibed-type-misc',
+    'movie': 'bibed-type-movie',
+    'music': 'bibed-type-music',
+    'mvbook': 'bibed-type-mvbook',
+    'mvcollection': 'bibed-type-mvcollection',
+    'mvproceedings': 'bibed-type-mvproceedings',
+    'mvreference': 'bibed-type-mvreference',
+    'online': 'bibed-type-online',
+    'patent': 'bibed-type-patent',
+    'performance': 'bibed-type-performance',
+    'periodical': 'bibed-type-periodical',
+    'phdthesis': 'bibed-type-phdthesis',
+    'proceedings': 'bibed-type-proceedings',
+    'reference': 'bibed-type-reference',
+    'report': 'bibed-type-report',
+    'review': 'bibed-type-review',
+    'set': 'bibed-type-set',
+    'software': 'bibed-type-software',
+    'standard': 'bibed-type-standard',
+    'suppbook': 'bibed-type-suppbook',
+    'suppcollection': 'bibed-type-suppcollection',
+    'suppperiodical': 'bibed-type-suppperiodical',
+    'thesis': 'bibed-type-thesis',
+    'unpublished': 'bibed-type-unpublished',
+    'video': 'bibed-type-video',
+    'xdata': 'bibed-type-xdata',
 }

@@ -23,7 +23,12 @@ from bibed.constants import (
     COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
-from bibed.strings import asciize
+from bibed.strings import asciize, friendly_filename
+from bibed.locale import _
+from bibed.fields import FieldUtils as fu
+from bibed.completion import (
+    DeduplicatedStoreColumnCompletion,
+)
 from bibed.preferences import defaults, preferences, gpod
 from bibed.exceptions import FileNotFoundError
 from bibed.gui.helpers import markup_bib_filename
@@ -41,11 +46,70 @@ KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
 # There is a non-breaking space and an space.
 SPLIT_RE = re.compile(' | |:|,|;|\'|"|«|»|“|”|‘|’', re.IGNORECASE)
 
-
 # ———————————————————————————————————————————————————————————————— Functions
 
-
+markup_escape_text = GLib.markup_escape_text
 bibtexparser_as_text = bibtexparser.bibdatabase.as_text
+
+
+def format_edition(edition, short=False):
+    ''' Returns Pango Markup for [book] edition. '''
+
+    if edition == 1:
+        if short:
+            return _('1<sup>st</sup> ed.')
+        return _('First edition')
+
+    elif edition == 2:
+        if short:
+            return _('2<sup>nd</sup> ed.')
+        return _('Second edition')
+
+    elif edition == 3:
+        if short:
+            return _('3<sup>rd</sup> ed.')
+        return _('Third edition')
+
+    elif edition == 4:
+        if short:
+            return _('4<sup>th</sup> ed.')
+        return _('Fourth edition')
+
+    elif edition == 5:
+        if short:
+            return _('5<sup>th</sup> ed.')
+        return _('Fifth edition')
+
+    elif edition == 6:
+        if short:
+            return _('6<sup>th</sup> ed.')
+        return _('Sixth edition')
+
+    elif edition == 7:
+        if short:
+            return _('7<sup>th</sup> ed.')
+        return _('Seventh edition')
+
+    elif edition == 8:
+        if short:
+            return _('8<sup>th</sup> ed.')
+        return _('Eighth edition')
+
+    elif edition == 9:
+        if short:
+            return _('9<sup>th</sup> ed.')
+        return _('Nineth edition')
+
+    elif edition == 10:
+        if short:
+            return _('10<sup>th</sup> ed.')
+        return _('Tenth edition')
+
+    else:
+        if short:
+            return _('{ednum}<sup>th</sup> ed.').format(ednum=edition)
+
+        return _('{ednum}th edition').format(ednum=edition)
 
 
 # —————————————————————————————————————————————————————————————————— Classes
@@ -253,7 +317,7 @@ class BibedEntry:
 
         # .replace('& ', '&amp; ')
 
-        text = GLib.markup_escape_text(text)
+        text = markup_escape_text(text)
 
         # TODO: re.sub() sur texttt, emph, url, etc.
         #       probably some sort of TeX → Gtk Markup.
@@ -322,6 +386,12 @@ class BibedEntry:
 
     def set_field(self, name, value):
 
+        if value in (None, '', ):
+            # remove field. Doing this here is
+            # required by field mechanics in GUI.
+            del self.bib_dict[name]
+            return
+
         name = self.__internal_translate(name)
 
         try:
@@ -340,10 +410,17 @@ class BibedEntry:
         self.__internal_keywords = kw + [self.read_status] + [self.quality]
 
         # Flatten for bibtexparser
-        self.bib_dict['keywords'] = ','.join(
+        final_keywords = ','.join(
             # If no read_status or quality, we need to “re-cleanup”
             kw for kw in self.__internal_keywords if kw.strip() != ''
         )
+
+        if final_keywords != '':
+            self.bib_dict['keywords'] = final_keywords
+
+        else:
+            # remove now-empty field.
+            del self.bib_dict['keywords']
 
     # —————————————————————————————————————————————————————————————— properties
 
@@ -414,12 +491,17 @@ class BibedEntry:
     @property
     def title(self):
 
-        return self.bib_dict.get('title', '')
+        return self.__clean_for_display('title')
 
     @property
     def comment(self):
 
         return self.bib_dict.get('comment', '')
+
+    @property
+    def abstract(self):
+
+        return self.bib_dict.get('abstract', '')
 
     @comment.setter
     def comment(self, value):
@@ -427,7 +509,245 @@ class BibedEntry:
         self.bib_dict['comment'] = value
 
     @property
-    def tooltip(self):
+    def author(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return self.__clean_for_display('author')
+
+    @property
+    def year(self):
+        ''' Will try to return year field or year part of date field. '''
+
+        # TODO: handle non-ISO date gracefully.
+        return int(
+            self.bib_dict.get(
+                'year',
+                self.bib_dict.get('date', '0').split('-')[0])
+        )
+
+    @property
+    def keywords(self):
+        ''' Return entry keywords without JabRef internals. '''
+
+        # HEADS UP: copy(), else we alter __internal_keywords!
+        keywords = self.__internal_keywords[:]
+
+        for kw in JABREF_QUALITY_KEYWORDS + JABREF_READ_KEYWORDS:
+            try:
+                keywords.remove(kw)
+
+            except ValueError:
+                pass
+
+        return keywords
+
+    @property
+    def quality(self):
+        ''' Get the JabRef quality from keywords. '''
+
+        keywords = self.__internal_keywords
+
+        for kw in JABREF_QUALITY_KEYWORDS:
+            if kw in keywords:
+                return kw
+
+        return ''
+
+    @property
+    def read_status(self):
+        ''' Get the JabRef read status from keywords. '''
+
+        keywords = self.__internal_keywords
+
+        for kw in JABREF_READ_KEYWORDS:
+            if kw in keywords:
+                return kw
+
+        # NO keyword means book unread.
+        # See constants.py
+        return ''
+
+    @property
+    def short_display(self):
+        ''' Used in GUI dialogs (thus uses Pango markup). '''
+
+        assert getattr(defaults.types.labels, self.type)
+
+        if self.is_trashed:
+            trashedFrom, trashedDate = self.trashed_informations
+        else:
+            trashedFrom, trashedDate = None, None
+
+        return (
+            '{type} <b><i>{title}</i></b> '
+            'by <b>{author}</b>{in_or_by}{year}{trashed}'.format(
+                type=_(getattr(defaults.types.labels,
+                               self.type).replace('_', '')),
+
+                title=(
+                    (self.title[:24] + (self.title[24:] and ' […]'))
+                    if self.title else _('No title')
+                ),
+                author=(
+                    self.author if self.author else _('No author')
+                ),
+
+                in_or_by=(
+                    ' in <i>{}</i>'.format(self.col_in_or_by)
+                    if self.col_in_or_by else ''
+                ),
+
+                year=(
+                    ' ({})'.format(self.year)
+                    if self.year else ''
+                ),
+
+                trashed=_(' <span color="grey">(trashed on {tDate} from <span face="monospace">{tFrom}</span>)</span>').format(
+                    tFrom=GLib.markup_escape_text(
+                        friendly_filename(trashedFrom)),
+                    tDate=trashedDate
+                ) if self.is_trashed else '',
+            )
+        )
+
+    # ——————————————————————————————————————————————————————— ListStore Columns
+
+    @property
+    def col_type(self):
+
+        # subtype = self.bib_dict.get('entrysubtype', None)
+
+        # if subtype is not None:
+        #     return _(subtype)
+
+        # etype = self.bib_dict.get('type', None)
+
+        # if etype is not None:
+        #     return _(etype)
+
+        # return _(getattr(defaults.types.labels,
+        #                  self.bib_dict['ENTRYTYPE'])).replace('_', '')
+
+        return self.bib_dict['ENTRYTYPE']
+
+    @property
+    def col_author(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return markup_escape_text(self.author)
+
+    @property
+    def col_in_or_by(self):
+
+        if self.bib_dict['ENTRYTYPE'] == 'article':
+            fields_names = (
+                'journaltitle', 'booktitle',
+                # backward compatible field name for JabRef.
+                'journal',
+            )
+
+        elif 'book' in self.bib_dict['ENTRYTYPE']:
+            fields_names = (
+                'publisher',
+                'booktitle',
+                'isbn',
+            )
+
+        else:
+            fields_names = (
+                'howpublished',
+                'institution',
+                'school',
+                'organization',
+            )
+
+        for field_name in fields_names:
+
+            if isinstance(field_name, tuple):
+                values = []
+
+                for subfield_name in field_name:
+                    field_value = self.__clean_for_display(subfield_name)
+
+                    if field_value:
+                        if subfield_name == 'edition':
+                            values.append(
+                                '<span color="grey">{}</span>'.format(
+                                    format_edition(field_value, short=True)))
+
+                        else:
+                            values.append(markup_escape_text(field_value))
+
+                if values:
+                    return ', '.join(values)
+
+            else:
+                field_value = self.__clean_for_display(field_name)
+
+                if field_value:
+                    return markup_escape_text(field_value)
+
+        return ''
+
+    @property
+    def col_abstract_or_comment(self):
+
+        if self.comment:
+            if self.abstract:
+                return 'both'
+            else:
+                return 'comment'
+        else:
+            if self.abstract:
+                return 'abstract'
+            else:
+                return ''
+
+    @property
+    def col_title(self):
+
+        title = markup_escape_text(self.title)
+
+        edition = self.bib_dict.get('edition', None)
+
+        if edition is not None and edition != '':
+            title += ' <span color="grey">({})</span>'.format(
+                format_edition(edition, short=True))
+
+        return title
+
+    # —————————————————————————————————————————— search columns (not displayed)
+
+    @property
+    def col_subtitle(self):
+
+        # No need to escape, this column is not displayed.
+        return self.bib_dict.get('subtitle', '')
+
+    @property
+    def col_comment(self):
+
+        # No need to escape, this column is not displayed.
+        return self.bib_dict.get('comment', '')
+
+    @property
+    def col_abstract(self):
+
+        # No need to escape, this column is not displayed.
+        return self.bib_dict.get('abstract', '')
+
+    @property
+    def col_keywords(self):
+
+        # No need to escape, this column is not displayed.
+        return ','.join(self.keywords)
+
+    # ———————————————————————————————————————————————————————— Special: tooltip
+
+    @property
+    def col_tooltip(self):
 
         esc = self.__escape_for_tooltip
         is_trashed = self.is_trashed
@@ -453,9 +773,9 @@ class BibedEntry:
             )
         )
 
-        if self.journal:
-            base_tooltip += ', published in <b><i>{journal}</i></b>'.format(
-                journal=esc(self.journal))
+        if self.col_in_or_by:
+            base_tooltip += ', published in <b><i>{in_or_by}</i></b>'.format(
+                in_or_by=esc(self.col_in_or_by))
 
         if year:
             base_tooltip += ' ({year})'.format(year=year)
@@ -544,113 +864,56 @@ class BibedEntry:
 
         return '\n\n'.join(tooltips)
 
-    @property
-    def journal(self):
-
-        # TODO: use journaltitle / handle aliased fields.
-
-        for field_name in ('journaltitle', 'booktitle',
-                           'journal', 'howpublished', ):
-            field_value = self.__clean_for_display(field_name)
-
-            if field_value:
-                return field_value
-
-        return ''
+    # ——————————————————————————————————————————————————— Completion properties
 
     @property
-    def author(self):
+    def comp_journaltitle(self):
 
         # TODO: handle {and}, "and", and other author particularities.
 
-        return self.__clean_for_display('author')
+        return self.__clean_for_display('journaltitle')
 
     @property
-    def year(self):
-        ''' Will try to return year field or year part of date field. '''
+    def comp_editor(self):
 
-        # TODO: handle non-ISO date gracefully.
-        return int(
-            self.bib_dict.get(
-                'year',
-                self.bib_dict.get('date', '0').split('-')[0])
-        )
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return self.__clean_for_display('editor')
 
     @property
-    def keywords(self):
-        ''' Return entry keywords without JabRef internals. '''
+    def comp_publisher(self):
 
-        # HEADS UP: copy(), else we alter __internal_keywords!
-        keywords = self.__internal_keywords[:]
+        # TODO: handle {and}, "and", and other author particularities.
 
-        for kw in JABREF_QUALITY_KEYWORDS + JABREF_READ_KEYWORDS:
-            try:
-                keywords.remove(kw)
-
-            except ValueError:
-                pass
-
-        return keywords
+        return self.__clean_for_display('publisher')
 
     @property
-    def quality(self):
-        ''' Get the JabRef quality from keywords. '''
+    def comp_series(self):
 
-        keywords = self.__internal_keywords
+        # TODO: handle {and}, "and", and other author particularities.
 
-        for kw in JABREF_QUALITY_KEYWORDS:
-            if kw in keywords:
-                return kw
-
-        return ''
+        return self.__clean_for_display('series')
 
     @property
-    def read_status(self):
-        ''' Get the JabRef read status from keywords. '''
+    def comp_type(self):
 
-        keywords = self.__internal_keywords
+        # TODO: handle {and}, "and", and other author particularities.
 
-        for kw in JABREF_READ_KEYWORDS:
-            if kw in keywords:
-                return kw
-
-        # NO keyword means book unread.
-        # See constants.py
-        return ''
+        return self.__clean_for_display('type')
 
     @property
-    def short_display(self):
-        ''' Used in GUI dialogs (thus uses Pango markup). '''
+    def comp_howpublished(self):
 
-        assert getattr(defaults.types.labels, self.type)
+        # TODO: handle {and}, "and", and other author particularities.
 
-        if self.is_trashed:
-            trashedFrom, trashedDate = self.trashed_informations
-        else:
-            trashedFrom, trashedDate = None, None
+        return self.__clean_for_display('howpublished')
 
-        return (
-            '{type} <b><i>{title}</i></b> '
-            'by <b>{author}</b>{journal}{year}{trashed}'.format(
-                type=getattr(defaults.types.labels,
-                             self.type).replace('_', ''),
+    @property
+    def comp_entrysubtype(self):
 
-                title=self.title[:24] + (self.title[24:] and ' […]'),
-                author=self.author,
+        # TODO: handle {and}, "and", and other author particularities.
 
-                journal=' in <i>{}</i>'.format(self.journal)
-                if self.journal else '',
-
-                year=' ({})'.format(self.year)
-                if self.year else '',
-
-                trashed=' <span color="grey">(trashed on {tDate} from <span face="monospace">{tFrom}</span>)</span>'.format(
-                    tFrom=GLib.markup_escape_text(
-                        os.path.basename(trashedFrom)),
-                    tDate=trashedDate
-                ) if self.is_trashed else '',
-            )
-        )
+        return self.__clean_for_display('entrysubtype')
 
     # ————————————————————————————————————————————————————————————————— Methods
 
@@ -827,13 +1090,77 @@ class EntryKeyGenerator:
 generate_new_key = EntryKeyGenerator.generate_new_key
 
 
+class EntryFieldBuildMixin:
+    ''' Helpers for field building. '''
+
+    def build_field_author_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.AUTHOR))
+
+    def build_field_journaltitle_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.JOURNALTITLE))
+
+    def build_field_editor_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.EDITOR))
+
+    def build_field_publisher_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.PUBLISHER))
+
+    def build_field_series_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.SERIES))
+
+    def build_field_type_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.TYPEFIELD))
+
+    def build_field_howpublished_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.HOWPUBLISHED))
+
+    def build_field_entrysubtype_post(self, all_fields, field_name, field, store):
+
+        field.set_completion(DeduplicatedStoreColumnCompletion(
+            field, store, BibAttrs.ENTRYSUBTYPE))
+
+    def build_field_entryset_post(self, all_fields, field_name, field, store):
+
+        # TODO: add a custom entry key completer.
+
+        pass
+
+    def build_field_related_post(self, all_fields, field_name, field, store):
+
+        # TODO: add a custom entry key completer.
+
+        pass
+
+    def build_field_keywords_post(self, all_fields, field_name, field, store):
+
+        # TODO: add a custom keyword completer for a textview.
+
+        pass
+
+
 class EntryFieldCheckMixin:
     ''' This class is meant to be subclassed by any Window/Dialog that checks entries.
 
         .. seealso:: :class:`~bibed.gui.BibedEntryDialog`.
     '''
 
-    def check_field_year(self, field_name, field, field_value):
+    # ——————————————————————————————————————————————————————————— Check methods
+
+    def check_field_year(self, all_fields, field_name, field, field_value):
 
         field_value = field_value.strip()
 
@@ -850,7 +1177,7 @@ class EntryFieldCheckMixin:
                 'Invalid year, not understood: {exc}.'.format(exc=e)
             )
 
-    def check_field_key(self, field_name, field, field_value):
+    def check_field_key(self, all_fields, field_name, field, field_value):
 
         field_value = field_value.strip()
 
@@ -869,7 +1196,42 @@ class EntryFieldCheckMixin:
                     filename=os.path.basename(has_key)
             )
 
-    def fix_field_key(self, field_name, field, field_value, entry, files):
+    def check_field_date(self, all_fields, field_name, field, field_value):
+
+        error_message = (
+            'Invalid ISO date. '
+            'Please type a date in the format YYYY-MM-DD.'
+        )
+
+        if fu.value_is_empty(field_value):
+            # User has removed the date after having
+            # typed something. Everything is fine.
+            return
+
+        if len(field_value) < 10:
+            return error_message
+
+        try:
+            _ = datetime.date.fromisoformat(field_value)
+
+        except Exception as e:
+            return '{error_message}\nExact error is: {exception}'.format(
+                error_message=error_message, exception=e)
+
+    check_field_urldate = check_field_date
+
+    def check_field_url(self, all_fields, field_name, field, field_value):
+
+        if fu.value_is_empty(field_value):
+            # The URL was made empty after beiing set. Empty the date.
+            fu.field_make_empty(all_fields['urldate'])
+            return
+
+        fu.field_set_date_today(all_fields['urldate'])
+
+    # ————————————————————————————————————————————————————————————— Fix methods
+
+    def fix_field_key(self, all_fields, field_name, field, field_value, entry, files):
         ''' Create a valid key. '''
 
         assert entry
@@ -884,22 +1246,3 @@ class EntryFieldCheckMixin:
             counter += 1
 
         return new_key
-
-    def check_field_date(self, field_name, field, field_value):
-
-        error_message = (
-            'Invalid ISO date. '
-            'Please type a date in the format YYYY-MM-DD.'
-        )
-
-        if len(field_value) < 10:
-            return error_message
-
-        try:
-            _ = datetime.date.fromisoformat(field_value)
-
-        except Exception as e:
-            return '{error_message}\nExact error is: {exception}'.format(
-                error_message=error_message, exception=e)
-
-    check_field_urldate = check_field_date
