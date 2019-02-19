@@ -46,8 +46,68 @@ SPLIT_RE = re.compile(' | |:|,|;|\'|"|«|»|“|”|‘|’', re.IGNORECASE)
 
 # ———————————————————————————————————————————————————————————————— Functions
 
-
+markup_escape_text = GLib.markup_escape_text
 bibtexparser_as_text = bibtexparser.bibdatabase.as_text
+
+
+def format_edition(edition, short=False):
+    ''' Returns Pango Markup for [book] edition. '''
+
+    if edition == 1:
+        if short:
+            return _('1<sup>st</sup> ed.')
+        return _('First edition')
+
+    elif edition == 2:
+        if short:
+            return _('2<sup>nd</sup> ed.')
+        return _('Second edition')
+
+    elif edition == 3:
+        if short:
+            return _('3<sup>rd</sup> ed.')
+        return _('Third edition')
+
+    elif edition == 4:
+        if short:
+            return _('4<sup>th</sup> ed.')
+        return _('Fourth edition')
+
+    elif edition == 5:
+        if short:
+            return _('5<sup>th</sup> ed.')
+        return _('Fifth edition')
+
+    elif edition == 6:
+        if short:
+            return _('6<sup>th</sup> ed.')
+        return _('Sixth edition')
+
+    elif edition == 7:
+        if short:
+            return _('7<sup>th</sup> ed.')
+        return _('Seventh edition')
+
+    elif edition == 8:
+        if short:
+            return _('8<sup>th</sup> ed.')
+        return _('Eighth edition')
+
+    elif edition == 9:
+        if short:
+            return _('9<sup>th</sup> ed.')
+        return _('Nineth edition')
+
+    elif edition == 10:
+        if short:
+            return _('10<sup>th</sup> ed.')
+        return _('Tenth edition')
+
+    else:
+        if short:
+            return _('{ednum}<sup>th</sup> ed.').format(ednum=edition)
+
+        return _('{ednum}th edition').format(ednum=edition)
 
 
 # —————————————————————————————————————————————————————————————————— Classes
