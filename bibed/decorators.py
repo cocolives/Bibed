@@ -93,16 +93,18 @@ def run_at_most_every(delay):
 def wait_for_queued_events(delay=None):
 
     if delay is None:
-        delay = 500
+        # defaults to 10 seconds (some methods
+        # can be delayed once every 5 secs).
+        delay = 10000
 
     wait_cycle = 0
-    had_remaining = 0
+    has_remaining = 0
 
     if FUNC_IDLE_CALLS or FUNC_MOST_CALLS:
-        had_remaining = len(FUNC_IDLE_CALLS) + len(FUNC_MOST_CALLS)
-        LOGGER.info('Waiting for {} queued events to run…'.format(
-            had_remaining
-        ))
+        has_remaining = len(FUNC_IDLE_CALLS) + len(FUNC_MOST_CALLS)
+        LOGGER.info(
+            'Waiting at most {:.1f} seconds for {} remaining events to run…'.format(
+                delay / 1000.0, has_remaining))
 
     while (FUNC_IDLE_CALLS or FUNC_MOST_CALLS) and wait_cycle != delay:
 
@@ -110,7 +112,7 @@ def wait_for_queued_events(delay=None):
             Gtk.main_iteration()
 
         wait_cycle += 1
-        time.sleep(0.01)
+        time.sleep(0.001)
 
     if FUNC_IDLE_CALLS:
         LOGGER.warning('Idle calls still pending: {}'.format(
@@ -122,6 +124,6 @@ def wait_for_queued_events(delay=None):
             len(FUNC_MOST_CALLS)
         ))
 
-    elif had_remaining:
-        LOGGER.info('{} remaining events ran in {} msecs.'.format(
-            had_remaining, wait_cycle))
+    elif has_remaining:
+        LOGGER.info('Last {} remaining events ran in {} secs.'.format(
+            has_remaining, wait_cycle / 1000.0))
