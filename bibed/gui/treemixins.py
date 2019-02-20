@@ -61,14 +61,13 @@ class BibedEntryTreeViewMixin:
     def setup_treeview_columns(self):
 
         self.col_type = self.setup_pixbuf_column(
-            C_('treeview header', 'T'), BibAttrs.TYPE,
+            'type', C_('treeview header', 'T'), BibAttrs.TYPE,
             self.get_type_cell_column,
-            # self.on_type_clicked,
             # tooltip=_('Entry type'),
         )
 
         self.col_key = self.setup_text_column(
-            C_('treeview header', 'Key'), BibAttrs.KEY,
+            'key', C_('treeview header', 'Key'), BibAttrs.KEY,
             ellipsize=Pango.EllipsizeMode.START,
             attributes={'foreground': BibAttrs.COLOR},
             # tooltip=_('Entry unique key across all databases'),
@@ -79,53 +78,48 @@ class BibedEntryTreeViewMixin:
         # TODO: integrate a pixbuf for 'tags' (keywords) ?
 
         self.col_file = self.setup_pixbuf_column(
-            C_('treeview header', 'F'), BibAttrs.FILE,
-            self.get_file_cell_column,
-            self.on_file_clicked,
+            'file', C_('treeview header', 'F'), BibAttrs.FILE,
+            self.get_file_cell_column, self.on_file_clicked,
             # tooltip=_('File (PDF)'),
         )
         self.col_url = self.setup_pixbuf_column(
-            C_('treeview header', 'U'), BibAttrs.URL,
-            self.get_url_cell_column,
-            self.on_url_clicked,
+            'url', C_('treeview header', 'U'), BibAttrs.URL,
+            self.get_url_cell_column, self.on_url_clicked,
             # tooltip=_('URL of entry')
         )
         self.col_quality = self.setup_pixbuf_column(
-            C_('treeview header', 'Q'), BibAttrs.QUALITY,
-            self.get_quality_cell_column,
-            self.on_quality_clicked,
+            'quality', C_('treeview header', 'Q'), BibAttrs.QUALITY,
+            self.get_quality_cell_column, self.on_quality_clicked,
             # tooltip=_('Verified qualify')
         )
         self.col_read_status = self.setup_pixbuf_column(
-            C_('treeview header', 'R'), BibAttrs.READ,
-            self.get_read_cell_column,
-            self.on_read_clicked,
+            'read_status', C_('treeview header', 'R'), BibAttrs.READ,
+            self.get_read_cell_column, self.on_read_clicked,
             # tooltip=_('Read status')
         )
         self.col_abstract_or_comment = self.setup_pixbuf_column(
-            C_('treeview header', 'C'), BibAttrs.ABSTRACT_OR_COMMENT,
-            self.get_comment_cell_column,
+            'abstract_or_comment', C_('treeview header', 'C'), BibAttrs.ABSTRACT_OR_COMMENT, self.get_comment_cell_column,
             # tooltip=_('Personal comment(s)')
         )
 
         self.col_author = self.setup_text_column(
-            _('Author(s)'), BibAttrs.AUTHOR,
+            'author', _('Author(s)'), BibAttrs.AUTHOR,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
         self.col_title = self.setup_text_column(
-            _('Title'), BibAttrs.TITLE, resizable=True,
+            'title', _('Title'), BibAttrs.TITLE, resizable=True,
             ellipsize=Pango.EllipsizeMode.MIDDLE,
             attributes={'foreground': BibAttrs.COLOR},
         )
         self.col_in_or_by = self.setup_text_column(
-            _('In, by or how'), BibAttrs.IN_OR_BY,
+            'in_or_by', _('In, by or how'), BibAttrs.IN_OR_BY,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
 
         self.col_year = self.setup_text_column(
-            _('Year'), BibAttrs.YEAR, xalign=1.0,
+            'year', _('Year'), BibAttrs.YEAR, xalign=0.9,
             attributes={'foreground': BibAttrs.COLOR},
         )
 

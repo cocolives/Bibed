@@ -8,9 +8,9 @@ from bibed.constants import (
 from bibed.exceptions import BibedTreeViewException
 from bibed.preferences import preferences, memories, gpod
 
+from bibed.gtk import Gtk, Pango
 from bibed.gui.renderers import CellRendererTogglePixbuf
 from bibed.gui.treemixins import BibedEntryTreeViewMixin
-from bibed.gtk import Gtk, Pango
 
 
 LOGGER = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         except AttributeError:
             pass
 
-    def setup_text_column(self, name, store_num, attributes=None, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None, tooltip=None):  # NOQA
+    def setup_text_column(self, name, label, store_num, attributes=None, resizable=False, expand=False, min=None, max=None, xalign=None, ellipsize=None, tooltip=None):  # NOQA
 
         if ellipsize is None:
             ellipsize = Pango.EllipsizeMode.NONE
@@ -87,7 +87,8 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         if attributes is None:
             attributes = {}
 
-        column = Gtk.TreeViewColumn(name)
+        column = Gtk.TreeViewColumn(label)
+        column.set_name(name)
 
         if xalign is not None:
             cellrender = Gtk.CellRendererText(
@@ -123,7 +124,7 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
 
         return column
 
-    def setup_pixbuf_column(self, title, store_num, renderer_method, signal_method=None, tooltip=None):
+    def setup_pixbuf_column(self, name, label, store_num, renderer_method, signal_method=None, tooltip=None):
 
         if signal_method:
             renderer = CellRendererTogglePixbuf()
@@ -133,7 +134,9 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
             renderer.set_padding(CELLRENDERER_PIXBUF_PADDING,
                                  CELLRENDERER_PIXBUF_PADDING)
 
-        column = Gtk.TreeViewColumn(title)
+        column = Gtk.TreeViewColumn(label)
+        column.set_name(name)
+
         column.pack_start(renderer, False)
 
         column.set_sort_column_id(store_num)
