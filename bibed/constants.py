@@ -176,6 +176,7 @@ treeview.view header button {
 }
 
 scrolledwindow#main {
+    /* TODO: detect background color (light/dark) and set accordingly. */
     background-color: white;
     background-image: url("{background_filename}");
     background-size: {background_size};
