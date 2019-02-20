@@ -129,23 +129,66 @@ class BibedEntryTreeViewMixin:
             attributes={'foreground': BibAttrs.COLOR},
         )
 
+    @run_at_most_every(125)
     def on_size_allocate(self, treeview, rectangle):
 
         self.set_columns_widths(rectangle.width)
 
-    @only_one_when_idle
     def set_columns_widths(self, width=None):
-
-        if width is None:
-            width = self.get_allocated_width()
 
         # assert lprint_caller_name(levels=4)
         # assert lprint_function_name()
 
-        col_key_width     = round(width * COL_KEY_WIDTH)
-        col_author_width  = round(width * COL_AUTHOR_WIDTH)
-        col_in_or_by_width = round(width * COL_IN_OR_BY_WIDTH)
-        col_year_width    = round(width * COL_YEAR_WIDTH)
+        if width is None:
+            width = self.get_allocated_width()
+
+        # print('WIDTH', width)
+
+        cols_level1 = (
+            self.col_url,
+            self.col_file,
+            self.col_quality,
+            self.col_read_status,
+            self.col_abstract_or_comment,
+        )
+
+        # self.col_author
+        # self.col_year
+
+        if width < 1250:
+            widgets_hide([self.col_key])
+            multiplicator = 1.0
+
+        if width < 1075:
+            widgets_hide([self.col_in_or_by])
+            multiplicator = 1.3
+
+        if width < 1025:
+            multiplicator = 1.15
+
+        if width < 930:
+            widgets_hide(cols_level1)
+            multiplicator = 1.5
+
+        if width > 930:
+            widgets_show(cols_level1)
+            multiplicator = 1.15
+
+        if width > 1025:
+            multiplicator = 1.3
+
+        if width > 1075:
+            widgets_show([self.col_in_or_by])
+            multiplicator = 1.0
+
+        if width > 1250:
+            widgets_show([self.col_key])
+            multiplicator = 0.9
+
+        col_key_width      = round(width * multiplicator * COL_KEY_WIDTH)
+        col_author_width   = round(width * multiplicator * COL_AUTHOR_WIDTH)
+        col_in_or_by_width = round(width * multiplicator * COL_IN_OR_BY_WIDTH)
+        col_year_width     = round(width * multiplicator * COL_YEAR_WIDTH)
 
         # col_title_width   = round(width - (
         #     col_key_width + col_author_width
