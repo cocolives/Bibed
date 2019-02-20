@@ -1107,7 +1107,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 '{entries_list}\n from {from_files}.',
                 entries_count,
             ).format(
-                entry=entry,
+                entry=entry.short_display,
                 entries_list=entries_list,
                 from_files=n_(
                     '{count} database',
@@ -1230,6 +1230,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.update_title()
         self.sync_buttons_states()
+        self.treeview.set_columns_widths(self.current_size[0])
         self.treeview.do_column_sort()
 
     def do_status_change(self, message):
