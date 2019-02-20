@@ -521,17 +521,23 @@ class BibedEntry:
 
         # assert lprint_caller_name(levels=5)
 
-        try:
-            return int(
-                self.bib_dict.get(
-                    'year',
+        year = self.bib_dict.get('year', None)
 
-                    # TODO: handle non-ISO date gracefully.
-                    self.bib_dict['date'].split('-')[0])
-            )
-        except (KeyError, AttributeError):
-            # print('NONE', self.key)
-            return None
+        if year is None:
+            date = self.bib_dict.get('date', None)
+
+            if date is None:
+                return None
+
+            try:
+                # TODO: handle non-ISO date gracefully.
+                return int(date.split('-')[0])
+
+            except Exception:
+                return None
+
+        else:
+            return int(year)
 
     @property
     def keywords(self):
@@ -1196,6 +1202,11 @@ class EntryFieldCheckMixin:
 
     def check_field_year(self, all_fields, field_name, field, field_value):
 
+        if fu.value_is_empty(field_value):
+            # User has removed the date after having
+            # typed something. Everything is fine.
+            return
+
         field_value = field_value.strip()
 
         if len(field_value) != 4:
@@ -1232,15 +1243,15 @@ class EntryFieldCheckMixin:
 
     def check_field_date(self, all_fields, field_name, field, field_value):
 
-        error_message = (
-            'Invalid ISO date. '
-            'Please type a date in the format YYYY-MM-DD.'
-        )
-
         if fu.value_is_empty(field_value):
             # User has removed the date after having
             # typed something. Everything is fine.
             return
+
+        error_message = (
+            'Invalid ISO date. '
+            'Please type a date in the format YYYY-MM-DD.'
+        )
 
         if len(field_value) < 10:
             return error_message
