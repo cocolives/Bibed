@@ -532,14 +532,22 @@ def widgets_show(widgets):
     ''' Show a list of widgets. '''
 
     for widget in widgets:
-        widget.show()
+        try:
+            widget.show()
+
+        except AttributeError:
+            widget.set_visible(True)
 
 
 def widgets_hide(widgets):
     ''' Hide a list of widgets. '''
 
     for widget in widgets:
-        widget.hide()
+        try:
+            widget.hide()
+
+        except AttributeError:
+            widget.set_visible(False)
 
 
 def widget_replace(old, new):
