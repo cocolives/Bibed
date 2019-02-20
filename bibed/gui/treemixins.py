@@ -217,11 +217,6 @@ class BibedEntryTreeViewMixin:
 
     # ———————————————————————————————————————————————————————— Entry selection
 
-    def get_main_model_iter_by_gid(self, gid):
-        ''' '''
-        # TODO: use path instead of GID.
-        return self.main_model.get_iter(gid)
-
     def get_entry_by_path(self, path, only_row=False):
 
         return self.get_entries_by_paths([path], only_rows=only_row)[0]
