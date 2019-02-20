@@ -519,12 +519,19 @@ class BibedEntry:
     def year(self):
         ''' Will try to return year field or year part of date field. '''
 
-        # TODO: handle non-ISO date gracefully.
-        return int(
-            self.bib_dict.get(
-                'year',
-                self.bib_dict.get('date', '0').split('-')[0])
-        )
+        # assert lprint_caller_name(levels=5)
+
+        try:
+            return int(
+                self.bib_dict.get(
+                    'year',
+
+                    # TODO: handle non-ISO date gracefully.
+                    self.bib_dict['date'].split('-')[0])
+            )
+        except (KeyError, AttributeError):
+            # print('NONE', self.key)
+            return None
 
     @property
     def keywords(self):
@@ -582,8 +589,7 @@ class BibedEntry:
         return (
             '{type} <b><i>{title}</i></b> '
             'by <b>{author}</b>{in_or_by}{year}{trashed}'.format(
-                type=_(getattr(defaults.types.labels,
-                               self.type).replace('_', '')),
+                type=self.type_label,
 
                 title=(
                     (self.title[:24] + (self.title[24:] and ' […]'))
@@ -610,6 +616,19 @@ class BibedEntry:
                 ) if self.is_trashed else '',
             )
         )
+
+    # ——————————————————————————————————————————————————————— translated labels
+
+    @property
+    def type_label(self):
+
+        return self.type_label_with_mnemonic.replace('_', '')
+
+    @property
+    def type_label_with_mnemonic(self):
+        ''' Translated type label. '''
+
+        return _(getattr(defaults.types.labels, self.type))
 
     # ——————————————————————————————————————————————————————— ListStore Columns
 
@@ -692,6 +711,16 @@ class BibedEntry:
         return ''
 
     @property
+    def col_read_status(self):
+
+        return self.read_status
+
+    @property
+    def col_quality(self):
+
+        return self.quality
+
+    @property
     def col_abstract_or_comment(self):
 
         if self.comment:
@@ -717,6 +746,11 @@ class BibedEntry:
                 format_edition(edition, short=True))
 
         return title
+
+    @property
+    def col_year(self):
+
+        return self.year
 
     # —————————————————————————————————————————— search columns (not displayed)
 

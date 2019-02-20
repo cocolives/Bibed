@@ -18,23 +18,24 @@ from bibed.constants import (
     # COL_SEPARATOR_WIDTH,
 )
 
-from bibed.decorators import only_one_when_idle
+from bibed.decorators import run_at_most_every, only_one_when_idle
 from bibed.utils import (
     open_with_system_launcher,
     open_urls_in_web_browser,
 )
+from bibed.strings import friendly_filename
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
 from bibed.locale import _, C_, n_
 
 from bibed.gtk import Gtk, Gio, Pango
+from bibed.gui.helpers import widgets_hide, widgets_show
 
 
 class BibedEntryTreeViewMixin:
     ''' This class exists only to separate entry-related actions
         from pure-treeview ones. '''
 
-    TOOLTIP_COLUMN = BibAttrs.TOOLTIP
     SELECTION_MODE = Gtk.SelectionMode.MULTIPLE
 
     def setup_pixbufs(self):
@@ -95,13 +96,13 @@ class BibedEntryTreeViewMixin:
             self.on_quality_clicked,
             # tooltip=_('Verified qualify')
         )
-        self.col_read = self.setup_pixbuf_column(
+        self.col_read_status = self.setup_pixbuf_column(
             C_('treeview header', 'R'), BibAttrs.READ,
             self.get_read_cell_column,
             self.on_read_clicked,
             # tooltip=_('Read status')
         )
-        self.col_comment = self.setup_pixbuf_column(
+        self.col_abstract_or_comment = self.setup_pixbuf_column(
             C_('treeview header', 'C'), BibAttrs.ABSTRACT_OR_COMMENT,
             self.get_comment_cell_column,
             # tooltip=_('Personal comment(s)')
@@ -174,6 +175,7 @@ class BibedEntryTreeViewMixin:
     # ————————————————————————————————————————————————————————— Pixbufs columns
 
     def get_type_cell_column(self, col, cell, model, iter, user_data):
+
         cell.set_property(
             'gicon', self.type_pixbufs[
                 model.get_value(iter, BibAttrs.TYPE)
@@ -263,6 +265,106 @@ class BibedEntryTreeViewMixin:
         )
 
     # ————————————————————————————————————————————————————————————— Gtk signals
+
+    def on_query_tooltip(self, widget, x, y, keyboard_tip, tooltip):
+
+        # w, z = self.convert_widget_to_tree_coords(x, y)
+        w, z = self.convert_widget_to_bin_window_coords(x, y)
+
+        result = widget.get_path_at_pos(w, z)
+
+        if result is None:
+            return False
+
+        path, column, cell_x, cell_y = result
+
+        entry = self.get_entry_by_path(path)
+
+        icon_size = None
+        icon_name = None
+        markup = None
+
+        if column in (
+            self.col_type,
+            self.col_key,
+            self.col_year,
+        ):
+            icon_size = Gtk.IconSize.DIALOG
+            icon_name = TYPE_PIXBUFS[entry.type]
+
+            markup = (
+                '<big>{typee}</big> '
+                '<span font="monospace">{key}</span>\n'
+                '{title}{year}\n{author}'
+            ).format(
+                key=entry.key,
+                typee=entry.type_label,
+                title=entry.col_title,
+                author=entry.col_author,
+                year=' ({})'.format(entry.col_year) if entry.year else '',
+            )
+
+        elif column == self.col_file:
+
+            efile = entry.get_field('file', '')
+
+            if efile != '':
+                icon_size = Gtk.IconSize.DIALOG
+                icon_name = FILE_PIXBUFS.get(
+                    entry.type, FILE_PIXBUFS['default'])
+
+                if entry.type in ('audio', 'music', ):
+                    markup_base = _('Play {file}')
+
+                else:
+                    markup_base = _('Open {file}')
+
+                markup = markup_base.format(file=friendly_filename(efile))
+
+        elif column == self.col_read_status:
+
+            read_status = entry.col_read_status
+
+            icon_size = Gtk.IconSize.DIALOG
+            icon_name = READ_STATUS_PIXBUFS[read_status]
+
+            if read_status == 'read':
+                markup = _('You read this entry')
+
+            elif read_status == 'skimmed':
+                markup = _('You skimmed this entry')
+
+            else:
+                markup = _('Entry is unread')
+
+        elif column == self.col_abstract_or_comment:
+
+            abs_or_com = entry.col_abstract_or_comment
+
+            if abs_or_com is not None:
+                icon_size = Gtk.IconSize.DIALOG
+                icon_name = COMMENT_PIXBUFS[abs_or_com]
+
+                if abs_or_com == 'both':
+                    markup = _('Entry has an abstract and personal comment')
+
+                elif abs_or_com == 'comment':
+                    markup = _('Entry has personal comment')
+
+                else:
+                    markup = _('Entry has abstract')
+
+        elif column == self.col_title:
+            icon_size = Gtk.IconSize.from_name('BIBED_BIG')
+            icon_name = TYPE_PIXBUFS[entry.type]
+            markup = entry.col_tooltip
+
+        if icon_size:
+            tooltip.set_icon_from_icon_name(icon_name, icon_size)
+            tooltip.set_markup(markup)
+            return True
+
+        return False
 
     def on_quality_clicked(self, renderer, path):
 

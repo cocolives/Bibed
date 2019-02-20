@@ -53,14 +53,6 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         self.set_fixed_height_mode(True)
 
         try:
-            if gpod('treeview_show_tooltips'):
-                # Not required neither.
-                self.set_tooltip_column(self.TOOLTIP_COLUMN)
-
-        except AttributeError:
-            pass
-
-        try:
             # Not required neither.
             self.connect('row-activated', self.on_treeview_row_activated)
 
@@ -73,6 +65,9 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
 
         except AttributeError:
             pass
+
+        if gpod('treeview_show_tooltips'):
+            self.__activate_tooltips()
 
         self.selection = self.get_selection()
         self.selection.set_mode(self.SELECTION_MODE)
@@ -187,30 +182,36 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
                     # print(col.get_sort_indicator())
                     break
 
+    def __activate_tooltips(self):
+
+        if hasattr(self, 'on_query_tooltip'):
+            self.set_has_tooltip(True)
+            self.query_tooltip_signal_id = self.connect(
+                'query-tooltip', self.on_query_tooltip)
+
+    def __deactivate_tooltips(self):
+
+        if hasattr(self, 'on_query_tooltip'):
+            self.disconnect(self.query_tooltip_signal_id)
+            self.set_has_tooltip(False)
+
     def switch_tooltips(self, state=None):
 
-        tooltip_column = getattr(self, 'TOOLTIP_COLUMN', None)
-
-        if tooltip_column is None:
-            return
-
         def switch_off():
-            self.set_tooltip_column(-1)
-
+            self.__deactivate_tooltips()
             # Autosave is ON, because direct attribute.
             preferences.treeview_show_tooltips = False
 
         def switch_on():
-            self.set_tooltip_column(self.TOOLTIP_COLUMN)
-
+            self.__activate_tooltips()
             # Autosave is ON, because direct attribute.
             preferences.treeview_show_tooltips = True
 
         if state is None:
-            if self.get_tooltip_column() == -1:
-                switch_on()
-            else:
+            if self.get_has_tooltip():
                 switch_off()
+            else:
+                switch_on()
         else:
             if state:
                 switch_on()
@@ -218,7 +219,7 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
                 switch_off()
 
         self.do_status_change('Tooltips switched {}.'.format(
-            'off' if self.get_tooltip_column() == -1 else 'ON'
+            'ON' if self.get_has_tooltip() else 'off'
         ))
 
     # ——————————————————————————————————————————————————————— Generic selection

@@ -67,7 +67,6 @@ BibAttrs = Anything((
 
     # specials.
     ('COLOR', str, ),  # foreground color
-    ('TOOLTIP', str, ),  # Row tooltip (for treeview)
 ))
 
 
@@ -202,7 +201,7 @@ RESIZE_SIZE_MULTIPLIER = 0.20
 # Expressed in percentiles of 1
 COL_KEY_WIDTH     = 0.10
 COL_TYPE_WIDTH    = 0.06
-COL_AUTHOR_WIDTH  = 0.15
+COL_AUTHOR_WIDTH  = 0.175
 COL_IN_OR_BY_WIDTH = 0.15
 COL_YEAR_WIDTH    = 0.04
 # NOTE: col_title_width will be computed from remaining space.
