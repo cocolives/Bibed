@@ -550,7 +550,7 @@ class BibedFileStore(Gio.ListStore):
 
         database_to_write.write()
 
-    def close(self, db_to_close, save_before=True, remember_close=True):
+    def close(self, db_to_close, save_before=False, remember_close=True):
 
         # assert lprint_function_name()
         # assert lprint(filename, save_before, remember_close)

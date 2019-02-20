@@ -468,7 +468,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin):
             if message:
                 self.window.do_status_change(message)
 
-    def close_database(self, database, save_before=True, remember_close=True):
+    def close_database(self, database, save_before=False, remember_close=True):
         ''' Close a file and impact changes. '''
 
         # assert lprint_function_name()
