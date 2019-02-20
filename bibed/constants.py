@@ -17,7 +17,7 @@ from bibed.locale import C_
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
-APP_VERSION = '0.9.13-develop'
+APP_VERSION = '0.9.14-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
@@ -67,7 +67,6 @@ BibAttrs = Anything((
 
     # specials.
     ('COLOR', str, ),  # foreground color
-    ('TOOLTIP', str, ),  # Row tooltip (for treeview)
 ))
 
 
@@ -196,16 +195,13 @@ SEARCH_WIDTH_MAXIMAL = 60
 
 COMBO_CHARS_DIVIDER = 10
 
-# TODO: remove this when search / combo are implemented as sidebar / searchbar
-RESIZE_SIZE_MULTIPLIER = 0.20
-
 # Expressed in percentiles of 1
-COL_KEY_WIDTH     = 0.10
-COL_TYPE_WIDTH    = 0.06
-COL_AUTHOR_WIDTH  = 0.15
+COL_KEY_WIDTH      = 0.10
+COL_TYPE_WIDTH     = 0.06
+COL_AUTHOR_WIDTH   = 0.175
 COL_IN_OR_BY_WIDTH = 0.15
-COL_YEAR_WIDTH    = 0.04
-# NOTE: col_title_width will be computed from remaining space.
+COL_YEAR_WIDTH     = 0.05
+# NOTE: col_title width is computed from remaining space (Gtk EXPAND).
 
 # Expressed in pixels
 COL_PIXBUF_WIDTH = 24

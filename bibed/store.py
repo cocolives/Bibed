@@ -699,9 +699,9 @@ class BibedDataStore(Gtk.ListStore):
             entry.col_author,
             entry.col_title,
             entry.col_in_or_by,
-            entry.year,
-            entry.quality,
-            entry.read_status,
+            entry.col_year,
+            entry.col_quality,
+            entry.col_read_status,
             entry.col_abstract_or_comment,
 
             # search-only fields.
@@ -721,7 +721,6 @@ class BibedDataStore(Gtk.ListStore):
 
             # specials.
             FILETYPES_COLORS[entry.database.filetype],
-            entry.col_tooltip,
         )
 
     def append(self, entry):
