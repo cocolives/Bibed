@@ -4,7 +4,7 @@ import threading
 
 from bibed.constants import BibAttrs
 from bibed.parallel import run_in_background
-from bibed.strings import lowunaccent
+from bibed.strings import lowunaccent, bibtex_clean
 from bibed.gtk import Gtk
 
 
@@ -93,7 +93,7 @@ class DeferredCompletion(Gtk.EntryCompletion):
         super().__init__()
 
         self.store = Gtk.ListStore(str)
-        self.completion_key = None
+        self.completion_key = ''
 
         self.set_model(self.store)
         self.set_text_column(0)
@@ -127,18 +127,22 @@ class DeferredCompletion(Gtk.EntryCompletion):
         if len(entry.get_text()) >= MINIMUM_KEY_LENGTH:
             self.completion_key = entry.get_text()
 
+        else:
+            self.completion_key = ''
+
     def match_func(self, widget, key, iter, store):
         ''' Deduplicate matched values, and match them more fuzzily. '''
 
         self.populated.wait()
 
-        print(
-            'KEY', lowunaccent(key, normalized=True), type(key),
-            'MY', lowunaccent(self.completion_key), type(self.completion_key),
-            'IN', lowunaccent(store[iter][0])
-        )
+        # print(
+        #     'KEY', lowunaccent(key, normalized=True), type(key),
+        #     'MY', lowunaccent(self.completion_key), type(self.completion_key),
+        #     'IN', lowunaccent(store[iter][0])
+        # )
 
-        if lowunaccent(key, normalized=True) in lowunaccent(store[iter][0]):
+        if lowunaccent(key, normalized=True) in \
+                lowunaccent(bibtex_clean(store[iter][0])):
             return True
 
         return False

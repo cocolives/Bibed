@@ -186,3 +186,8 @@ def to_lower_if_not_none(data):
         return ''
 
     return data.lower()
+
+
+def bibtex_clean(string_):
+
+    return string_.replace(' and ', ' ').replace(' {and} ', ' ')
