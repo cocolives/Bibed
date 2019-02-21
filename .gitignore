@@ -22,6 +22,10 @@
 /node_modules
 
 bibed.queue.*
+contrib/bibed
+snippets.py
+tstats.py
+biblatex-datamodel.txt
 
 # PIP local installs
 /src
