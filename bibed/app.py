@@ -21,13 +21,14 @@ from bibed.constants import (
 
 from bibed.decorators import wait_for_queued_events
 from bibed.foundations import Anything
-from bibed.system import touch_file, set_process_title
+from bibed.system import set_program_name_global
+from bibed.system import touch_file
 from bibed.strings import to_lower_if_not_none, seconds_to_string
 from bibed.parallel import run_and_wait_on
 from bibed.locale import _, NO_
 
 # Import Gtk before preferences, to initialize GI.
-from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
+from bibed.gtk import Gio, Gtk, Gdk, Notify
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
@@ -42,17 +43,7 @@ from bibed.gui.window import BibedWindow
 
 LOGGER = logging.getLogger(__name__)
 
-# This fixes the name displayed in the GNOME Menu bar.
-# Without this, the name is 'Bibed.py'.
-GLib.set_prgname(APP_NAME)
-
-set_process_title(APP_NAME)
-# set after main loop has started (gtk seems to reset it)
-GLib.idle_add(set_process_title, APP_NAME)
-
-# Not sure what this is for, but it seems important in
-# Gtk/GLib documentation.
-GLib.set_application_name(APP_NAME)
+set_program_name_global(APP_NAME)
 
 
 class BibedApplication(Gtk.Application, GtkCssAwareMixin):
