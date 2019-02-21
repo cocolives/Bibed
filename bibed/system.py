@@ -122,3 +122,21 @@ def xdg_get_system_data_dirs():
 
     else:
         return ('/usr/local/share/', '/usr/share/')
+
+
+def set_program_name_global(name):
+    ''' Set program name everywhere we can. '''
+
+    from bibed.gtk import GLib
+
+    # This fixes the name displayed in the GNOME Menu bar.
+    # Without this, the name is 'Bibed.py'.
+    GLib.set_prgname(name)
+
+    set_process_title(name)
+    # set after main loop has started (gtk seems to reset it)
+    GLib.idle_add(set_process_title, name)
+
+    # Not sure what this is for, but it seems important in
+    # Gtk/GLib documentation.
+    GLib.set_application_name(name)
