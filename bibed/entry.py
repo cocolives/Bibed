@@ -20,11 +20,15 @@ from bibed.constants import (
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
     MINIMUM_BIB_KEY_LENGTH,
-    ABSTRACT_MAX_LENGHT_IN_TOOLTIPS,
-    COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
+    TEXT_MAX_LENGHT_IN_TOOLTIPS,
+    TEXT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
-from bibed.strings import asciize, friendly_filename
+from bibed.strings import (
+    asciize,
+    friendly_filename,
+    latex_to_pango_markup,
+)
 from bibed.locale import _
 from bibed.fields import FieldUtils as fu
 from bibed.actions import EntryActionStatusMixin
@@ -40,7 +44,7 @@ from bibed.gtk import GLib
 LOGGER = logging.getLogger(__name__)
 
 
-# —————————————————————————————————————————————————————— regular expressions
+# ————————————————————————————————————————————————————————— Regular expressions
 
 
 KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
@@ -48,7 +52,8 @@ KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
 # There is a non-breaking space and an space.
 SPLIT_RE = re.compile(' | |:|,|;|\'|"|«|»|“|”|‘|’', re.IGNORECASE)
 
-# ———————————————————————————————————————————————————————————————— Functions
+
+# ——————————————————————————————————————————————————————————————————— Functions
 
 markup_escape_text = GLib.markup_escape_text
 bibtexparser_as_text = bibtexparser.bibdatabase.as_text
@@ -114,7 +119,7 @@ def format_edition(edition, short=False):
         return _('{ednum}th edition').format(ednum=edition)
 
 
-# —————————————————————————————————————————————————————————————————— Classes
+# ————————————————————————————————————————————————————————————————————— Classes
 
 
 class BibedEntry(EntryActionStatusMixin):
@@ -332,9 +337,9 @@ class BibedEntry(EntryActionStatusMixin):
         return text
 
     def __clean_for_display(self, name):
+        ''' Be aggrssive against BibLaTeX and bibtexparser, for GUI display. '''
 
         # TODO: do better than this.
-
         field = bibtexparser_as_text(self.bib_dict.get(name, ''))
 
         if field == '':
@@ -343,10 +348,15 @@ class BibedEntry(EntryActionStatusMixin):
         if field.startswith('{') and field.endswith('}'):
             field = field[1:-1]
 
-        if '{' in field:
+        # Still in persons fields, we have can have more than one level of {}s.
+        if '{' in field and '\\' not in field:
+            # but if we've got some backslashes, we have latex commands.
+            # Don't remove them, else latex_to_pango_markup() will fail.
             field = field.replace('{', '').replace('}', '')
 
-        field = field.replace('\\&', '&')
+        # WARNING: order is important, else pango markup gets escaped…
+        field = markup_escape_text(field)
+        field = latex_to_pango_markup(field, reverse=False)
 
         return field
 
@@ -748,7 +758,7 @@ class BibedEntry(EntryActionStatusMixin):
     @property
     def col_title(self):
 
-        title = markup_escape_text(self.title)
+        title = self.__clean_for_display('title')
 
         edition = self.bib_dict.get('edition', None)
 
@@ -820,7 +830,7 @@ class BibedEntry(EntryActionStatusMixin):
         base_tooltip = (
             '<big><i>{title}</i></big>\n{subtitle}'
             'by <b>{author}</b>'.format(
-                title=strike(esc(self.title)),
+                title=strike(self.col_title),
                 subtitle='<i>{}</i>\n'.format(strike(esc(subtitle)))
                 if subtitle else '',
                 author=esc(self.author),
@@ -837,20 +847,27 @@ class BibedEntry(EntryActionStatusMixin):
         tooltips.append(base_tooltip)
 
         if self.comment:
+            comment = self.comment
+            comment_cr = (
+                '\n'
+                if len(comment) > TEXT_LENGHT_FOR_CR_IN_TOOLTIPS
+                else ' '
+            )
+            comment = comment[:TEXT_MAX_LENGHT_IN_TOOLTIPS] \
+                + (comment[TEXT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
+
             tooltips.append('<b>Comment:</b>{cr}{comment}'.format(
-                cr='\n'
-                if len(self.comment) > COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS
-                else ' ',  # Note the space.
-                comment=esc(self.comment)))
+                cr=comment_cr,  # Note the space.
+                comment=latex_to_pango_markup(esc(comment))))
 
         abstract = self.get_field('abstract', default='')
 
         if abstract:
-            abstract = abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] \
-                + (abstract[ABSTRACT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
+            abstract = abstract[:TEXT_MAX_LENGHT_IN_TOOLTIPS] \
+                + (abstract[TEXT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
 
             tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
-                abstract=esc(abstract)))
+                abstract=latex_to_pango_markup(esc(abstract))))
 
         keywords = self.keywords
 
@@ -870,7 +887,7 @@ class BibedEntry(EntryActionStatusMixin):
         url = self.get_field('url', '')
 
         if url:
-            tooltips.append('<b>URL:</b> <a href="{url}">{url}</a>'.format(url=url))
+            tooltips.append('<b>URL:</b> <a href="{url}">{url}</a>'.format(url=esc(url)))
 
         if is_trashed:
             tFrom, tDate = self.trashed_informations

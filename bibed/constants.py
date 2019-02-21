@@ -110,7 +110,7 @@ ENTRY_COLORS = {
 
     },
     'dark': {
-    
+
         # —————————————————————————————————————————————————————————— File types
         FileTypes.SPECIAL   : '#fff',
         FileTypes.ALL       : '#fff',
@@ -280,8 +280,8 @@ HELP_POPOVER_LABEL_MARGIN = 10
 MAX_KEYWORDS_IN_TOOLTIPS = 20
 
 # expressed in number of characters
-ABSTRACT_MAX_LENGHT_IN_TOOLTIPS = 512
-COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS = 96
+TEXT_MAX_LENGHT_IN_TOOLTIPS = 384
+TEXT_LENGHT_FOR_CR_IN_TOOLTIPS = 96
 
 
 GENERIC_HELP_SYMBOL = (
