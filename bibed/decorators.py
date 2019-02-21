@@ -4,7 +4,7 @@ import functools
 import logging
 
 from bibed.gtk import GLib, Gtk
-
+from bibed.strings import seconds_to_string
 
 LOGGER = logging.getLogger(__name__)
 FUNC_IDLE_CALLS = {}
@@ -92,6 +92,8 @@ def run_at_most_every(delay):
 
 def wait_for_queued_events(delay=None):
 
+    start = time.time()
+
     if delay is None:
         # defaults to 10 seconds (some methods
         # can be delayed once every 5 secs).
@@ -103,8 +105,8 @@ def wait_for_queued_events(delay=None):
     if FUNC_IDLE_CALLS or FUNC_MOST_CALLS:
         has_remaining = len(FUNC_IDLE_CALLS) + len(FUNC_MOST_CALLS)
         LOGGER.info(
-            'Waiting at most {:.1f} seconds for {} remaining events to run…'.format(
-                delay / 1000.0, has_remaining))
+            'Waiting at most {:.1f} seconds for {} remaining '
+            'events to run…'.format(delay / 1000, has_remaining))
 
     while (FUNC_IDLE_CALLS or FUNC_MOST_CALLS) and wait_cycle != delay:
 
@@ -126,4 +128,4 @@ def wait_for_queued_events(delay=None):
 
     elif has_remaining:
         LOGGER.info('Last {} remaining events ran in {} secs.'.format(
-            has_remaining, wait_cycle / 1000.0))
+            has_remaining, seconds_to_string(time.time() - start)))
