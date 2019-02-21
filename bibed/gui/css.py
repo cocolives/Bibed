@@ -162,8 +162,6 @@ class GtkCssAwareMixin:
 
         self.icon_theme.rescan_if_needed()
 
-        print(self.icon_theme.get_search_path())
-
         self.css_provider.load_from_data(bytes(self.css_data.encode('utf-8')))
 
     def is_dark_theme(self):
@@ -171,6 +169,7 @@ class GtkCssAwareMixin:
         try:
             settings = Gio.Settings("org.gnome.desktop.interface")
             theme_name = settings.get_string('gtk-theme')
+            LOGGER.debug('Detected GTK Theme: “{}”'.format(theme_name))
 
         except Exception:
             LOGGER.exception('Could not determine theme name.')
