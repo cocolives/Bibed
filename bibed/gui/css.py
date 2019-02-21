@@ -1,16 +1,22 @@
 
 import os
 import random
+import logging
 
 from bibed.constants import (
     BIBED_DATA_DIR,
     BIBED_ICONS_DIR,
     BIBED_BACKGROUNDS_DIR,
     MAIN_TREEVIEW_CSS,
+    ENTRY_COLORS,
 )
 
 from bibed.preferences import gpod
-from bibed.gtk import Gtk, Gdk
+from bibed.entry import BibedEntry
+from bibed.gtk import Gtk, Gdk, Gio
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class GtkCssAwareMixin:
@@ -26,6 +32,9 @@ class GtkCssAwareMixin:
 
         self.__css_filename = os.path.join(BIBED_DATA_DIR, 'style.css')
 
+        with open(self.__css_filename) as css_file:
+            self.__css_data_string = css_file.read()
+
         try:
             self.set_resource_base_path(BIBED_DATA_DIR)
 
@@ -39,9 +48,6 @@ class GtkCssAwareMixin:
         self.icon_theme = Gtk.IconTheme.get_for_screen(default_screen)
 
         self.icon_theme.add_resource_path(BIBED_DATA_DIR)
-        self.icon_theme.add_resource_path(BIBED_ICONS_DIR)
-
-        self.icon_theme.prepend_search_path(BIBED_ICONS_DIR)
 
         # Get an icon path.
         # icon_info = icon_theme.lookup_icon("my-icon-name", 48, 0)
@@ -62,11 +68,17 @@ class GtkCssAwareMixin:
     @property
     def css_data(self):
 
-        with open(self.__css_filename) as css_file:
-            self.__css_data_string = css_file.read()
+        css_data_string = self.__css_data_string[:] + MAIN_TREEVIEW_CSS
+
+        css_data_string = css_data_string.replace(
+            '{{theme_{}}}'.format(self.__css_theme_disabled), '_disabled')
+
+        css_data_string = css_data_string.replace(
+            '{{theme_{}}}'.format(self.__css_theme), '')
 
         if gpod('use_treeview_background'):
-            background_filename = self.get_random_background()
+            background_filename = \
+                self.get_random_background(self.__css_theme)
             background_position = None
             background_size = None
 
@@ -89,7 +101,9 @@ class GtkCssAwareMixin:
             if background_position is None:
                 background_position = 'left top'
 
-            css_data_string = self.__css_data_string[:] + MAIN_TREEVIEW_CSS
+            # Enable background use in CSS.
+            css_data_string = css_data_string.replace(
+                '{use_background}', '')
 
             css_data_string = css_data_string.replace(
                 '{background_filename}', background_filename)
@@ -98,14 +112,20 @@ class GtkCssAwareMixin:
             css_data_string = css_data_string.replace(
                 '{background_size}', background_size)
 
-            return css_data_string
+        else:
+            css_data_string = css_data_string.replace(
+                '{use_background}', '_disabled')
 
-        return self.__css_data_string
+        # print('CSS DATA\n', css_data_string)
 
-    def get_random_background(self):
+        return css_data_string
 
-        for root, dirs, files in os.walk(BIBED_BACKGROUNDS_DIR):
-            return os.path.join(BIBED_BACKGROUNDS_DIR, random.choice(files))
+    def get_random_background(self, theme):
+
+        for root, dirs, files in os.walk(
+                os.path.join(BIBED_BACKGROUNDS_DIR, theme)):
+            return os.path.join(BIBED_BACKGROUNDS_DIR,
+                                theme, random.choice(files))
 
     def reload_css_provider_data(self):
         ''' The method called from action, button or keyboard shortcut.
@@ -113,4 +133,49 @@ class GtkCssAwareMixin:
             This method calls necessary things to change / cycle background.
         '''
 
+        if self.is_dark_theme():
+            self.__css_theme = 'dark'
+            self.__css_theme_disabled = 'light'
+
+        else:
+            self.__css_theme = 'light'
+            self.__css_theme_disabled = 'dark'
+
+        BibedEntry.COLORS = ENTRY_COLORS[self.__css_theme]
+
+        # self.icon_theme.add_resource_path(BIBED_ICONS_DIR)
+
+        icons_enabled = os.path.join(BIBED_ICONS_DIR, self.__css_theme)
+        icons_disabled = os.path.join(BIBED_ICONS_DIR, self.__css_theme_disabled)
+
+        search_path = self.icon_theme.get_search_path()
+
+        try:
+            search_path.remove(icons_disabled)
+
+        except ValueError:
+            pass
+
+        search_path.insert(0, icons_enabled)
+
+        self.icon_theme.set_search_path(search_path)
+
+        self.icon_theme.rescan_if_needed()
+
+        print(self.icon_theme.get_search_path())
+
         self.css_provider.load_from_data(bytes(self.css_data.encode('utf-8')))
+
+    def is_dark_theme(self):
+
+        try:
+            settings = Gio.Settings("org.gnome.desktop.interface")
+            theme_name = settings.get_string('gtk-theme')
+
+        except Exception:
+            LOGGER.exception('Could not determine theme name.')
+
+            # Still allow user to choose between dark and light themes.
+            return gpod('force_dark_theme')
+
+        return 'dark' in theme_name.lower()

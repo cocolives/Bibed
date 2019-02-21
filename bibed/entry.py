@@ -15,6 +15,7 @@ from bibed.ltrace import (
 
 from bibed.constants import (
     BibAttrs, FileTypes,
+    ENTRY_COLORS,
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
@@ -26,6 +27,7 @@ from bibed.constants import (
 from bibed.strings import asciize, friendly_filename
 from bibed.locale import _
 from bibed.fields import FieldUtils as fu
+from bibed.actions import EntryActionStatusMixin
 from bibed.completion import (
     DeduplicatedStoreColumnCompletion,
 )
@@ -115,7 +117,7 @@ def format_edition(edition, short=False):
 # —————————————————————————————————————————————————————————————————— Classes
 
 
-class BibedEntry:
+class BibedEntry(EntryActionStatusMixin):
     '''
 
         Free fields from BibLaTeX documentation:
@@ -131,6 +133,9 @@ class BibedEntry:
     KEYWORDS_SEPARATOR = ','
     TRASHED_FROM       = 'trashedFrom'
     TRASHED_DATE       = 'trashedDate'
+
+    # Will be set by app / css methods.
+    COLORS = None
 
     files_store = None
 
@@ -784,7 +789,16 @@ class BibedEntry:
         # No need to escape, this column is not displayed.
         return ','.join(self.keywords)
 
-    # ———————————————————————————————————————————————————————— Special: tooltip
+    # —————————————————————————————————————————————— Special: tooltip & context
+
+    @property
+    def context_color(self):
+
+        if self.action_status is not None:
+            return self.COLORS[self.action_status]
+
+        else:
+            return self.COLORS[self.database.filetype]
 
     @property
     def col_tooltip(self):

@@ -22,7 +22,6 @@ from bibed.ltrace import (  # NOQA
 from bibed.constants import (
     BibAttrs,
     FileTypes,
-    FILETYPES_COLORS,
     BIBED_SYSTEM_IMPORTED_NAME,
     BIBED_SYSTEM_QUEUE_NAME,
     BIBED_SYSTEM_TRASH_NAME,
@@ -719,8 +718,8 @@ class BibedDataStore(Gtk.ListStore):
             entry.comp_howpublished,
             entry.comp_entrysubtype,
 
-            # specials.
-            FILETYPES_COLORS[entry.database.filetype],
+            # context.
+            entry.context_color,
         )
 
     def append(self, entry):

@@ -83,16 +83,41 @@ FileTypes.USER      = 0x0000fff
 FileTypes.NOTFOUND  = 0x0000800
 
 
-FILETYPES_COLORS = {
-    FileTypes.SPECIAL   : '#000000',
-    FileTypes.ALL       : '#000000',
-    FileTypes.SEPARATOR : '#000000',
-    FileTypes.SYSTEM    : '#000000',
-    FileTypes.TRASH     : '#999',
-    FileTypes.QUEUE     : '#6c6',
-    FileTypes.TRANSIENT : '#afa',
-    FileTypes.USER      : '#000000',
+ActionStatus = Anything()
+ActionStatus.RUNNING   = 0xff0000
+ActionStatus.WAITING   = 0x00ff00
+ActionStatus.OK        = 0x000100
+ActionStatus.ERROR     = 0x001000
+
+ENTRY_COLORS = {
+    'light': {
+        # —————————————————————————————————————————————————————————— File types
+        FileTypes.SPECIAL   : '#000',
+        FileTypes.ALL       : '#000',
+        FileTypes.SEPARATOR : '#000',
+        FileTypes.SYSTEM    : '#000',
+        FileTypes.TRASH     : '#999',
+        FileTypes.QUEUE     : '#6c6',
+        FileTypes.TRANSIENT : '#afa',
+        FileTypes.USER      : '#000',
+        # ———————————————————————————————————————————————————— Actions & Status
+
+    },
+    'dark': {
+        # —————————————————————————————————————————————————————————— File types
+        FileTypes.SPECIAL   : '#fff',
+        FileTypes.ALL       : '#fff',
+        FileTypes.SEPARATOR : '#fff',
+        FileTypes.SYSTEM    : '#fff',
+        FileTypes.TRASH     : '#999',
+        FileTypes.QUEUE     : '#6c6',
+        FileTypes.TRANSIENT : '#afa',
+        FileTypes.USER      : '#fff',
+        # ———————————————————————————————————————————————————— Actions & Status
+
+    }
 }
+
 
 SEARCH_SPECIALS = (
     (C_('search field', 'p'),
@@ -175,9 +200,28 @@ treeview.view header button {
     background-color: transparent;
 }
 
-scrolledwindow#main {
-    /* TODO: detect background color (light/dark) and set accordingly. */
+treeview.view{theme_dark}:not(:selected) {
+    color: #eeeeec;
+}
+
+treeview.view{theme_light}:not(:selected) {
+    color: #2e3436;
+}
+
+scrolledwindow#main{theme_dark} {
+    color: #eeeeec;
+    background-color: black;
+    /* background-color: #353535; */
+}
+
+scrolledwindow#main{theme_light} {
+    color: #2e3436;
     background-color: white;
+    /* background-color: #f6f5f4; */
+}
+
+
+scrolledwindow#main{use_background} {
     background-image: url("{background_filename}");
     background-size: {background_size};
     background-position: {background_position};
