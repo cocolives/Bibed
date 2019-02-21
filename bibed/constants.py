@@ -91,6 +91,7 @@ ActionStatus.ERROR     = 0x001000
 
 ENTRY_COLORS = {
     'light': {
+
         # —————————————————————————————————————————————————————————— File types
         FileTypes.SPECIAL   : '#000',
         FileTypes.ALL       : '#000',
@@ -100,10 +101,16 @@ ENTRY_COLORS = {
         FileTypes.QUEUE     : '#6c6',
         FileTypes.TRANSIENT : '#afa',
         FileTypes.USER      : '#000',
+
         # ———————————————————————————————————————————————————— Actions & Status
+        ActionStatus.OK     : '#000',
+        ActionStatus.RUNNING: '#87591A',  # Mordoré
+        ActionStatus.WAITING: '#1FA055',  # Vert Malachite
+        ActionStatus.ERROR  : '#C4698F',  # Rose balais
 
     },
     'dark': {
+    
         # —————————————————————————————————————————————————————————— File types
         FileTypes.SPECIAL   : '#fff',
         FileTypes.ALL       : '#fff',
@@ -113,7 +120,12 @@ ENTRY_COLORS = {
         FileTypes.QUEUE     : '#6c6',
         FileTypes.TRANSIENT : '#afa',
         FileTypes.USER      : '#fff',
+
         # ———————————————————————————————————————————————————— Actions & Status
+        ActionStatus.OK     : '#fff',
+        ActionStatus.RUNNING: '#87591A',  # Mordoré
+        ActionStatus.WAITING: '#1FA055',  # Vert Malachite
+        ActionStatus.ERROR  : '#C4698F',  # Rose balais
 
     }
 }

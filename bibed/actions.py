@@ -7,6 +7,11 @@ class EntryActionStatusMixin:
     action_status = None
 
     @property
+    def is_running(self):
+
+        return self.action_status & ActionStatus.RUNNING
+
+    @property
     def is_waiting(self):
 
         return self.action_status & ActionStatus.WAITING
