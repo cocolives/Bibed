@@ -191,3 +191,66 @@ def to_lower_if_not_none(data):
 def bibtex_clean(string_):
 
     return string_.replace(' and ', ' ').replace(' {and} ', ' ')
+
+
+# —————————————————————————————————————————————— LaTeX to Pango Markup and back
+
+LATEX_EXPR = r'[^}]+'
+PANGO_EXPR = r'[^<]+'
+
+L2P_TRANSFORMS = {
+    # This is SOOOOO Basic… It won't even work for nested expressions…
+    # Test expression:
+    # t = r'1\textsuperscript{er} mois avec CH\textsubscript{3}Cl\textsubscript{2} et c\'est \textbf{super bien !} D\'ailleurs je \emph{crois} que \texttt{Gtk & Pango} c\'est vraiment \st{pas} \underline{Coolissime}.'
+    # latex_to_pango_markup(t)
+    # assert t == latex_to_pango_markup(latex_to_pango_markup(t), True)
+    'superscript': (
+        (re.compile(r'\\textsuperscript\{(' + LATEX_EXPR + r')\}'), r'<sup>\1</sup>', ),
+        (re.compile(r'<sup>(' + PANGO_EXPR + r')</sup>'), r'\\textsuperscript{\1}', ),
+    ),
+    'subscript': (
+        (re.compile(r'\\textsubscript\{(' + LATEX_EXPR + r')\}'), r'<sub>\1</sub>', ),
+        (re.compile(r'<sub>(' + PANGO_EXPR + r')</sub>'), r'\\textsubscript{\1}', ),
+    ),
+    'bold': (
+        (re.compile(r'\\textbf\{(' + LATEX_EXPR + r')\}'), r'<b>\1</b>', ),
+        (re.compile(r'<b>(' + PANGO_EXPR + r')</b>'), r'\\textbf{\1}', ),
+    ),
+    'emphasis': (
+        (re.compile(r'\\emph\{(' + LATEX_EXPR + r')\}'), r'<i>\1</i>', ),
+        (re.compile(r'<i>(' + PANGO_EXPR + r')</i>'), r'\\emph{\1}', ),
+    ),
+    'monospace': (
+        (re.compile(r'\\texttt\{(' + LATEX_EXPR + r')\}'), r'<tt>\1</tt>', ),
+        (re.compile(r'<tt>(' + PANGO_EXPR + r')</tt>'), r'\\texttt{\1}', ),
+    ),
+    'underline': (
+        (re.compile(r'\\underline\{(' + LATEX_EXPR + r')\}'), r'<u>\1</u>', ),
+        (re.compile(r'<u>(' + PANGO_EXPR + r')</u>'), r'\\underline{\1}', ),
+    ),
+    'striked': (
+        (re.compile(r'\\s(?:ou)?t\{(' + LATEX_EXPR + r')\}'), r'<s>\1</s>', ),
+        # Note: this needs the latex `ulem` package, but it's
+        #       completely out of Bibed's scope to check this…
+        (re.compile(r'<s>(' + PANGO_EXPR + r')</s>'), r'\\sout{\1}', ),
+    ),
+    'links': (
+        (re.compile(r'\\url\{(' + LATEX_EXPR + r')\}'), r'<a href="\1">\1</a>', ),
+        # Note: this needs the latex `ulem` package, but it's
+        #       completely out of Bibed's scope to check this…
+        (re.compile(r'<a href[^>]+>(' + PANGO_EXPR + r')</a>'), r'\\url{\1}', ),
+    ),
+}
+
+
+def latex_to_pango_markup(text, reverse=False):
+
+    index = 1 if reverse else 0
+
+    for key, value in L2P_TRANSFORMS.items():
+
+        regex, repl = value[index]
+
+        text = regex.sub(repl, text)
+
+    return text
