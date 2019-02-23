@@ -192,12 +192,11 @@ class BibedEntryTreeViewMixin:
         # ) - COL_SEPARATOR_WIDTH * 10)
 
         # print(
-        #     col_key_width,
-        #     col_type_width,
-        #     col_author_width,
-        #     col_in_or_by_width,
-        #     col_year_width,
-        #     # col_title_width,
+        #     'key', col_key_width,
+        #     'author', col_author_width,
+        #     'in_or_by', col_in_or_by_width,
+        #     'year', col_year_width,
+        #     # 'title', col_title_width,
         # )
 
         # self.col_title.set_fixed_width(-1)
