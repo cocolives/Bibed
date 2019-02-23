@@ -17,8 +17,13 @@ from bibed.constants import (
     GRID_BORDER_WIDTH,
 )
 
+from bibed.strings import friendly_filename
 from bibed.preferences import defaults, preferences, memories, gpod
-from bibed.entry import EntryFieldCheckMixin, EntryFieldBuildMixin
+from bibed.entry import (
+    generate_new_key,
+    EntryFieldCheckMixin,
+    EntryFieldBuildMixin,
+)
 from bibed.locale import _
 from bibed.gtk import Gtk, Gdk, Gio
 
@@ -29,7 +34,7 @@ from bibed.gui.helpers import (
     get_children_recursive,
     stack_switch_next,
     add_classes, remove_classes,
-    find_child_by_name,
+    # find_child_by_name,
     build_entry_field_labelled_entry,
     build_entry_field_textview,
     grid_with_common_params,
@@ -562,9 +567,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                 Gtk.Entry(name='new_entry_key'),
                 expand=Gtk.Orientation.HORIZONTAL,
                 # margin=BOXES_BORDER_WIDTH,
-                halign=Gtk.Align.FILL,
+                # halign=Gtk.Align.FILL,
                 valign=Gtk.Align.CENTER,
-                width=300,
+                # width=300,
                 activates_default=True,
             )
 
@@ -582,15 +587,15 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
             hbox = widget_properties(
                 Gtk.HBox(),
-                expand=False,
-                halign=Gtk.Align.CENTER,
+                expand=Gtk.Orientation.HORIZONTAL,
+                valign=Gtk.Align.CENTER,
                 classes=['linked'],
             )
 
-            hbox.add(entry)
-            hbox.add(btn_compute)
+            hbox.pack_start(entry, True, True, 0)
+            hbox.pack_start(btn_compute, False, False, 0)
 
-            vbox.pack_start(hbox, False, True, GRID_ROWS_SPACING)
+            vbox.pack_start(hbox, True, True, GRID_ROWS_SPACING)
 
             # ————————————————————————————————————————— error label (hidden)
 
@@ -610,7 +615,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                 classes=['suggested-action'],
                 connect_to=self.on_rename_confirm_clicked,
                 default=True,
-                connect_args=(entry, popover, ),
+                connect_args=(popover, entry, error_label),
             )
 
             vbox.pack_start(btn_confirm_rename, False, True, 0)
@@ -959,14 +964,9 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
     def on_key_compute_clicked(self, widget, entry):
 
-        LOGGER.info('Compute Button Clicked.')
-
-        # Compute a new key
-        # Fill the entry
-
-        # IDEA: call fix_field_key() and fill new_key with result ?
-
-        pass
+        # Do not close the popup, user
+        # could like to alter the generated key.
+        entry.set_text(generate_new_key(self.entry))
 
     def on_rename_clicked(self, button):
 
@@ -977,15 +977,11 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
         # ).hide()
         self.rename_popover.popup()
 
-    def on_rename_confirm_clicked(self, widget, entry, popover):
+    def on_rename_confirm_clicked(self, widget, popover, new_entry_key, error_label):
 
-        new_key = entry.get_text().strip()
+        new_key = new_entry_key.get_text().strip()
 
-        if new_key in (None, ''):
-            popover.popdown()
-            return
-
-        if new_key == self.entry.key:
+        if new_key in (None, '') or new_key == self.entry.key:
             popover.popdown()
             return
 
@@ -997,13 +993,11 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
         has_key_in = self.files.has_bib_key(new_key)
 
         if has_key_in is not None:
-            error_label = find_child_by_name(popover, 'error_label')
-            new_entry_key = find_child_by_name(popover, 'new_entry_key')
             error_label.set_markup(
                 _('Key already present in\n'
                   '<span face="monospace">{filename}</span>.\n'
                   'Please choose another one.').format(
-                    filename=os.path.basename(has_key_in))
+                    filename=friendly_filename(has_key_in))
             )
             error_label.show()
             add_classes(new_entry_key, ('error', ))
@@ -1015,10 +1009,12 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
         # put old key in 'aliases'
         if 'ids' in self.entry.fields():
-            self.entry['ids'] += ', {}'.format(self.entry.key)
+            old_ids = self.entry.ids
+            old_ids.insert(0, self.entry.key)
+            self.entry.ids = old_ids
 
         else:
-            self.entry['ids'] = self.entry.key
+            self.entry.ids = [self.entry.key]
 
         # This will be done in update_entry_and_save_file()
         # Just for the consistency with "new entry case"
@@ -1027,13 +1023,13 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
         # fake the field change and populate the UI entry
         # for *save() to update the BIB entry key.
-        self.fields['key'].set_text(new_key)
+        self.set_field_value('key', new_key, self.fields['key'])
 
         self.changed_fields |= set(('key', 'ids', ))
 
-        self.update_entry_and_save_file(save=gpod('bib_auto_save'))
-
         popover.popdown()
+
+        self.update_entry_and_save_file(save=gpod('bib_auto_save'))
 
     def on_destination_changed(self, combo):
 
@@ -1260,7 +1256,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                 try:
                     self.changed_fields.remove(field_name)
 
-                except ValueError:
+                except (ValueError, KeyError):
                     pass
 
                 return

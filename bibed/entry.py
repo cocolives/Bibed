@@ -159,11 +159,11 @@ class BibedEntry(EntryActionStatusMixin):
 
         new_entry = cls(
             entry_to_dupe.database,
-            entry_to_dupe.entry.copy(),
+            entry_to_dupe.bib_dict.copy(),
         )
 
         # It's a new entry. Wipe key, else the old could get overwritten.
-        del new_entry.entry['ID']
+        del new_entry.bib_dict['ID']
 
         LOGGER.info('Entry {0} duplicated into {1}'.format(
             entry_to_dupe, new_entry))
@@ -502,6 +502,21 @@ class BibedEntry(EntryActionStatusMixin):
         #       this should be implemented higher
         #       in the GUI check_field*() methods.
         self.bib_dict['ID'] = value
+
+    @property
+    def ids(self):
+
+        return [
+            x.strip()
+            for x in self.bib_dict.get('ids', '').split(',')
+            if x.strip() != ''
+        ]
+
+    @ids.setter
+    def ids(self, value):
+
+        self.bib_dict['ids'] = ', '.join(v for v in value
+                                         if v not in (None, ''))
 
     @property
     def title(self):
@@ -1016,6 +1031,12 @@ class BibedEntry(EntryActionStatusMixin):
             # The data store will be updated later by add_entry().
             self.database.data_store.update_entry(self, fields)
 
+    def pivot_key(self):
+        ''' Special method to update an entry key in the data store. '''
+
+        self.database.data_store.update_entry(
+            self, {BibAttrs.KEY: self.key}, old_keys=self.ids)
+
     def toggle_quality(self):
 
         if self.quality == '':
@@ -1120,9 +1141,16 @@ class EntryKeyGenerator:
         title = entry.title
         year = entry.year
 
+        if year is None:
+            year = ''
+
         if entry.type not in (
                 'book', 'article', 'misc', 'booklet', 'thesis', 'online'):
             prefix = '{}:'.format(entry.type[0].lower())
+
+        elif entry.type in ('misc', ):
+            howpublished = entry.get_field('howpublished', '')
+            prefix = '{}:'.format(howpublished[0].lower()) if howpublished else ''
 
         else:
             prefix = ''
