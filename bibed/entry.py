@@ -775,6 +775,13 @@ class BibedEntry(EntryActionStatusMixin):
 
         title = self.__clean_for_display('title')
 
+        if len(title) <= 32:
+            subtitle = self.__clean_for_display('subtitle')
+
+            if subtitle:
+                title += ' <i>{}</i>'.format(
+                    subtitle[:32] + (subtitle[32:] and '[…]'))
+
         edition = self.bib_dict.get('edition', None)
 
         if edition is not None and edition != '':
