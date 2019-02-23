@@ -1226,6 +1226,11 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     # —————————————————————————————————————————————————————————————— DO actions
 
+    def present(self):
+
+        super().present()
+        self.treeview.set_columns_widths(self.current_size[0])
+
     def do_activate(self):
 
         self.update_title()
