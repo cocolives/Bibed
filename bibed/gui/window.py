@@ -347,18 +347,9 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         hb.pack_end(self.btn_preferences)
 
+        # ——————————————————————————————————————————————————— activity switcher
+
         hb.pack_end(self.stack_switcher)
-
-        self.btn_search = Gtk.Button()
-        self.btn_search.set_tooltip_markup(
-            _('Start searching in selected databases')
-        )
-        icon = Gio.ThemedIcon(name='system-search-symbolic')
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        self.btn_search.add(image)
-        self.btn_search.connect('clicked', self.on_search_clicked)
-
-        hb.pack_end(self.btn_search)
 
         # —————————————————————————————————————————————————————————————— Import
 
@@ -371,7 +362,21 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_import.add(image)
         self.btn_import.connect('clicked', self.on_import_clicked)
 
-        hb.pack_end(self.btn_import)
+        # hb.pack_end(self.btn_import)
+
+        # —————————————————————————————————————————————————————————————— Search
+
+        self.btn_search = Gtk.Button()
+        self.btn_search.set_tooltip_markup(
+            _('Start searching in selected databases')
+        )
+        icon = Gio.ThemedIcon(name='system-search-symbolic')
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_search.add(image)
+        self.btn_search.connect('clicked', self.on_search_clicked)
+
+        hb.pack_end(self.btn_search)
+
         # ————————————————————————————————————————————————————————— End buttons
 
         self.headerbar = hb
@@ -1180,6 +1185,10 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         self.searchbar.set_search_mode(
             not self.searchbar.get_search_mode())
+
+    def on_import_clicked(self, button):
+
+        pass
 
     def on_preferences_clicked(self, button):
 
