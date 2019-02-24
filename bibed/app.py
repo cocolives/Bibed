@@ -47,7 +47,7 @@ LOGGER = logging.getLogger(__name__)
 set_program_name_global(APP_NAME)
 
 
-class BibedApplication(Gtk.Application, GtkCssAwareMixin):
+class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
 
     def __init__(self, *args, **kwargs):
 
