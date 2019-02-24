@@ -285,23 +285,17 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
         # assert lprint(entry)
 
-        # Note: update_entry_key() is a high-level operation. We
-        #       do not touch the store. This will be done by caller.
-
-        old_keys = [x.strip() for x in entry['ids'].split(',')]
-
-        for old_key in old_keys:
-            if old_key in self.keys():
-                old_index = self.entries[old_key][1]
-                break
-
         # delete and re-insert in BibedDatabase.
-        del self.entries[old_key]
-        self.entries[entry.key] = (entry.entry, old_index)
+        for old_key in entry.ids:
+            try:
+                del self.entries[old_key]
 
-        # idem in bibtexparser database.
-        del self.bibdb.entries[old_index]
-        self.bibdb.entries.insert(old_index, entry.entry)
+            except KeyError:
+                pass
+
+        self.entries[entry.key] = entry
+
+        entry.pivot_key()
 
         LOGGER.debug('{0}.update_entry_key({1}) done.'.format(self, entry))
 

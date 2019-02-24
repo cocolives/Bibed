@@ -15,7 +15,7 @@ class SentryHelper(metaclass=Singleton):
 
     def __init__(self):
 
-        self.enabled = False
+        self.__enabled = False
 
         try:
             import sentry_sdk  # NOQA
@@ -31,20 +31,17 @@ class SentryHelper(metaclass=Singleton):
     @property
     def usable(self):
 
-        return self.__usable
+        return self.__usable and self.__enabled
 
     def enable(self):
 
-        if self.enabled:
+        if self.__enabled:
             return
 
-        try:
-            import sentry_sdk
-
-        except Exception:
-            LOGGER.error('Unable to import sentry SDK. '
-                         'Errors will not be reported.')
+        if not self.__usable:
             return
+
+        import sentry_sdk
 
         sentry_dsn = gpod('sentry_dsn')
 
@@ -52,11 +49,11 @@ class SentryHelper(metaclass=Singleton):
 
         LOGGER.info('Using sentry to report errors to {}'.format(sentry_dsn))
 
-        self.enabled = True
+        self.__enabled = True
 
     def disable(self):
 
-        if not self.enabled:
+        if not self.__enabled:
             return
 
         try:
@@ -75,7 +72,7 @@ class SentryHelper(metaclass=Singleton):
 
         LOGGER.info('Disabled sentry error reporting.')
 
-        self.enabled = False
+        self.__enabled = False
 
 
 sentry = SentryHelper()

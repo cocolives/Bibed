@@ -17,7 +17,7 @@ from bibed.locale import C_
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
-APP_VERSION = '0.9.14-develop'
+APP_VERSION = '0.9.15-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
@@ -83,16 +83,53 @@ FileTypes.USER      = 0x0000fff
 FileTypes.NOTFOUND  = 0x0000800
 
 
-FILETYPES_COLORS = {
-    FileTypes.SPECIAL   : '#000000',
-    FileTypes.ALL       : '#000000',
-    FileTypes.SEPARATOR : '#000000',
-    FileTypes.SYSTEM    : '#000000',
-    FileTypes.TRASH     : '#999',
-    FileTypes.QUEUE     : '#6c6',
-    FileTypes.TRANSIENT : '#afa',
-    FileTypes.USER      : '#000000',
+ActionStatus = Anything()
+ActionStatus.RUNNING   = 0xff0000
+ActionStatus.WAITING   = 0x00ff00
+ActionStatus.OK        = 0x000100
+ActionStatus.ERROR     = 0x001000
+
+ENTRY_COLORS = {
+    'light': {
+
+        # —————————————————————————————————————————————————————————— File types
+        FileTypes.SPECIAL   : '#000',
+        FileTypes.ALL       : '#000',
+        FileTypes.SEPARATOR : '#000',
+        FileTypes.SYSTEM    : '#000',
+        FileTypes.TRASH     : '#999',
+        FileTypes.QUEUE     : '#6c6',
+        FileTypes.TRANSIENT : '#afa',
+        FileTypes.USER      : '#000',
+
+        # ———————————————————————————————————————————————————— Actions & Status
+        ActionStatus.OK     : '#000',
+        ActionStatus.RUNNING: '#87591A',  # Mordoré
+        ActionStatus.WAITING: '#1FA055',  # Vert Malachite
+        ActionStatus.ERROR  : '#C4698F',  # Rose balais
+
+    },
+    'dark': {
+
+        # —————————————————————————————————————————————————————————— File types
+        FileTypes.SPECIAL   : '#fff',
+        FileTypes.ALL       : '#fff',
+        FileTypes.SEPARATOR : '#fff',
+        FileTypes.SYSTEM    : '#fff',
+        FileTypes.TRASH     : '#999',
+        FileTypes.QUEUE     : '#6c6',
+        FileTypes.TRANSIENT : '#afa',
+        FileTypes.USER      : '#fff',
+
+        # ———————————————————————————————————————————————————— Actions & Status
+        ActionStatus.OK     : '#fff',
+        ActionStatus.RUNNING: '#87591A',  # Mordoré
+        ActionStatus.WAITING: '#1FA055',  # Vert Malachite
+        ActionStatus.ERROR  : '#C4698F',  # Rose balais
+
+    }
 }
+
 
 SEARCH_SPECIALS = (
     (C_('search field', 'p'),
@@ -175,8 +212,28 @@ treeview.view header button {
     background-color: transparent;
 }
 
-scrolledwindow#main {
+treeview.view{theme_dark}:not(:selected) {
+    color: #eeeeec;
+}
+
+treeview.view{theme_light}:not(:selected) {
+    color: #2e3436;
+}
+
+scrolledwindow#main{theme_dark} {
+    color: #eeeeec;
+    background-color: black;
+    /* background-color: #353535; */
+}
+
+scrolledwindow#main{theme_light} {
+    color: #2e3436;
     background-color: white;
+    /* background-color: #f6f5f4; */
+}
+
+
+scrolledwindow#main{use_background} {
     background-image: url("{background_filename}");
     background-size: {background_size};
     background-position: {background_position};
@@ -223,8 +280,8 @@ HELP_POPOVER_LABEL_MARGIN = 10
 MAX_KEYWORDS_IN_TOOLTIPS = 20
 
 # expressed in number of characters
-ABSTRACT_MAX_LENGHT_IN_TOOLTIPS = 512
-COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS = 96
+TEXT_MAX_LENGHT_IN_TOOLTIPS = 384
+TEXT_LENGHT_FOR_CR_IN_TOOLTIPS = 96
 
 
 GENERIC_HELP_SYMBOL = (

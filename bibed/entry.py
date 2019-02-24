@@ -15,17 +15,23 @@ from bibed.ltrace import (
 
 from bibed.constants import (
     BibAttrs, FileTypes,
+    ENTRY_COLORS,
     JABREF_READ_KEYWORDS,
     JABREF_QUALITY_KEYWORDS,
     MAX_KEYWORDS_IN_TOOLTIPS,
     MINIMUM_BIB_KEY_LENGTH,
-    ABSTRACT_MAX_LENGHT_IN_TOOLTIPS,
-    COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS,
+    TEXT_MAX_LENGHT_IN_TOOLTIPS,
+    TEXT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
-from bibed.strings import asciize, friendly_filename
+from bibed.strings import (
+    asciize,
+    friendly_filename,
+    latex_to_pango_markup,
+)
 from bibed.locale import _
 from bibed.fields import FieldUtils as fu
+from bibed.actions import EntryActionStatusMixin
 from bibed.completion import (
     DeduplicatedStoreColumnCompletion,
 )
@@ -38,7 +44,7 @@ from bibed.gtk import GLib
 LOGGER = logging.getLogger(__name__)
 
 
-# —————————————————————————————————————————————————————— regular expressions
+# ————————————————————————————————————————————————————————— Regular expressions
 
 
 KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
@@ -46,7 +52,8 @@ KEY_RE = re.compile('^[a-z]([-:_a-z0-9]){2,}$', re.IGNORECASE)
 # There is a non-breaking space and an space.
 SPLIT_RE = re.compile(' | |:|,|;|\'|"|«|»|“|”|‘|’', re.IGNORECASE)
 
-# ———————————————————————————————————————————————————————————————— Functions
+
+# ——————————————————————————————————————————————————————————————————— Functions
 
 markup_escape_text = GLib.markup_escape_text
 bibtexparser_as_text = bibtexparser.bibdatabase.as_text
@@ -112,10 +119,10 @@ def format_edition(edition, short=False):
         return _('{ednum}th edition').format(ednum=edition)
 
 
-# —————————————————————————————————————————————————————————————————— Classes
+# ————————————————————————————————————————————————————————————————————— Classes
 
 
-class BibedEntry:
+class BibedEntry(EntryActionStatusMixin):
     '''
 
         Free fields from BibLaTeX documentation:
@@ -131,6 +138,9 @@ class BibedEntry:
     KEYWORDS_SEPARATOR = ','
     TRASHED_FROM       = 'trashedFrom'
     TRASHED_DATE       = 'trashedDate'
+
+    # Will be set by app / css methods.
+    COLORS = None
 
     files_store = None
 
@@ -149,11 +159,11 @@ class BibedEntry:
 
         new_entry = cls(
             entry_to_dupe.database,
-            entry_to_dupe.entry.copy(),
+            entry_to_dupe.bib_dict.copy(),
         )
 
         # It's a new entry. Wipe key, else the old could get overwritten.
-        del new_entry.entry['ID']
+        del new_entry.bib_dict['ID']
 
         LOGGER.info('Entry {0} duplicated into {1}'.format(
             entry_to_dupe, new_entry))
@@ -327,9 +337,9 @@ class BibedEntry:
         return text
 
     def __clean_for_display(self, name):
+        ''' Be aggrssive against BibLaTeX and bibtexparser, for GUI display. '''
 
         # TODO: do better than this.
-
         field = bibtexparser_as_text(self.bib_dict.get(name, ''))
 
         if field == '':
@@ -338,10 +348,15 @@ class BibedEntry:
         if field.startswith('{') and field.endswith('}'):
             field = field[1:-1]
 
-        if '{' in field:
+        # Still in persons fields, we have can have more than one level of {}s.
+        if '{' in field and '\\' not in field:
+            # but if we've got some backslashes, we have latex commands.
+            # Don't remove them, else latex_to_pango_markup() will fail.
             field = field.replace('{', '').replace('}', '')
 
-        field = field.replace('\\&', '&')
+        # WARNING: order is important, else pango markup gets escaped…
+        field = markup_escape_text(field)
+        field = latex_to_pango_markup(field, reverse=False)
 
         return field
 
@@ -489,6 +504,21 @@ class BibedEntry:
         self.bib_dict['ID'] = value
 
     @property
+    def ids(self):
+
+        return [
+            x.strip()
+            for x in self.bib_dict.get('ids', '').split(',')
+            if x.strip() != ''
+        ]
+
+    @ids.setter
+    def ids(self, value):
+
+        self.bib_dict['ids'] = ', '.join(v for v in value
+                                         if v not in (None, ''))
+
+    @property
     def title(self):
 
         return self.__clean_for_display('title')
@@ -521,17 +551,23 @@ class BibedEntry:
 
         # assert lprint_caller_name(levels=5)
 
-        try:
-            return int(
-                self.bib_dict.get(
-                    'year',
+        year = self.bib_dict.get('year', None)
 
-                    # TODO: handle non-ISO date gracefully.
-                    self.bib_dict['date'].split('-')[0])
-            )
-        except (KeyError, AttributeError):
-            # print('NONE', self.key)
-            return None
+        if year is None:
+            date = self.bib_dict.get('date', None)
+
+            if date is None:
+                return None
+
+            try:
+                # TODO: handle non-ISO date gracefully.
+                return int(date.split('-')[0])
+
+            except Exception:
+                return None
+
+        else:
+            return int(year)
 
     @property
     def keywords(self):
@@ -737,7 +773,14 @@ class BibedEntry:
     @property
     def col_title(self):
 
-        title = markup_escape_text(self.title)
+        title = self.__clean_for_display('title')
+
+        if len(title) <= 32:
+            subtitle = self.__clean_for_display('subtitle')
+
+            if subtitle:
+                title += ' <i>{}</i>'.format(
+                    subtitle[:32] + (subtitle[32:] and '[…]'))
 
         edition = self.bib_dict.get('edition', None)
 
@@ -778,7 +821,16 @@ class BibedEntry:
         # No need to escape, this column is not displayed.
         return ','.join(self.keywords)
 
-    # ———————————————————————————————————————————————————————— Special: tooltip
+    # —————————————————————————————————————————————— Special: tooltip & context
+
+    @property
+    def context_color(self):
+
+        if self.action_status is not None:
+            return self.COLORS[self.action_status]
+
+        else:
+            return self.COLORS[self.database.filetype]
 
     @property
     def col_tooltip(self):
@@ -800,7 +852,7 @@ class BibedEntry:
         base_tooltip = (
             '<big><i>{title}</i></big>\n{subtitle}'
             'by <b>{author}</b>'.format(
-                title=strike(esc(self.title)),
+                title=strike(self.col_title),
                 subtitle='<i>{}</i>\n'.format(strike(esc(subtitle)))
                 if subtitle else '',
                 author=esc(self.author),
@@ -817,20 +869,27 @@ class BibedEntry:
         tooltips.append(base_tooltip)
 
         if self.comment:
+            comment = self.comment
+            comment_cr = (
+                '\n'
+                if len(comment) > TEXT_LENGHT_FOR_CR_IN_TOOLTIPS
+                else ' '
+            )
+            comment = comment[:TEXT_MAX_LENGHT_IN_TOOLTIPS] \
+                + (comment[TEXT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
+
             tooltips.append('<b>Comment:</b>{cr}{comment}'.format(
-                cr='\n'
-                if len(self.comment) > COMMENT_LENGHT_FOR_CR_IN_TOOLTIPS
-                else ' ',  # Note the space.
-                comment=esc(self.comment)))
+                cr=comment_cr,  # Note the space.
+                comment=latex_to_pango_markup(esc(comment))))
 
         abstract = self.get_field('abstract', default='')
 
         if abstract:
-            abstract = abstract[:ABSTRACT_MAX_LENGHT_IN_TOOLTIPS] \
-                + (abstract[ABSTRACT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
+            abstract = abstract[:TEXT_MAX_LENGHT_IN_TOOLTIPS] \
+                + (abstract[TEXT_MAX_LENGHT_IN_TOOLTIPS:] and '[…]')
 
             tooltips.append('<b>Abstract</b>:\n{abstract}'.format(
-                abstract=esc(abstract)))
+                abstract=latex_to_pango_markup(esc(abstract))))
 
         keywords = self.keywords
 
@@ -850,7 +909,7 @@ class BibedEntry:
         url = self.get_field('url', '')
 
         if url:
-            tooltips.append('<b>URL:</b> <a href="{url}">{url}</a>'.format(url=url))
+            tooltips.append('<b>URL:</b> <a href="{url}">{url}</a>'.format(url=esc(url)))
 
         if is_trashed:
             tFrom, tDate = self.trashed_informations
@@ -979,6 +1038,12 @@ class BibedEntry:
             # The data store will be updated later by add_entry().
             self.database.data_store.update_entry(self, fields)
 
+    def pivot_key(self):
+        ''' Special method to update an entry key in the data store. '''
+
+        self.database.data_store.update_entry(
+            self, {BibAttrs.KEY: self.key}, old_keys=self.ids)
+
     def toggle_quality(self):
 
         if self.quality == '':
@@ -1083,9 +1148,16 @@ class EntryKeyGenerator:
         title = entry.title
         year = entry.year
 
+        if year is None:
+            year = ''
+
         if entry.type not in (
                 'book', 'article', 'misc', 'booklet', 'thesis', 'online'):
             prefix = '{}:'.format(entry.type[0].lower())
+
+        elif entry.type in ('misc', ):
+            howpublished = entry.get_field('howpublished', '')
+            prefix = '{}:'.format(howpublished[0].lower()) if howpublished else ''
 
         else:
             prefix = ''
@@ -1196,6 +1268,11 @@ class EntryFieldCheckMixin:
 
     def check_field_year(self, all_fields, field_name, field, field_value):
 
+        if fu.value_is_empty(field_value):
+            # User has removed the date after having
+            # typed something. Everything is fine.
+            return
+
         field_value = field_value.strip()
 
         if len(field_value) != 4:
@@ -1232,15 +1309,15 @@ class EntryFieldCheckMixin:
 
     def check_field_date(self, all_fields, field_name, field, field_value):
 
-        error_message = (
-            'Invalid ISO date. '
-            'Please type a date in the format YYYY-MM-DD.'
-        )
-
         if fu.value_is_empty(field_value):
             # User has removed the date after having
             # typed something. Everything is fine.
             return
+
+        error_message = (
+            'Invalid ISO date. '
+            'Please type a date in the format YYYY-MM-DD.'
+        )
 
         if len(field_value) < 10:
             return error_message

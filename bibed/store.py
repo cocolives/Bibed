@@ -22,7 +22,6 @@ from bibed.ltrace import (  # NOQA
 from bibed.constants import (
     BibAttrs,
     FileTypes,
-    FILETYPES_COLORS,
     BIBED_SYSTEM_IMPORTED_NAME,
     BIBED_SYSTEM_QUEUE_NAME,
     BIBED_SYSTEM_TRASH_NAME,
@@ -550,7 +549,7 @@ class BibedFileStore(Gio.ListStore):
 
         database_to_write.write()
 
-    def close(self, db_to_close, save_before=True, remember_close=True):
+    def close(self, db_to_close, save_before=False, remember_close=True):
 
         # assert lprint_function_name()
         # assert lprint(filename, save_before, remember_close)
@@ -719,8 +718,8 @@ class BibedDataStore(Gtk.ListStore):
             entry.comp_howpublished,
             entry.comp_entrysubtype,
 
-            # specials.
-            FILETYPES_COLORS[entry.database.filetype],
+            # context.
+            entry.context_color,
         )
 
     def append(self, entry):
@@ -737,16 +736,19 @@ class BibedDataStore(Gtk.ListStore):
 
         LOGGER.debug('Row {} created with entry {}.'.format(index, entry.key))
 
-    def update_entry(self, entry, fields=None):
+    def update_entry(self, entry, fields=None, old_keys=None):
 
         # assert lprint_function_name()
 
         key_col = BibAttrs.KEY
-        key_to_update = entry.key
+
+        # NOTE: even if old_keys is an array, only ONE will be matched,
+        #       because it's the one that have just been renamed.
+        keys_to_update = [entry.key] if old_keys is None else old_keys
         index = None
 
         for index, row in enumerate(self):
-            if row[key_col] == key_to_update:
+            if row[key_col] in keys_to_update:
                 if fields:
                     for key, value in fields.items():
                         row[key] = value

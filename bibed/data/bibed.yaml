@@ -1953,6 +1953,7 @@ fields:
     - verba
     - verbb
     - verbc
+force_dark_theme: false
 keep_recent_files: 10
 remember_last_destination: true
 remember_open_files: true

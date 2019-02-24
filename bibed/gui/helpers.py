@@ -30,33 +30,6 @@ def bibed_icon_name(icon_category, icon_name):
     return 'bibed-{}-{}'.format(icon_category, icon_name)
 
 
-def is_dark_theme():
-
-    '''
-    	gint		textAvg, bgAvg;
-
-
-	textAvg = style->text[GTK_STATE_NORMAL].red / 256 +
-	        style->text[GTK_STATE_NORMAL].green / 256 +
-	        style->text[GTK_STATE_NORMAL].blue / 256;
-
-
-	bgAvg = style->bg[GTK_STATE_NORMAL].red / 256 +
-	        style->bg[GTK_STATE_NORMAL].green / 256 +
-	        style->bg[GTK_STATE_NORMAL].blue / 256;
-
-
-	if (textAvg > bgAvg)
-		darkTheme = TRUE;
-
-        cf. https://lzone.de/blog/Detecting%20a%20Dark%20Theme%20in%20GTK
-
-        We need to detect if automathemely is installed.
-        https://www.linuxuprising.com/2018/08/automatically-switch-to-light-dark-gtk.html
-    '''
-    pass
-
-
 def get_screen_size(window=None):
 
     if os.name != 'posix':

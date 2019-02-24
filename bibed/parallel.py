@@ -42,6 +42,8 @@ def run_and_wait_on(func, *args, **kwargs):
         while Gtk.events_pending():
             Gtk.main_iteration()
 
+    thread.join()
+
 
 def run_in_background(func, event, *args, **kwargs):
     ''' Start a daemon thread and forget it. It should run a finite function.
