@@ -28,7 +28,7 @@ from bibed.parallel import run_and_wait_on
 from bibed.locale import _, NO_
 
 # Import Gtk before preferences, to initialize GI.
-from bibed.gtk import Gio, Gtk, Gdk, Notify
+from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
