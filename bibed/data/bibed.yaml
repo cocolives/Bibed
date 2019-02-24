@@ -19,6 +19,7 @@ bib_auto_save: true
 bib_backup_count: 10
 bib_update_owner: false
 bib_update_timestamp: false
+clear_clipboard_after_import: true
 docs:
   missing_and_omissible_data:
     content: "The fields marked as \u2018required\u2019 are not strictly required\
@@ -2217,6 +2218,7 @@ types:
   - set
   - xdata
 url_action_opens_browser: true
+use_global_paste: true
 use_sentry: true
-use_trash: false
+use_trash: true
 use_treeview_background: true
