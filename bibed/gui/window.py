@@ -218,7 +218,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         # This is to connect the headerbar close button to our quit method.
         self.connect('delete-event', self.application.on_quit)
 
-        # ———————————————————————— Left side, from start to end
+        # ———————————————————————————————————————— Left side, from start to end
 
         bbox_file = widget_properties(
             Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL),
@@ -333,7 +333,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         hb.pack_start(bbox_entry_multi)
 
-        # ————————————————————————————— Right side, from end to start
+        # ——————————————————————————————————————— Right side, from end to start
 
         self.btn_preferences = Gtk.Button()
         self.btn_preferences.set_tooltip_markup(
@@ -372,6 +372,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_import.connect('clicked', self.on_import_clicked)
 
         hb.pack_end(self.btn_import)
+        # ————————————————————————————————————————————————————————— End buttons
 
         self.headerbar = hb
 
