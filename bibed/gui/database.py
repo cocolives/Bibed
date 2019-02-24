@@ -351,7 +351,7 @@ class BibedDatabasePopover(Gtk.Popover):
         icon = Gio.ThemedIcon(name='edit-select-all-symbolic')
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         self.btn_select_all.add(image)
-        self.btn_select_all.set_tooltip_markup('Select all files for display.')
+        self.btn_select_all.set_tooltip_markup(_('Select all files for display.'))
         self.btn_select_all.connect(
             'clicked', self.on_select_all_clicked)
 

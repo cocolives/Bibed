@@ -3,6 +3,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Gdk', '3.0')
 gi.require_version('Notify', '0.7')
 gi.require_version('Dazzle', '1.0')
+gi.require_version('WebKit2', '4.0')
 
 from gi.repository import (  # NOQA
     GObject,
@@ -14,4 +15,5 @@ from gi.repository import (  # NOQA
     Pango,
     Notify,
     Dazzle,
+    WebKit2,
 )

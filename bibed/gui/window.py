@@ -360,6 +360,19 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         hb.pack_end(self.btn_search)
 
+        # —————————————————————————————————————————————————————————————— Import
+
+        self.btn_import = Gtk.Button()
+        self.btn_import.set_tooltip_markup(
+            _('Import any data / file.')
+        )
+        icon = Gio.ThemedIcon(name='document-save-symbolic')
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        self.btn_import.add(image)
+        self.btn_import.connect('clicked', self.on_import_clicked)
+
+        hb.pack_end(self.btn_import)
+
         self.headerbar = hb
 
     def setup_booked(self):
@@ -681,6 +694,21 @@ class BibedWindow(Gtk.ApplicationWindow):
             event.state & (Gdk.ModifierType.CONTROL_MASK
                            | Gdk.ModifierType.SHIFT_MASK)
         )
+
+        if ctrl and keyval == Gdk.KEY_v:
+
+            if gpod('use_global_paste'):
+                self.tv_import.get_buffer().set_text(
+                    self.application.clipboard.wait_for_text()
+                )
+
+                if gpod('clear_clipboard_after_import'):
+                    self.application.clipboard.clear()
+
+                # self.btn_import.emit()
+
+            else:
+                LOGGER.warning('Data pasted but global paste is not enabled.')
 
         if ctrl and keyval == Gdk.KEY_c:
             self.treeview.copy_entries_keys_formatted_to_clipboard()

@@ -1,3 +1,5 @@
 bibtexparser
 pygobject
 pyinotify
+isbnlib
+sentry_sdk

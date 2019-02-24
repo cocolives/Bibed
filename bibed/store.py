@@ -502,7 +502,7 @@ class BibedFileStore(Gio.ListStore):
 
         database = BibedDatabase(filename, filetype)
 
-        if impact_data_store:
+        if impact_data_store and self.data_store is not None:
             for entry in database.values():
                 self.data_store.append(entry)
 
@@ -646,6 +646,10 @@ class BibedFileStore(Gio.ListStore):
 
         # assert lprint_function_name()
         # assert lprint(filename)
+
+        if self.data_store is None:
+            # We are in the background process, no data_store.
+            return
 
         if database is None:
             # clear all USER data only (no system).
