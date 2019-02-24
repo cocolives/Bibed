@@ -337,7 +337,7 @@ class BibedEntry(EntryActionStatusMixin):
         return text
 
     def __clean_for_display(self, name):
-        ''' Be aggrssive against BibLaTeX and bibtexparser, for GUI display. '''
+        ''' Be agressive against BibLaTeX and bibtexparser, for GUI display. '''
 
         # TODO: do better than this.
         field = bibtexparser_as_text(self.bib_dict.get(name, ''))
@@ -359,6 +359,10 @@ class BibedEntry(EntryActionStatusMixin):
         field = latex_to_pango_markup(field, reverse=False)
 
         return field
+
+    def __format_names(self, names_string):
+
+        return names_string.replace(' {and} ', ', ').replace(' and ', ', ')
 
     # ———————————————————————————————————————————————————— Methods & attributes
 
@@ -546,6 +550,13 @@ class BibedEntry(EntryActionStatusMixin):
         return self.__clean_for_display('author')
 
     @property
+    def editor(self):
+
+        # TODO: handle {and}, "and", and other author particularities.
+
+        return self.__clean_for_display('editor')
+
+    @property
     def year(self):
         ''' Will try to return year field or year part of date field. '''
 
@@ -691,58 +702,46 @@ class BibedEntry(EntryActionStatusMixin):
 
         # TODO: handle {and}, "and", and other author particularities.
 
-        return markup_escape_text(self.author)
+        author = self.author
+
+        if author in (None, '', ):
+            editor = self.editor
+
+            if editor in (None, '', ):
+                return ''
+
+            else:
+                return _('<span color="grey">{} (Ed.)</span>').format(
+                    markup_escape_text(self.__format_names(editor)))
+
+        else:
+            return markup_escape_text(self.__format_names(author))
 
     @property
     def col_in_or_by(self):
 
-        if self.bib_dict['ENTRYTYPE'] == 'article':
-            fields_names = (
-                'journaltitle', 'booktitle',
-                # backward compatible field name for JabRef.
-                'journal',
-            )
+        fields_to_try = (
+            'journaltitle',
+            'publisher',
+            'howpublished',
+            'institution',
+            'organization',
+            'booktitle',
+            'isbn',
 
-        elif 'book' in self.bib_dict['ENTRYTYPE']:
-            fields_names = (
-                'publisher',
-                'booktitle',
-                'isbn',
-            )
+            # backward compatible field name for JabRef.
+            'journal',
 
-        else:
-            fields_names = (
-                'howpublished',
-                'institution',
-                'school',
-                'organization',
-            )
+            # other backward compatible fields.
+            'school',
+        )
 
-        for field_name in fields_names:
+        for field_name in fields_to_try:
 
-            if isinstance(field_name, tuple):
-                values = []
+            field_value = self.__clean_for_display(field_name)
 
-                for subfield_name in field_name:
-                    field_value = self.__clean_for_display(subfield_name)
-
-                    if field_value:
-                        if subfield_name == 'edition':
-                            values.append(
-                                '<span color="grey">{}</span>'.format(
-                                    format_edition(field_value, short=True)))
-
-                        else:
-                            values.append(markup_escape_text(field_value))
-
-                if values:
-                    return ', '.join(values)
-
-            else:
-                field_value = self.__clean_for_display(field_name)
-
-                if field_value:
-                    return markup_escape_text(field_value)
+            if field_value:
+                return markup_escape_text(field_value)
 
         return ''
 
@@ -775,12 +774,11 @@ class BibedEntry(EntryActionStatusMixin):
 
         title = self.__clean_for_display('title')
 
-        if len(title) <= 32:
+        if len(title) <= 48:
             subtitle = self.__clean_for_display('subtitle')
 
             if subtitle:
-                title += ' <i>{}</i>'.format(
-                    subtitle[:32] + (subtitle[32:] and '[…]'))
+                title += ': <i>{}</i>'.format(subtitle)
 
         edition = self.bib_dict.get('edition', None)
 
@@ -855,7 +853,7 @@ class BibedEntry(EntryActionStatusMixin):
                 title=strike(self.col_title),
                 subtitle='<i>{}</i>\n'.format(strike(esc(subtitle)))
                 if subtitle else '',
-                author=esc(self.author),
+                author=esc(self.col_author),
             )
         )
 
