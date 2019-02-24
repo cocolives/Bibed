@@ -386,7 +386,6 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin):
 
             else:
                 self.window.files_popover.listbox.select_all()
-                # self.window.do_activate()
 
         if self.session.search_grab_focus:
             self.window.searchbar.set_search_mode(True)
