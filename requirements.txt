@@ -1,3 +1,4 @@
 bibtexparser
 pygobject
 pyinotify
+sentry_sdk
