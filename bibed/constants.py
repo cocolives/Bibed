@@ -17,7 +17,7 @@ from bibed.locale import C_
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
-APP_VERSION = '0.9.15.4-develop'
+APP_VERSION = '0.9.15.5-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
 BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
