@@ -107,6 +107,16 @@ if __name__ == '__main__':
 
         run_and_wait_on(sentry.enable)
 
+        if __debug__:
+            assert sentry.usable
+
+            import sentry_sdk
+            try:
+                raise Exception('Test exception Bibed')
+
+            except Exception:
+                sentry_sdk.capture_exception()
+
         LOGGER.debug('Sentry startup time: {}'.format(
             seconds_to_string(time.time() - time_start)))
 

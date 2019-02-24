@@ -28,7 +28,8 @@ from bibed.parallel import run_and_wait_on
 from bibed.locale import _, NO_
 
 # Import Gtk before preferences, to initialize GI.
-from bibed.gtk import Gio, GLib, Gtk, Gdk, Notify
+from bibed.gtk import Gio, Gtk, Gdk, Notify
+from bibed.daemon import BibedDaemonMixin
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
@@ -60,11 +61,8 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin):
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE,
                          **kwargs)
 
-        self.add_main_option(
-            "test", ord("t"),
-            GLib.OptionFlags.NONE,
-            GLib.OptionArg.NONE,
-            "Command line test", None)
+        # from BibedDaemonMixin
+        self.daemon_setup()
 
         # TODO: If there is a resource located at “gtk/help-overlay.ui”
         # which defines a Gtk.ShortcutsWindow with ID “help_overlay” […].
@@ -72,6 +70,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin):
         # associate the item with the action win.show-help-overlay.
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+
         self.window = None
 
         self.setup_data_store()
