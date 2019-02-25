@@ -20,7 +20,7 @@ from bibed.constants import (
 from bibed.strings import friendly_filename
 from bibed.preferences import defaults, preferences, memories, gpod
 from bibed.entry import (
-    generate_new_key,
+    EntryKeyGenerator,
     EntryFieldCheckMixin,
     EntryFieldBuildMixin,
 )
@@ -966,7 +966,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
         # Do not close the popup, user
         # could like to alter the generated key.
-        entry.set_text(generate_new_key(self.entry))
+        entry.set_text(EntryKeyGenerator.generate_new_key(self.entry))
 
     def on_rename_clicked(self, button):
 
@@ -1162,6 +1162,15 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
         else:
             pass
 
+    def get_entry_for_generator(self, generator):
+
+        otf_entry = self.entry.new_from_type(self.entry.type)
+
+        for field_name in generator.usable_fields:
+            otf_entry.set_field(field_name, self.get_field_value(field_name))
+
+        return otf_entry
+
     def get_field_value(self, field_name, widget=None):
 
         if widget is None:
@@ -1260,6 +1269,19 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                     pass
 
                 return
+
+        # Generate a key on the fly as usable fields change.
+        # Display it as place holder only so that the user
+        # can still type one. If none is typed, the auto-generation
+        # mechanism will di its job anyway at dialog close.
+        if self.brand_new and 'key' not in self.changed_fields \
+                and field_name in EntryKeyGenerator.usable_fields:
+            with self.block_changed_signal(self.fields['key']):
+                self.fields['key'].set_placeholder_text(
+                    EntryKeyGenerator.generate_new_key(
+                        self.get_entry_for_generator(EntryKeyGenerator)
+                    )
+                )
 
         # Multiple updates to same widget will be
         # recorded only once, thanks to the set.
