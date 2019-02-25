@@ -408,7 +408,10 @@ class BibedEntry(EntryActionStatusMixin):
         if value in (None, '', ):
             # remove field. Doing this here is
             # required by field mechanics in GUI.
-            del self.bib_dict[name]
+            try:
+                del self.bib_dict[name]
+            except KeyError:
+                pass
             return
 
         name = self.__internal_translate(name)
