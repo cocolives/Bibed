@@ -26,6 +26,7 @@ from bibed.constants import (
 
 from bibed.strings import (
     asciize,
+    bibtex_clean,
     friendly_filename,
     latex_to_pango_markup,
 )
@@ -359,10 +360,6 @@ class BibedEntry(EntryActionStatusMixin):
         field = latex_to_pango_markup(field, reverse=False)
 
         return field
-
-    def __format_names(self, names_string):
-
-        return names_string.replace(' {and} ', ', ').replace(' and ', ', ')
 
     # ———————————————————————————————————————————————————— Methods & attributes
 
@@ -715,10 +712,10 @@ class BibedEntry(EntryActionStatusMixin):
 
             else:
                 return _('<span color="grey">{} (Ed.)</span>').format(
-                    markup_escape_text(self.__format_names(editor)))
+                    markup_escape_text(bibtex_clean(editor)))
 
         else:
-            return markup_escape_text(self.__format_names(author))
+            return markup_escape_text(bibtex_clean(author))
 
     @property
     def col_in_or_by(self):
