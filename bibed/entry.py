@@ -1082,6 +1082,12 @@ class BibedEntry(EntryActionStatusMixin):
 
 class EntryKeyGenerator:
 
+    usable_fields = (
+        'author',
+        'title',
+        'year',
+    )
+
     @staticmethod
     def format_title(title):
         ''' Return first letter of each word. '''
