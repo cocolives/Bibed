@@ -190,7 +190,7 @@ def to_lower_if_not_none(data):
 
 def bibtex_clean(string_):
 
-    return string_.replace(' and ', ' ').replace(' {and} ', ' ')
+    return string_.replace(' {and} ', ' ').replace(' and ', ' ')
 
 
 # —————————————————————————————————————————————— LaTeX to Pango Markup and back
