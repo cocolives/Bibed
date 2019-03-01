@@ -45,7 +45,7 @@ def run_and_wait_on(func, *args, **kwargs):
     thread.join()
 
 
-def run_in_background(func, event, *args, **kwargs):
+def run_in_background(func, event=None, *args, **kwargs):
     ''' Start a daemon thread and forget it. It should run a finite function.
 
         :param event: a :class:`~threading.Event` instance. Can be ``none``.
