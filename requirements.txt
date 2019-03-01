@@ -2,4 +2,10 @@ bibtexparser
 pygobject
 pyinotify
 isbnlib
+isbnlib-oclc
+isbnlib-bnf
+isbnlib-mcues
+isbnlib-dnb
+isbnlib-porbase
+isbnlib-loc
 sentry_sdk
