@@ -4,7 +4,7 @@ import logging
 
 from yaml.representer import Representer
 
-# from bibed.ltrace import lprint, lprint_caller_name
+from bibed.ltrace import lprint, lprint_caller_name
 from bibed.decorators import run_at_most_every  # only_one_when_idle
 from bibed.foundations import AttributeDict
 from bibed.system import touch_file
