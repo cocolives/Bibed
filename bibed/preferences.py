@@ -2,9 +2,13 @@
 import os
 import logging
 
-from bibed.foundations import Singleton, AttributeDict
+from bibed.foundations import (
+    Singleton,
+    AttributeDict,
+    BIBED_DATA_DIR,
+)
 from bibed.yaml import AttributeDictFromYaml
-from bibed.user import get_bibed_user_dir
+from bibed.user import BIBED_USER_DIR
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,6 +34,9 @@ def gpod(preference_name):
     pref = getattr(preferences, preference_name)
 
     if pref is None:
+
+        assert getattr(defaults, preference_name) is not None, 'NO DEFAULT FOR {}'.format(preference_name)
+
         return getattr(defaults, preference_name)
 
     return pref
@@ -38,15 +45,11 @@ def gpod(preference_name):
 
 
 class ApplicationDefaults(AttributeDictFromYaml, metaclass=Singleton):
-    filename = os.path.join(os.path.dirname(
-                            os.path.abspath(__file__)),
-                            'data',
-                            PREFERENCES_FILENAME)
+    filename = os.path.join(BIBED_DATA_DIR, PREFERENCES_FILENAME)
 
 
 class UserPreferences(AttributeDictFromYaml, metaclass=Singleton):
-    filename = os.path.join(get_bibed_user_dir(),
-                            PREFERENCES_FILENAME)
+    filename = os.path.join(BIBED_USER_DIR, PREFERENCES_FILENAME)
 
     def __init__(self, defaults, *args, **kwargs):
 
@@ -67,8 +70,7 @@ class UserPreferences(AttributeDictFromYaml, metaclass=Singleton):
 
 
 class UserMemories(AttributeDictFromYaml, metaclass=Singleton):
-    filename = os.path.join(get_bibed_user_dir(),
-                            MEMORIES_FILENAME)
+    filename = os.path.join(BIBED_USER_DIR, MEMORIES_FILENAME)
 
     def __init__(self, defaults, preferences, *args, **kwargs):
 

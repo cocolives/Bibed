@@ -45,9 +45,10 @@ def get_bibed_user_dir():
 
 def make_bibed_user_dir():
 
-    bibed_user_dir = get_bibed_user_dir()
-
-    for folder in (bibed_user_dir, BIBED_LOG_DIR):
+    for folder in (
+        BIBED_USER_DIR,
+        BIBED_LOG_DIR,
+    ):
         try:
             os.makedirs(folder)
 
@@ -57,11 +58,12 @@ def make_bibed_user_dir():
         except Exception:
             sys.stderr.write(
                 'Could not create preferences directory “{}”.'.format(
-                    bibed_user_dir))
+                    BIBED_USER_DIR))
             raise SystemExit(1)
 
 
-BIBED_LOG_DIR = os.path.join(get_bibed_user_dir(), 'logs', )
+BIBED_USER_DIR = get_bibed_user_dir()
+BIBED_LOG_DIR = os.path.join(BIBED_USER_DIR, 'logs', )
 BIBED_LOG_FILE = os.path.join(BIBED_LOG_DIR, 'bibed.log')
 
 
