@@ -20,6 +20,7 @@ bib_backup_count: 10
 bib_update_owner: false
 bib_update_timestamp: false
 clear_clipboard_after_import: true
+detailled_system_status: false
 docs:
   missing_and_omissible_data:
     content: "The fields marked as \u2018required\u2019 are not strictly required\
