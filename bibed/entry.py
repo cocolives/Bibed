@@ -355,6 +355,8 @@ class BibedEntry(EntryActionStatusMixin):
             # Don't remove them, else latex_to_pango_markup() will fail.
             field = field.replace('{', '').replace('}', '')
 
+        field = field.replace('\\', '')
+
         # WARNING: order is important, else pango markup gets escaped…
         field = markup_escape_text(field)
         field = latex_to_pango_markup(field, reverse=False)
@@ -741,7 +743,7 @@ class BibedEntry(EntryActionStatusMixin):
             field_value = self.__clean_for_display(field_name)
 
             if field_value:
-                return markup_escape_text(field_value)
+                return field_value
 
         return ''
 
