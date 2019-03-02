@@ -123,7 +123,7 @@ class BibedDatabase(GObject.GObject):
 
             :param filename: a full pathname, as a string, for a `BibTeX` /
                 `BibLaTeX` database.
-            :param fileype: the application file type, from `FileTypes` enum. This is used in tooltips and other descriptive fields, to decide if full pathname or folder is shown or not.
+            :param filetype: the application file type, from `FileTypes` enum. This is used in tooltips and other descriptive fields, to decide if full pathname or folder is shown or not.
             :param store: a :class:`~bibed.store.BibedFileStore` instance. its
                 `.data_store` attribute will be kept handy in the current
                 database attributes.
