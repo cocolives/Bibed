@@ -259,6 +259,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.btn_file_select.add(flat_unclickable_button_in_hbox(
             'file_select', _('Library'),
             icon_name='drive-multidisk-symbolic',
+            border=False,
         ))
 
         self.files_popover = BibedDatabasePopover(
@@ -483,7 +484,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         if active_databases:
             title_value = '{app} – {text}'.format(
                 app=APP_NAME,
-                text=(active_databases[0].friendly_filename)
+                text=active_databases[0].friendly_filename
                 if active_databases_count == 1
                 else n_(
                     '{count} file selected',

@@ -808,7 +808,7 @@ def flat_unclickable_label(label_text, icon_name=None):
     return label
 
 
-def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None, icon_size=None, classes=None):
+def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_path=None, icon_size=None, classes=None, border=True):
 
     hbox = widget_properties(
         Gtk.HBox(),
@@ -820,7 +820,8 @@ def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_pat
 
     hbox.set_name(name)
 
-    hbox.set_border_width(BOXES_BORDER_WIDTH)
+    if border:
+        hbox.set_border_width(BOXES_BORDER_WIDTH)
 
     if icon_size is None:
         icon_size = Gtk.IconSize.BUTTON
@@ -847,7 +848,8 @@ def flat_unclickable_button_in_hbox(name, label_markup, icon_name=None, icon_pat
         # debug=True
     ), False, False, 0)
 
-    hbox.set_size_request(30, 30)
+    # XXX: needed somewhere ? deactivated 20190302.
+    # hbox.set_size_request(30, 30)
 
     hbox.show_all()
 
