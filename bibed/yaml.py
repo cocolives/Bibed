@@ -60,8 +60,15 @@ class AttributeDictFromYaml(AttributeDict):
         if self.auto_save:
             self.save()
 
-    @run_at_most_every(1000)  # once a second.
-    def save(self):
+    def save(self, now=False):
+
+        if now:
+            return self.__save()
+
+        else:
+            return run_at_most_every(1000)(self.__save)
+
+    def __save(self):
 
         # assert lprint_caller_name(levels=4)
 

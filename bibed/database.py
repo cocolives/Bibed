@@ -360,11 +360,25 @@ class BibedDatabase(GObject.GObject):
         # TODO: clean old backup files. (PREFERENCE [number])
         LOGGER.debug('{0}.backup() done.'.format(self))
 
-    @run_at_most_every(2000)  # Save once per two seconds maximum
-    def write(self):
+    def write(self, now=False):
+        ''' Write the database to disk.
 
-        # assert lprint_function_name()
-        # assert lprint(self.filename)
+            :param now: should be ``True`` if you want to write now. Else,
+                write calls will be combined, buffered and made at most every
+                two seconds. In normal conditions, you should not touch the
+                :param:`now` parameter. It is meant for inter-process
+                synchronization.
+        '''
+        if now:
+            return self.__database_write()
+
+        else:
+            return run_at_most_every(2000)(self.__database_write)
+
+    def __database_write(self):
+
+        assert lprint_function_name()
+        assert lprint(self.filename)
 
         filename = self.filename
 
