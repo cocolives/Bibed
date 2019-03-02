@@ -1,6 +1,10 @@
 
 import logging
+
+import threading
 from threading import Thread, Event
+
+from bibed.ltrace import lprint
 
 from bibed.gtk import Gtk
 
@@ -12,9 +16,10 @@ class BibedEventThread(Thread):
 
     def __init__(self, event, *args, **kwargs):
 
-        super().__init__(*args, **kwargs)
-
         self.event = event
+        self.target = kwargs.get('target')
+
+        super().__init__(*args, **kwargs)
 
     def run(self):
 
@@ -23,11 +28,21 @@ class BibedEventThread(Thread):
         if self.event is not None:
             self.event.set()
 
-        LOGGER.debug('BibedEventThread: finished.')
+        LOGGER.debug('BibedEventThread({}): finished.'.format(
+            self.target.__name__))
 
 
 # ————————————————————————————————————————————————————————————————————— Helpers
 # https://wiki.gnome.org/Projects/PyGObject/Threading
+
+
+def parallel_status():
+
+    return '{}, {} alive: {}'.format(
+        threading.current_thread(),
+        threading.active_count(),
+        threading.enumerate(),
+    )
 
 
 def run_and_wait_on(func, *args, **kwargs):
