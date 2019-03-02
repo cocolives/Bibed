@@ -1,11 +1,17 @@
 
 import os
 import re
-from datetime import timedelta
+from datetime import date, timedelta
 
 from bibed.exceptions import BibedStringException
 from bibed.locale import _
 from bibed.gtk import GLib
+
+
+def isotoday():
+
+    return date.today().isoformat()
+
 
 def utf8_normalise_translation_map(translation_map):
 

@@ -26,6 +26,7 @@ from bibed.constants import (
 
 from bibed.strings import (
     asciize,
+    isotoday,
     bibtex_clean,
     friendly_filename,
     latex_to_pango_markup,
@@ -475,8 +476,7 @@ class BibedEntry(EntryActionStatusMixin):
             assert not self.is_trashed
 
             self.__internal_verbb[self.TRASHED_FROM] = self.database.filename
-            self.__internal_verbb[self.TRASHED_DATE] = \
-                datetime.date.today().isoformat()
+            self.__internal_verbb[self.TRASHED_DATE] = isotoday()
 
         else:
             assert self.is_trashed
