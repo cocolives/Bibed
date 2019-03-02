@@ -400,7 +400,7 @@ class BibedDatabasePopover(Gtk.Popover):
 
         self.btn_show_trash = Gtk.ToggleButton()
         self.btn_show_trash.add(flat_unclickable_button_in_hbox(
-            'trash', _('Trash'),
+            'trash', _('_Trash'),
             icon_name='user-trash-full-symbolic',
             border=False,
         ))
@@ -410,7 +410,7 @@ class BibedDatabasePopover(Gtk.Popover):
 
         self.btn_show_queue = Gtk.ToggleButton()
         self.btn_show_queue.add(flat_unclickable_button_in_hbox(
-            'queue', _('Queue'),
+            'queue', _('_Queue'),
             icon_name='view-list-symbolic',
             border=False,
         ))
@@ -421,7 +421,7 @@ class BibedDatabasePopover(Gtk.Popover):
         # user-bookmarks-symbolic
         self.btn_show_imported = Gtk.ToggleButton()
         self.btn_show_imported.add(flat_unclickable_button_in_hbox(
-            'imported', _('Imported'),
+            'imported', _('_Imported'),
             icon_name='emblem-ok-symbolic',
             border=False,
         ))

@@ -77,6 +77,8 @@ class BibedWindow(Gtk.ApplicationWindow):
         # prepared for future references.
         self.preferences_dialog = None
 
+        # HEADS UP: passing application argument is MANDATORY for the
+        #           whole Gtk application & main loop to work correctly.
         self.application = kwargs['application']
 
         was_maximized = self.setup_dimensions()
