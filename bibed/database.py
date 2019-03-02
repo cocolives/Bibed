@@ -359,7 +359,8 @@ class BibedDatabase(GObject.GObject):
         # TODO: clean old backup files. (PREFERENCE [number])
         LOGGER.debug('{0}.backup() done.'.format(self))
 
-    def write(self, now=False):
+    @run_at_most_every(2000)
+    def write(self):
         ''' Write the database to disk.
 
             :param now: should be ``True`` if you want to write now. Else,
@@ -368,11 +369,12 @@ class BibedDatabase(GObject.GObject):
                 :param:`now` parameter. It is meant for inter-process
                 synchronization.
         '''
-        if now:
-            return self.__database_write()
+        return self.__database_write()
 
-        else:
-            return run_at_most_every(2000)(self.__database_write)
+    def write_now(self):
+        ''' Same method as :meth:`write`, but without buffering/combination. '''
+
+        return self.__database_write()
 
     def __database_write(self):
 

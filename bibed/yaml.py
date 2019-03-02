@@ -60,13 +60,13 @@ class AttributeDictFromYaml(AttributeDict):
         if self.auto_save:
             self.save()
 
-    def save(self, now=False):
+    @run_at_most_every(1000)
+    def save(self):
 
-        if now:
-            return self.__save()
+        return self.__save()
 
-        else:
-            return run_at_most_every(1000)(self.__save)
+    def write_now(self):
+        return self.__save()
 
     def __save(self):
 
