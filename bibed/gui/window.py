@@ -263,7 +263,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         ))
 
         self.files_popover = BibedDatabasePopover(
-            self.btn_file_select, window=self)
+            self.btn_file_select, parent=self)
 
         self.btn_file_select.connect('clicked',
                                      self.on_file_select_clicked,

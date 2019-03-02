@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
 class BibedDatabaseListBoxRow(Gtk.ListBoxRow):
 
     def __init__(self, database, *args, **kwargs):
+
         super().__init__(*args, **kwargs)
 
         self.database = database
@@ -246,10 +247,10 @@ class BibedDatabasePopover(Gtk.Popover):
 
         super().__init__()
 
-        self.window = kwargs.pop('window')
         self.application = self.window.application
         self.all_files = self.application.files
         self.data = self.application.data
+        self.parent = kwargs.pop('parent')
 
         self.set_position(Gtk.PositionType.BOTTOM)
         self.set_relative_to(relative_to)
@@ -295,7 +296,7 @@ class BibedDatabasePopover(Gtk.Popover):
 
         super().popdown()
 
-        self.window.treeview.grab_focus()
+        self.parent.treeview.grab_focus()
 
     def sync_buttons_states(self, sync_parent=True):
 
@@ -320,7 +321,7 @@ class BibedDatabasePopover(Gtk.Popover):
         self.sync_system_buttons_states()
 
         if sync_parent:
-            self.window.sync_buttons_states(sync_children=False)
+            self.parent.sync_buttons_states(sync_children=False)
 
     def sync_system_buttons_states(self):
 

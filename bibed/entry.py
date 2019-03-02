@@ -144,7 +144,7 @@ class BibedEntry(EntryActionStatusMixin):
     # Will be set by app / css methods.
     COLORS = None
 
-    files_store = None
+    files = None
 
     @classmethod
     def new_from_type(cls, entry_type):
@@ -923,7 +923,7 @@ class BibedEntry(EntryActionStatusMixin):
             missing = False
 
             try:
-                tType = BibedEntry.files_store.get_filetype(tFrom)
+                tType = BibedEntry.files.get_filetype(tFrom)
 
             except FileNotFoundError:
                 # Most probably a deleted database, but could be also (99%)
