@@ -399,12 +399,14 @@ class BibedDatabasePopover(Gtk.Popover):
 
     def setup_system_buttons(self):
 
-        box = Gtk.HBox()
+        grid = Gtk.Grid()
+        grid.set_column_spacing(BOXES_BORDER_WIDTH)
 
         self.btn_show_trash = Gtk.ToggleButton()
         self.btn_show_trash.add(flat_unclickable_button_in_hbox(
             'trash', _('Trash'),
             icon_name='user-trash-full-symbolic',
+            border=False,
         ))
         self.btn_show_trash.set_relief(Gtk.ReliefStyle.NONE)
         self.btn_show_trash.connect(
@@ -414,6 +416,7 @@ class BibedDatabasePopover(Gtk.Popover):
         self.btn_show_queue.add(flat_unclickable_button_in_hbox(
             'queue', _('Queue'),
             icon_name='view-list-symbolic',
+            border=False,
         ))
         self.btn_show_queue.set_relief(Gtk.ReliefStyle.NONE)
         self.btn_show_queue.connect(
@@ -424,19 +427,20 @@ class BibedDatabasePopover(Gtk.Popover):
         self.btn_show_imported.add(flat_unclickable_button_in_hbox(
             'imported', _('Imported'),
             icon_name='emblem-ok-symbolic',
+            border=False,
         ))
         self.btn_show_imported.set_relief(Gtk.ReliefStyle.NONE)
         self.btn_show_imported.connect(
             'clicked', self.listbox.on_show_system_clicked, 'imported')
 
-        box.pack_start(self.btn_show_trash, True, False, 0)
         # box.pack_start(self.btn_show_queue, True, False, 0)
         # box.pack_start(self.btn_show_imported, True, False, 0)
+        grid.attach(self.btn_show_trash, 0, 0, 1, 1)
 
-        self.box_system = box
+        self.grid_system = grid
 
         self.grid.attach_next_to(
-            self.box_system,
+            self.grid_system,
             self.listbox,
             Gtk.PositionType.BOTTOM,
             1, 1)
