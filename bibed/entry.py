@@ -399,7 +399,13 @@ class BibedEntry(EntryActionStatusMixin):
         name = self.__internal_translate(name)
 
         if default is None:
-            return bibtexparser_as_text(self.bib_dict[name])
+
+            value = self.bib_dict.get(name, None)
+
+            if value is not None:
+                return bibtexparser_as_text(value)
+
+            return None
 
         return bibtexparser_as_text(self.bib_dict.get(name, default))
 
