@@ -186,6 +186,10 @@ class BibedDatabase(GObject.GObject):
 
         return len(self.entries)
 
+    def __iter__(self):
+
+        return iter(self.entries.values())
+
     def __eq__(self, other):
         ''' Overrides the default implementation '''
 
