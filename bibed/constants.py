@@ -241,7 +241,7 @@ scrolledwindow#main{use_background} {
 }
 '''
 
-BOXES_BORDER_WIDTH = 5
+BOXES_BORDER_WIDTH = 10
 
 GRID_BORDER_WIDTH = 20
 GRID_COLS_SPACING = 20
