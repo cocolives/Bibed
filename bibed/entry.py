@@ -786,7 +786,7 @@ class BibedEntry(EntryActionStatusMixin):
             subtitle = self.__clean_for_display('subtitle')
 
             if subtitle:
-                title += ': <i>{}</i>'.format(subtitle)
+                title += _(': <i>{}</i>').format(subtitle)
 
         edition = self.bib_dict.get('edition', None)
 
