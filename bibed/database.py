@@ -74,8 +74,8 @@ class BibedDatabase(GObject.GObject):
     # Used in the GUI to know which file(s) is(are) selected.
     selected = GObject.property(type=bool, default=False)
 
-    data_store = None
-    files_store = None
+    files = None
+    data = None
 
     @classmethod
     def move_entry(cls, entry, destination_database, write=True):
@@ -87,7 +87,7 @@ class BibedDatabase(GObject.GObject):
             duplicated, or lost. Typically these situations have external
             causes.
 
-            This operation will update underlying the Gtk datastore.
+            This operation will update the underlying Gtk datastore.
 
             :param entry: a :class:`~bibed.entry.BibedEntry` instance.
             :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
@@ -124,9 +124,6 @@ class BibedDatabase(GObject.GObject):
             :param filename: a full pathname, as a string, for a `BibTeX` /
                 `BibLaTeX` database.
             :param filetype: the application file type, from `FileTypes` enum. This is used in tooltips and other descriptive fields, to decide if full pathname or folder is shown or not.
-            :param store: a :class:`~bibed.store.BibedFileStore` instance. its
-                `.data_store` attribute will be kept handy in the current
-                database attributes.
         '''
 
         # TODO: think about getting rid of the whole bibtexparser level.
@@ -237,7 +234,7 @@ class BibedDatabase(GObject.GObject):
     def add_entry(self, entry):
         ''' Add an entry into the current database.
 
-            This operation will update underlying the Gtk datastore.
+            This operation will update the underlying Gtk datastore.
 
             .. note:: it's up to the caller to call :method:`write` on the
                 database.
@@ -253,14 +250,15 @@ class BibedDatabase(GObject.GObject):
         entry.database = self
         self.entries[entry.key] = entry
 
-        BibedDatabase.data_store.add_entry(entry)
+        if BibedDatabase.data is not None:
+            BibedDatabase.data.add_entry(entry)
 
         LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
 
     def delete_entry(self, entry, old_index=None):
         ''' Delete an entry from the current database.
 
-            This operation will update underlying the Gtk datastore.
+            This operation will update the underlying Gtk datastore.
 
             .. note:: it's up to the caller to call :method:`write` on the
                 database.
@@ -273,7 +271,8 @@ class BibedDatabase(GObject.GObject):
         assert entry.database is not None
         assert entry.database == self
 
-        BibedDatabase.data_store.delete_entry(entry)
+        if BibedDatabase.data is not None:
+            BibedDatabase.data.delete_entry(entry)
 
         entry.database = None
         del self.entries[entry.key]
@@ -382,7 +381,7 @@ class BibedDatabase(GObject.GObject):
 
         filename = self.filename
 
-        with BibedDatabase.files_store.no_watch(filename):
+        with BibedDatabase.files.no_watch(filename):
 
             if gpod('backup_before_save'):
                 self.backup()
