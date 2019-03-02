@@ -21,8 +21,7 @@ from bibed.constants import (
 
 from bibed.decorators import wait_for_queued_events
 from bibed.foundations import Anything
-from bibed.system import set_program_name_global
-from bibed.system import touch_file
+from bibed.system import set_program_name_global, touch_file
 from bibed.strings import to_lower_if_not_none, seconds_to_string
 from bibed.parallel import run_and_wait_on
 from bibed.locale import _, NO_
