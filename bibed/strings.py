@@ -4,6 +4,7 @@ import re
 from datetime import timedelta
 
 from bibed.exceptions import BibedStringException
+from bibed.locale import _
 from bibed.gtk import GLib
 
 def utf8_normalise_translation_map(translation_map):
@@ -177,7 +178,8 @@ def seconds_to_string(elapsed):
 def friendly_filename(filename):
 
     # the base name, without extension.
-    return os.path.basename(filename).rsplit('.', 1)[0]
+    # Translated on the fly, for system databases names.
+    return _(os.path.basename(filename)).rsplit('.', 1)[0]
 
 
 def to_lower_if_not_none(data):

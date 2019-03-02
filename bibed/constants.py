@@ -13,16 +13,16 @@ from bibed.foundations import (
     BIBED_ICONS_DIR,
 )
 
-from bibed.locale import C_
+from bibed.locale import NO_, C_
 
 APP_ID = 'es.cocoliv.bibed'
 APP_NAME = 'Bibed'
 APP_VERSION = '0.9.15.5-develop'
 BIBED_BACKGROUNDS_DIR = os.path.join(BIBED_DATA_DIR, 'backgrounds')
 
-BIBED_SYSTEM_TRASH_NAME = 'trash.bib'
-BIBED_SYSTEM_QUEUE_NAME = 'queue.bib'
-BIBED_SYSTEM_IMPORTED_NAME = 'imported.bib'
+BIBED_SYSTEM_TRASH_NAME = NO_('trash.bib')
+BIBED_SYSTEM_QUEUE_NAME = NO_('queue.bib')
+BIBED_SYSTEM_IMPORTED_NAME = NO_('imported.bib')
 
 BIBED_ASSISTANCE_FR = 'https://t.me/joinchat/AUg6sBK4qUXx2ApA0Zf-Iw'
 BIBED_ASSISTANCE_EN = 'https://t.me/joinchat/AUg6sBUSeKHA3wubIyCwAg'
