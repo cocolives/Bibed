@@ -1,6 +1,15 @@
 
+import sys
 import os
 import gzip
+import logging
+
+from bibed.user import BIBED_LOG_FILE
+
+
+logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
+logging.getLogger('bibtexparser').setLevel(logging.CRITICAL)
 
 
 class GZipNamer:
@@ -24,3 +33,35 @@ class GZipRotator:
             file_out.writelines(file_in)
 
         os.rename(gziped_destination, destination)
+
+
+def setup_logging(level=logging.INFO):
+
+    root = logging.getLogger()
+    root.setLevel(level)
+
+    formatter = logging.Formatter(
+        '%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(level)
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
+
+    rfh = logging.handlers.RotatingFileHandler(BIBED_LOG_FILE, backupCount=10)
+    # File log is always full debug level
+    # in case we need it to assist users.
+    rfh.setLevel(logging.DEBUG)
+    rfh.setFormatter(formatter)
+    rfh.rotator = GZipRotator()
+    rfh.namer = GZipNamer()
+
+    # Rotate logs at every application launch.
+    rfh.doRollover()
+
+    mh = logging.handlers.MemoryHandler(32768)
+    mh.setTarget(rfh)
+
+    root.addHandler(mh)
+
+    return (mh, rfh)

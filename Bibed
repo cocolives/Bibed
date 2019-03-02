@@ -34,43 +34,10 @@ import time
 import logging
 import logging.handlers
 
-from bibed.logging import GZipRotator, GZipNamer
-from bibed.user import BIBED_LOG_FILE
+from bibed.logging import setup_logging
 
 
 LOGGER = logging.getLogger(__name__)
-
-
-def setup_logging(level=logging.INFO):
-
-    root = logging.getLogger()
-    root.setLevel(level)
-
-    formatter = logging.Formatter(
-        '%(asctime)s [%(levelname)s] %(name)s: %(message)s')
-
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(level)
-    ch.setFormatter(formatter)
-    root.addHandler(ch)
-
-    rfh = logging.handlers.RotatingFileHandler(BIBED_LOG_FILE, backupCount=10)
-    # File log is always full debug level
-    # in case we need it to assist users.
-    rfh.setLevel(logging.DEBUG)
-    rfh.setFormatter(formatter)
-    rfh.rotator = GZipRotator()
-    rfh.namer = GZipNamer()
-
-    # Rotate logs at every application launch.
-    rfh.doRollover()
-
-    mh = logging.handlers.MemoryHandler(32768)
-    mh.setTarget(rfh)
-
-    root.addHandler(mh)
-
-    return (mh, rfh)
 
 
 if __name__ == '__main__':
@@ -80,10 +47,6 @@ if __name__ == '__main__':
         logging_handlers = setup_logging(logging.DEBUG)
     else:
         logging_handlers = setup_logging(logging.INFO)
-
-    logging.getLogger('urllib3').setLevel(logging.CRITICAL)
-    logging.getLogger('pyinotify').setLevel(logging.CRITICAL)
-    logging.getLogger('bibtexparser').setLevel(logging.CRITICAL)
 
     from bibed.locale import _, init as locale_init
     locale_init()
