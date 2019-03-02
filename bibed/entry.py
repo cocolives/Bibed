@@ -376,7 +376,7 @@ class BibedEntry(EntryActionStatusMixin):
             current_ts = self.bib_dict.get('timestamp', None)
 
             if current_ts is None or gpod('bib_update_timestamp'):
-                self.bib_dict['timestamp'] = datetime.date.today().isoformat()
+                self.bib_dict['timestamp'] = isotoday()
 
         owner_name = preferences.bib_owner_name
 
