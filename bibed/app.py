@@ -28,18 +28,16 @@ from bibed.locale import _, NO_
 
 # Import Gtk before preferences, to initialize GI.
 from bibed.gtk import Gio, Gtk, Gdk, Notify
+from bibed.controllers import controllers
 from bibed.daemon import BibedDaemonMixin
 from bibed.preferences import preferences, memories, gpod
 
 from bibed.store import (
     BibedDataStore,
-    BibedFileStore,
     AlreadyLoadedException,
 )
 
 from bibed.gui.css import GtkCssAwareMixin
-from bibed.gui.window import BibedWindow
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -53,6 +51,8 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         self.splash = kwargs.pop('splash')
         self.time_start = kwargs.pop('time_start')
         self.logging_handlers = kwargs.pop('logging_handlers')
+
+        controllers.application = self
 
         LOGGER.info('Starting application.')
 
@@ -68,7 +68,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         # To create a menu item that displays the shortcuts window,
         # associate the item with the action win.show-help-overlay.
 
-        self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        controllers.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
         self.window = None
 
@@ -104,22 +104,20 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
 
         # TODO: externalize app menu in a file for translations.
         builder = Gtk.Builder.new_from_string(APP_MENU_XML, -1)
+
         self.set_app_menu(builder.get_object('app-menu'))
 
     def setup_data_store(self):
 
-        # Stores open files (user / system / other)
-        self.files = BibedFileStore()
-
-        # Stores All BIB entries.
-        self.data = BibedDataStore(files_store=self.files)
+        # data store for the main window treeview.
+        controllers.data = BibedDataStore(controllers=controllers)
 
         # This must be done after the data store has loaded.
-        self.files.load_system_files()
+        controllers.files.load_system_files()
 
         # Keep the filter data sortable along the way.
-        self.filter = self.data.filter_new()
-        # self.filter = Gtk.TreeModelFilter(self.data)
+        self.filter = controllers.data.filter_new()
+        # self.filter = Gtk.TreeModelFilter(controllers.data)
         self.sorter = Gtk.TreeModelSort(self.filter)
         self.filter.set_visible_func(self.data_filter_method)
 
@@ -232,12 +230,14 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
             LOGGER.info('Window already loaded somewhere, focusing it.')
 
         else:
+            from bibed.gui.window import BibedWindow
+
             Notify.init(APP_NAME)
 
             self.session_prepare()
 
-            # Windows are associated with the application
-            # when the last one is closed the application shuts down
+            # HEADS UP: passing application argument is MANDATORY for the
+            #           whole Gtk application & main loop to work correctly.
             self.window = BibedWindow(title='Main Window', application=self)
 
             # As soon as the main window is here, keep the splash above it.
@@ -362,7 +362,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
             # Try to get it again.
 
             for filename in self.session.filenames_to_select:
-                for system_database in self.files.system_databases:
+                for system_database in controllers.files.system_databases:
                     if filename == system_database.filename:
                         self.session.databases_to_select.append(system_database)
 
@@ -373,10 +373,10 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
 
             # Selecting a system database is the only case that doesn't
             # trigger a full window / treeview update. Fake it.
-            if len(tuple(self.files.selected_system_databases)):
+            if len(tuple(controllers.files.selected_system_databases)):
                 self.window.on_selected_files_changed()
         else:
-            if not self.files.num_user:
+            if not controllers.files.num_user:
                 # No database. Trigger a treeview filter
                 # anyway to hide the system entries if any.
                 self.window.on_selected_files_changed()
@@ -414,7 +414,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
 
         try:
             # Note: via events, this will update the window title.
-            database = self.files.load(filename)
+            database = controllers.files.load(filename)
 
         except AlreadyLoadedException:
             self.do_notification(
@@ -441,7 +441,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         # assert lprint_function_name()
         # assert lprint(message)
 
-        for database in self.files.user_databases:
+        for database in controllers.files.user_databases:
             self.reload_database(database)
 
         if message:
@@ -452,7 +452,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         # assert lprint_function_name()
         # assert lprint(filename, message)
 
-        if self.files.reload(database):
+        if controllers.files.reload(database):
             if message:
                 self.window.do_status_change(message)
 
@@ -461,9 +461,11 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
 
         # assert lprint_function_name()
 
-        self.files.close(database,
-                         save_before=save_before,
-                         remember_close=remember_close)
+        controllers.files.close(
+            database,
+            save_before=save_before,
+            remember_close=remember_close
+        )
 
     # ———————————————————————————————————————————————————————————— on “actions”
 
@@ -563,7 +565,7 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         self.window.block_signals()
 
         # This will close system files too.
-        self.files.close_all(
+        controllers.files.close_all(
 
             # Save is done along-the-way at each user action that needs it.
             save_before=False,

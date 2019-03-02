@@ -207,7 +207,7 @@ class BibedDatabase(GObject.GObject):
 
     def keys(self):
 
-        assert lprint_function_name()
+        # assert lprint_function_name()
 
         return self.entries.keys()
 
@@ -378,8 +378,8 @@ class BibedDatabase(GObject.GObject):
 
     def __database_write(self):
 
-        assert lprint_function_name()
-        assert lprint(self.filename)
+        # assert lprint_function_name()
+        # assert lprint(self.filename)
 
         filename = self.filename
 

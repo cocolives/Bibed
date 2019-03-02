@@ -101,14 +101,12 @@ class BibedFileStore(Gio.ListStore):
 
         super().__init__()
 
+        # == controllers.data
+        self.data = None
+
         # cached number of files.
         self.num_user   = 0
         self.num_system = 0
-
-        # A reference to the datastore,
-        # to handle system files internally.
-        # Will be fille by data_store.__init__()
-        self.data_store = None
 
         # Global lock to avoid concurrent writes,
         # which are destructive on flat files.
@@ -503,9 +501,9 @@ class BibedFileStore(Gio.ListStore):
 
         database = BibedDatabase(filename, filetype)
 
-        if impact_data_store and self.data_store is not None:
+        if impact_data_store and self.data is not None:
             for entry in database.values():
-                self.data_store.append(entry)
+                self.data.append(entry)
 
         if inotify:
             self.inotify_add_watch(filename)
@@ -648,7 +646,7 @@ class BibedFileStore(Gio.ListStore):
         # assert lprint_function_name()
         # assert lprint(filename)
 
-        if self.data_store is None:
+        if self.data is None:
             # We are in the background process, no data_store.
             return
 
@@ -656,10 +654,10 @@ class BibedFileStore(Gio.ListStore):
             # clear all USER data only (no system).
             for database in self:
                 if database.filetype == FileTypes.USER:
-                    self.data_store.clear_data(database)
+                    self.data.clear_data(database)
 
         else:
-            self.data_store.clear_data(database)
+            self.data.clear_data(database)
 
 
 class BibedDataStore(Gtk.ListStore):
@@ -674,15 +672,13 @@ class BibedDataStore(Gtk.ListStore):
             *BibAttrs.as_store_args
         )
 
-        self.files_store = kwargs.pop('files_store', None)
+        controllers = kwargs.pop('controllers', None)
 
-        assert self.files_store is not None
-
-        self.files_store.data_store = self
-
-        BibedDatabase.data_store = self
-        BibedDatabase.files_store = self.files_store
-        BibedEntry.files_store = self.files_store
+        if controllers is not None:
+            controllers.files.data = self
+            BibedDatabase.data = self
+            BibedDatabase.files = controllers.files
+            BibedEntry.files = controllers.files
 
     def __str__(self):
         return 'BibedDataStore'

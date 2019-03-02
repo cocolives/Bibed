@@ -25,6 +25,7 @@ from bibed.utils import (
 )
 from bibed.strings import friendly_filename
 from bibed.preferences import gpod
+from bibed.controllers import controllers
 from bibed.entry import BibedEntry
 from bibed.locale import _, C_, n_
 
@@ -280,7 +281,7 @@ class BibedEntryTreeViewMixin:
             bib_key = row[key_index]
             dbid = row[dbid_index]
 
-            entry = self.files.get_entry_by_key(bib_key, dbid=dbid)
+            entry = controllers.files.get_entry_by_key(bib_key, dbid=dbid)
 
             if return_iter:
                 entries.append((entry, treeiter, ))
@@ -526,7 +527,7 @@ class BibedEntryTreeViewMixin:
             if action_func is None:
                 final_data = '\n'.join(transformed_data)
 
-                self.clipboard.set_text(final_data, len=-1)
+                controllers.clipboard.set_text(final_data, len=-1)
 
                 self.do_status_change(
                     n_(

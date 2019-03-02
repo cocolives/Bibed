@@ -27,10 +27,7 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
         '''
 
         self.main_model  = kwargs.get('model')
-        self.application = kwargs.pop('application')
-        self.clipboard   = kwargs.pop('clipboard')
         self.window      = kwargs.pop('window')
-        self.files       = self.application.files
 
         super().__init__(*args, **kwargs)
 

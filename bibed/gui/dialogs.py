@@ -21,6 +21,7 @@ from bibed.gui.helpers import (
     widget_properties,
 )
 
+from bibed.controllers import controllers
 from bibed.gtk import Gtk
 
 LOGGER = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ LOGGER = logging.getLogger(__name__)
 
 class BibedMoveDialog(Gtk.MessageDialog):
 
-    def __init__(self, window, selected_entries, files, *args, **kwargs):
+    def __init__(self, window, selected_entries, *args, **kwargs):
         super().__init__(
             window, 0,
             Gtk.MessageType.QUESTION,
@@ -42,9 +43,6 @@ class BibedMoveDialog(Gtk.MessageDialog):
         )
 
         self.entries = selected_entries
-
-        # The application filestore.
-        self.files = files
 
         # Used during self operations and returned at the end.
         self.destination_database = None
@@ -90,7 +88,7 @@ class BibedMoveDialog(Gtk.MessageDialog):
 
         first_button = None
 
-        for database in self.files.user_databases:
+        for database in controllers.files.user_databases:
 
             filename_markup = markup_bib_filename(
                 database.filename, database.filetype,

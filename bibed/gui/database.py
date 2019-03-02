@@ -18,6 +18,7 @@ from bibed.gui.helpers import (
     widget_properties,
     # add_classes,
 )
+from bibed.controllers import controllers
 from bibed.gtk import Gtk, Gio, Dazzle
 from bibed.locale import _
 
@@ -39,19 +40,17 @@ class BibedDatabaseListBoxRow(Gtk.ListBoxRow):
 
 class BibedDatabaseListBox(Gtk.ListBox):
 
-    def __init__(self, application, parent):
+    def __init__(self, parent):
 
         super().__init__()
 
         self.parent = parent
-        self.application = application
-        self.all_files = self.application.files
-
-        self.user_files = Dazzle.ListModelFilter.new(self.all_files)
-        self.user_files.set_filter_func(self.files_filter_func)
 
         self.set_selection_mode(Gtk.SelectionMode.MULTIPLE)
         self.set_activate_on_single_click(False)
+
+        self.user_files = Dazzle.ListModelFilter.new(controllers.files)
+        self.user_files.set_filter_func(self.files_filter_func)
 
         self.bind_model(self.user_files, self.create_database_row)
 
@@ -133,8 +132,8 @@ class BibedDatabaseListBox(Gtk.ListBox):
 
     def select_any(self):
 
-        selected_user = len(tuple(self.all_files.selected_databases))
-        selected_system = len(tuple(self.all_files.selected_system_databases))
+        selected_user = len(tuple(controllers.files.selected_databases))
+        selected_system = len(tuple(controllers.files.selected_system_databases))
 
         if not selected_system:
             if not selected_user:
@@ -143,8 +142,8 @@ class BibedDatabaseListBox(Gtk.ListBox):
     def update_selected(self):
         ''' Update GUI based on file store selection. '''
 
-        user_selected = tuple(self.all_files.selected_user_databases)
-        system_selected = tuple(self.all_files.selected_system_databases)
+        user_selected = tuple(controllers.files.selected_user_databases)
+        system_selected = tuple(controllers.files.selected_system_databases)
 
         if user_selected:
             for row in self:
@@ -162,7 +161,7 @@ class BibedDatabaseListBox(Gtk.ListBox):
 
     def unselect_system_databases(self):
 
-        for database in self.all_files.system_databases:
+        for database in controllers.files.system_databases:
             database.selected = False
 
     def on_file_close_clicked(self, button, database):
@@ -172,10 +171,10 @@ class BibedDatabaseListBox(Gtk.ListBox):
         # Data store will be cleared anyway.
         # And listbox WILL update the selected_rows() too.
 
-        self.application.close_database(database)
+        controllers.application.close_database(database)
         # self.popdown()
 
-        if self.all_files.num_user:
+        if controllers.files.num_user:
             self.select_any()
 
         else:
@@ -188,7 +187,7 @@ class BibedDatabaseListBox(Gtk.ListBox):
         # Unselect other system DBs.
         self.unselect_system_databases()
 
-        getattr(self.all_files, db_name).selected = True
+        getattr(controllers.files, db_name).selected = True
 
         # unselecting all *after* selecting `db_name` will emit the
         # 'selection-changed' signal, which will be picked up by
@@ -219,21 +218,21 @@ class BibedDatabaseListBox(Gtk.ListBox):
 
         else:
             # Never forget them, they are not in 'rows'.
-            system_selected = list(self.all_files.selected_system_databases)
+            system_selected = list(controllers.files.selected_system_databases)
 
-        self.all_files.sync_selection(row_selected_databases + system_selected)
+        controllers.files.sync_selection(row_selected_databases + system_selected)
 
         # Bubble UP.
-        self.application.window.on_selected_files_changed()
+        controllers.application.window.on_selected_files_changed()
 
     def get_selected_databases(self):
 
-        selected_user = list(self.all_files.selected_databases)
+        selected_user = list(controllers.files.selected_databases)
 
         if selected_user:
             return selected_user
 
-        selected_system = list(self.all_files.selected_system_databases)
+        selected_system = list(controllers.files.selected_system_databases)
 
         if selected_system:
             return selected_system
@@ -247,9 +246,6 @@ class BibedDatabasePopover(Gtk.Popover):
 
         super().__init__()
 
-        self.application = self.window.application
-        self.all_files = self.application.files
-        self.data = self.application.data
         self.parent = kwargs.pop('parent')
 
         self.set_position(Gtk.PositionType.BOTTOM)
@@ -327,7 +323,7 @@ class BibedDatabasePopover(Gtk.Popover):
 
         for button_name in ('trash', 'queue', 'imported', ):
 
-            database = getattr(self.all_files, button_name)
+            database = getattr(controllers.files, button_name)
             button = getattr(self, 'btn_show_' + button_name)
 
             if button.get_active() != database.selected:
@@ -388,8 +384,7 @@ class BibedDatabasePopover(Gtk.Popover):
 
     def setup_listbox(self):
 
-        self.listbox = BibedDatabaseListBox(
-            application=self.application, parent=self)
+        self.listbox = BibedDatabaseListBox(parent=self)
 
         self.grid.attach_next_to(
             self.listbox,
@@ -434,9 +429,9 @@ class BibedDatabasePopover(Gtk.Popover):
         self.btn_show_imported.connect(
             'clicked', self.listbox.on_show_system_clicked, 'imported')
 
-        # box.pack_start(self.btn_show_queue, True, False, 0)
-        # box.pack_start(self.btn_show_imported, True, False, 0)
         grid.attach(self.btn_show_trash, 0, 0, 1, 1)
+        grid.attach(self.btn_show_queue, 1, 0, 1, 1)
+        grid.attach(self.btn_show_imported, 2, 0, 1, 1)
 
         self.grid_system = grid
 
@@ -453,7 +448,7 @@ class BibedDatabasePopover(Gtk.Popover):
     def on_close_all_clicked(self, button, *data):
         ''' Close current selected file. '''
 
-        for database in tuple(self.all_files.user_databases):
-            self.application.close_database(database)
+        for database in tuple(controllers.files.user_databases):
+            controllers.application.close_database(database)
 
         self.sync_buttons_states()

@@ -1146,7 +1146,6 @@ class EntryKeyGenerator:
     def generate_new_key(entry, suffix=None):
 
         assert isinstance(entry, BibedEntry)
-
         assert suffix is None or int(suffix)
 
         if suffix is None:

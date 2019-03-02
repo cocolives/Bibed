@@ -17,9 +17,9 @@ from bibed.constants import (
 
 from bibed.decorators import run_at_most_every, only_one_when_idle
 from bibed.locale import _, n_
+from bibed.controllers import controllers
 from bibed.preferences import memories, gpod
 from bibed.user import get_user_home_directory
-from bibed.strings import friendly_filename
 from bibed.entry import BibedEntry
 
 from bibed.gtk import Gio, GLib, Gtk, Gdk
@@ -216,7 +216,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.set_titlebar(hb)
 
         # This is to connect the headerbar close button to our quit method.
-        self.connect('delete-event', self.application.on_quit)
+        self.connect('delete-event', controllers.application.on_quit)
 
         # ———————————————————————————————————————— Left side, from start to end
 
@@ -414,9 +414,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.treeview_sw.set_name('main')
 
         self.treeview = BibedMainTreeView(
-            model=self.application.data,
-            application=self.application,
-            clipboard=self.application.clipboard,
+            model=controllers.data,
             window=self,
         )
 
@@ -464,7 +462,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         active_databases = self.get_selected_databases()
         active_databases_count = len(active_databases)
 
-        if active_databases_count == self.application.files.num_user:
+        if active_databases_count == controllers.files.num_user:
             # All user files are selected.
 
             search_text = self.get_search_text()
@@ -476,7 +474,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 files_count = len(self.matched_databases)
 
             else:
-                files_count = self.application.files.num_user
+                files_count = controllers.files.num_user
 
         else:
             files_count = active_databases_count
@@ -507,7 +505,7 @@ class BibedWindow(Gtk.ApplicationWindow):
             )
 
         else:
-            if self.application.files.num_user:
+            if controllers.files.num_user:
                 title_value = _('{app} – no file selected').format(app=APP_NAME)
                 subtitle_value = _('select at least one file to display in your library')
             else:
@@ -552,7 +550,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
             widgets_show(bibed_widgets_base)
 
-            how_many_files = self.application.files.num_user
+            how_many_files = controllers.files.num_user
 
             if how_many_files:
                 widget_replace(self.treeview_placeholder, self.treeview)
@@ -757,12 +755,12 @@ class BibedWindow(Gtk.ApplicationWindow):
         elif ctrl and keyval == Gdk.KEY_r:
 
             # keep memory, in case file order change during reload.
-            selected_databases = tuple(self.application.files.selected_databases)
+            selected_databases = tuple(controllers.files.selected_databases)
 
             with self.block_signals():
                 # Don't let combo change and update “memories” while we
                 # just reload files to attain same conditions as now.
-                self.application.reload_databases(
+                controllers.application.reload_databases(
                     _('Reloaded all open databases at user request.')
                 )
 
@@ -774,7 +772,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         elif ctrl_shift and keyval == Gdk.KEY_R:
             # NOTE: the upper case 'R'
 
-            self.application.reload_css_provider_data()
+            controllers.application.reload_css_provider_data()
 
         elif ctrl and keyval == Gdk.KEY_Page_Down:
             # switch file next
@@ -794,11 +792,11 @@ class BibedWindow(Gtk.ApplicationWindow):
             self.btn_file_select.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_m:
-            if self.application.files.num_user:
+            if controllers.files.num_user:
                 self.btn_move.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_n:
-            if self.application.files.num_user:
+            if controllers.files.num_user:
                 self.btn_add.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_d:
@@ -814,8 +812,8 @@ class BibedWindow(Gtk.ApplicationWindow):
         elif ctrl and keyval == Gdk.KEY_w:
 
             for database in tuple(
-                    self.application.files.selected_user_databases):
-                self.application.close_database(database)
+                    controllers.files.selected_user_databases):
+                controllers.application.close_database(database)
 
         elif not ctrl and keyval == Gdk.KEY_Escape:
 
@@ -846,12 +844,11 @@ class BibedWindow(Gtk.ApplicationWindow):
                     self.treeview.unselect_all()
 
                 else:
-                    application_files = self.application.files
                     selected_user_databases = tuple(
-                        application_files.selected_user_databases)
+                        controllers.files.selected_user_databases)
 
                     if len(selected_user_databases) \
-                            != application_files.num_user:
+                            != controllers.files.num_user:
                         self.files_popover.listbox.select_all()
 
             self.treeview.grab_focus()
@@ -883,7 +880,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
-            self.application.create_file(dialog.get_filename())
+            controllers.application.create_file(dialog.get_filename())
 
         elif response == Gtk.ResponseType.CANCEL:
             pass
@@ -907,8 +904,6 @@ class BibedWindow(Gtk.ApplicationWindow):
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
-            # dialog.set_select_multiple(False)
-            # self.application.open_file(dialog.get_filename())
             filenames = dialog.get_filenames()
             databases_to_select = []
 
@@ -920,7 +915,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                     databases_to_select.append(
                         # Don't select individually, we will select
                         # all newly opened databases grouped at once.
-                        self.application.open_file(filename, select=False)
+                        controllers.application.open_file(filename, select=False)
                     )
 
             self.set_selected_databases(databases_to_select)
@@ -944,10 +939,10 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def autoselect_destination(self):
 
-        get_database = self.application.files.get_database
-        user_databases = tuple(self.application.files.user_databases)
+        get_database = controllers.files.get_database
+        user_databases = tuple(controllers.files.user_databases)
         selected_user_databases = tuple(
-            self.application.files.selected_user_databases)
+            controllers.files.selected_user_databases)
 
         # We start with that.
         selected_database = None
@@ -1027,7 +1022,7 @@ class BibedWindow(Gtk.ApplicationWindow):
             return
 
         destination, moved_count, unchanged_count = BibedMoveDialog(
-            self, selected_entries, self.application.files).run()
+            self, selected_entries).run()
 
         if destination and moved_count > 0:
             self.do_status_change(
@@ -1062,7 +1057,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         if selected_entries:
             if use_trash:
-                self.application.files.trash_entries(selected_entries)
+                controllers.files.trash_entries(selected_entries)
 
             else:
                 self.ask_and_delete_entries(selected_entries)
@@ -1220,7 +1215,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def get_selected_databases(self, with_type=False, only_ids=False):
 
-        selected_databases = tuple(self.application.files.selected_databases)
+        selected_databases = tuple(controllers.files.selected_databases)
 
         if with_type:
             return [
@@ -1238,7 +1233,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
     def set_selected_databases(self, databases_to_select):
 
-        self.application.files.sync_selection(databases_to_select)
+        controllers.files.sync_selection(databases_to_select)
 
         self.files_popover.listbox.update_selected()
 
@@ -1268,6 +1263,7 @@ class BibedWindow(Gtk.ApplicationWindow):
     def present(self):
 
         super().present()
+
         self.treeview.set_columns_widths(self.current_size[0])
 
     def do_activate(self):
@@ -1288,7 +1284,7 @@ class BibedWindow(Gtk.ApplicationWindow):
         # assert lprint_function_name()
 
         selected_filenames = tuple(
-            x.filename for x in self.application.files.selected_databases
+            x.filename for x in controllers.files.selected_databases
         )
 
         if selected_filenames:
@@ -1311,8 +1307,8 @@ class BibedWindow(Gtk.ApplicationWindow):
 
         def refilter():
             self.matched_databases = set()
-            self.treeview.set_model(self.application.sorter)
-            self.application.filter.refilter()
+            self.treeview.set_model(controllers.application.sorter)
+            controllers.application.filter.refilter()
 
         if (':' in search_text and len(search_text) > 3) \
                 or (':' not in search_text and len(search_text) > 1):
