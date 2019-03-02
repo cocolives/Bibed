@@ -202,6 +202,8 @@ class BibedDatabaseListBox(Gtk.ListBox):
         else:
             self.emit('selected-rows-changed')
 
+        self.parent.popdown()
+
     # ——————————————————————————————————————————————————————————————— Selection
 
     def on_selected_rows_changed(self, *args):
