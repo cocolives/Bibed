@@ -75,20 +75,19 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
     def setup_page_general(self):
 
-        def build_fcbwf():
+        def build_folder_combobox(chooser_title, chooser_current_folder, chooser_set_callback):
             # HEADS UP: don't useGtk.FileChooserButton(…),
             # it doesn't honor parameters.
             fcbwf = widget_properties(
                 Gtk.FileChooserButton.new(
-                    _('Select working folder'),
+                    chooser_title,
                     Gtk.FileChooserAction.SELECT_FOLDER
                 ),
                 halign=Gtk.Align.START,
                 valign=Gtk.Align.CENTER
             )
-            fcbwf.set_current_folder(
-                preferences.working_folder or get_user_home_directory())
-            fcbwf.connect('file-set', self.on_working_folder_set)
+            fcbwf.set_current_folder(chooser_current_folder)
+            fcbwf.connect('file-set', chooser_set_callback)
 
             return fcbwf
 
@@ -119,13 +118,17 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         pg = grid_with_common_params()
 
-        # ————————————————————————————————————————————————— Working folder
+        # ——————————————————————————————————————————————— Bibliographies folder
 
-        self.fcb_working_folder = build_fcbwf()
+        self.fcb_working_folder = build_folder_combobox(
+            _('Select bibliographies folder'),
+            preferences.working_folder or get_user_home_directory(),
+            self.on_working_folder_set,
+        )
         self.lbl_working_folder = widget_properties(label_with_markup(
-            _('<b>Working folder</b>\n'
+            _('<b>Bibliographies folder</b>\n'
               '<span foreground="grey" size="small">'
-              'Where your BIB files are stored.</span>'),
+              'Where your BIB files are stored / created.</span>'),
             line_wrap=True),
             expand=Gtk.Orientation.HORIZONTAL,
             halign=Gtk.Align.START,
@@ -140,6 +143,37 @@ class BibedPreferencesDialog(Gtk.Dialog):
         pg.attach_next_to(
             self.fcb_working_folder,
             self.lbl_working_folder,
+            Gtk.PositionType.RIGHT,
+            1, 1)
+
+        # ————————————————————————————————————————————————————————— PDFs folder
+
+        self.fcb_books_folder = build_folder_combobox(
+            _('Select Books folder'),
+            preferences.books_folder or get_user_home_directory(),
+            self.on_books_folder_set,
+
+        )
+        self.lbl_books_folder = widget_properties(label_with_markup(
+            _('<b>Books folder</b>\n'
+              '<span foreground="grey" size="small">'
+              'Where your PDF files (books, booklets, prints, articles…) '
+              'are stored.</span>'),
+            line_wrap=True),
+            expand=Gtk.Orientation.HORIZONTAL,
+            halign=Gtk.Align.START,
+            valign=Gtk.Align.CENTER,
+        )
+
+        pg.attach_next_to(
+            self.lbl_books_folder,
+            self.lbl_working_folder,
+            Gtk.PositionType.BOTTOM,
+            1, 1)
+
+        pg.attach_next_to(
+            self.fcb_books_folder,
+            self.lbl_books_folder,
             Gtk.PositionType.RIGHT,
             1, 1)
 
@@ -158,7 +192,7 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
         pg.attach_next_to(
             self.lbl_bib_auto_save,
-            self.lbl_working_folder,
+            self.lbl_books_folder,
             Gtk.PositionType.BOTTOM,
             1, 1)
 
@@ -817,6 +851,17 @@ class BibedPreferencesDialog(Gtk.Dialog):
                 'on_working_folder_changed(): set to {}'.format(new_folder))
 
             preferences.working_folder = new_folder
+
+    def on_books_folder_set(self, widget):
+
+        new_folder = self.fcb_books_folder.get_filename()
+
+        if new_folder != preferences.books_folder:
+
+            LOGGER.info(
+                'on_books_folder_changed(): set to {}'.format(new_folder))
+
+            preferences.books_folder = new_folder
 
     def on_switch_activated(self, switch, gparam, preference_name):
 
