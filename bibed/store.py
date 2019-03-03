@@ -131,6 +131,9 @@ class BibedFileStore(Gio.ListStore):
         try:
             self.file_write_lock.release()
 
+        except RuntimeError:
+            pass
+
         except Exception as e:
             LOGGER.exception(e)
 
