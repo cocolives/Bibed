@@ -41,7 +41,7 @@ def setup_logging(level=logging.INFO):
     root.setLevel(level)
 
     formatter = logging.Formatter(
-        '%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+        '%(asctime)s [%(levelname)s] %(processName)s.%(threadName)s %(name)s: %(message)s')
 
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(level)
