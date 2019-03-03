@@ -628,13 +628,18 @@ class BibedFileStore(Gio.ListStore):
         self.lock(blocking=False)
 
         filename = database.filename
+        selected = database.selected
+
+        # In case we reload a system database
+        # (this happens in background process)
+        filetype = database.filetype
 
         # self.window.treeview.set_editable(False)
         self.close(database,
                    save_before=False,
                    remember_close=False)
 
-        result = self.load(filename)
+        result = self.load(filename, filetype).selected = selected
 
         self.unlock()
 
