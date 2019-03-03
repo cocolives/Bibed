@@ -31,6 +31,7 @@ programs live.
 
 import sys
 import time
+import multiprocessing
 import logging
 import logging.handlers
 
@@ -42,6 +43,10 @@ LOGGER = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     time_start = time.time()
+
+    # See app.py and daemon.py + spawn.py for the remaining.
+    multiprocessing.set_start_method('spawn')
+    multiprocessing.current_process().name = 'Bibed'
 
     if __debug__:
         logging_handlers = setup_logging(logging.DEBUG)
