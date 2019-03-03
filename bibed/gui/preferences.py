@@ -12,6 +12,7 @@ from bibed.user import get_user_home_directory
 from bibed.sentry import sentry
 from bibed.preferences import defaults, preferences, gpod
 from bibed.regex import OWNER_NAME_RE
+from bibed.controllers import controllers
 from bibed.gtk import Gtk
 
 from bibed.gui.helpers import (
@@ -38,9 +39,6 @@ class BibedPreferencesDialog(Gtk.Dialog):
     def __init__(self, parent):
         Gtk.Dialog.__init__(
             self, _('{app} Preferences').format(app=APP_NAME), parent, 0)
-
-        # Needed for CSS reload.
-        self.application = parent.application
 
         self.set_modal(True)
 
@@ -852,12 +850,12 @@ class BibedPreferencesDialog(Gtk.Dialog):
 
     def on_treeview_show_tooltips_activated(self, is_active):
 
-        self.application.window.treeview.switch_tooltips(is_active)
+        controllers.application.window.treeview.switch_tooltips(is_active)
 
     def on_use_treeview_background_activated(self, is_active):
 
         # Reload the whole application CSS, to enable or disable background.
-        self.application.reload_css_provider_data()
+        controllers.application.reload_css_provider_data()
 
     def on_bib_add_timestamp_activated(self, is_active):
 

@@ -25,6 +25,7 @@ from bibed.entry import (
     EntryFieldBuildMixin,
 )
 from bibed.locale import _
+from bibed.controllers import controllers
 from bibed.gtk import Gtk, Gdk, Gio
 
 from bibed.gui.helpers import (
@@ -77,7 +78,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
             # We need at least a field more than ID and ENTRYTYPE.
             entry_has_more_than_id_and_type = len(self.changed_fields) > 1
 
-            key_is_unique = not self.files.has_bib_key(
+            key_is_unique = not controllers.files.has_bib_key(
                 self.entry.key
                 if self.entry.key
                 else self.get_field_value('key')
@@ -127,11 +128,6 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                 type=type_label, key=entry.key)
 
         super().__init__(title, parent, use_header_bar=True)
-
-        self.files = parent.application.files
-
-        # Used for the field builder, which needs data store.
-        self.application = parent.application
 
         # TODO: This is probably a dupe with Gtk's get_parent(),
         #       but despite super() beiing given parent arg,
@@ -404,7 +400,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
             self.cmb_destination.set_entry_text_column(0)
             self.cmb_destination.set_popup_fixed_width(False)
 
-            for filename in self.files.get_open_filenames():
+            for filename in controllers.files.get_open_filenames():
                 self.cmb_destination.append_text(filename)
 
             self.cmb_destination.connect(
@@ -788,7 +784,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
                 if post_build_method is not None:
                     post_build_method(self.fields, field_name, entry,
-                                      self.application.data)
+                                      controllers.data)
 
             grid = Gtk.Grid()
             grid.set_border_width(BOXES_BORDER_WIDTH)
@@ -990,7 +986,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
         # TODO: why does get_parent() fails here ?
         #       See TODO/comment in __init__().
-        has_key_in = self.files.has_bib_key(new_key)
+        has_key_in = controllers.files.has_bib_key(new_key)
 
         if has_key_in is not None:
             error_label.set_markup(
@@ -1064,7 +1060,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
             # TODO: "you must choose one" error label.
             return
 
-        get_database = self.parent.application.files.get_database
+        get_database = controllers.files.get_database
 
         if self.entry.database is None:
 
@@ -1340,7 +1336,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
             else:
                 fixed_value = fix_method(self.fields,
                                          field_name, field, field_value,
-                                         entry=copy_entry, files=self.files)
+                                         entry=copy_entry, files=controllers.files)
 
             # Block “changed” signal and update changed_fields ouselves,
             # Else it happens in another thread/reality, and ou caller
@@ -1425,7 +1421,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
             entry.database.update_entry_key(entry)
 
         if save:
-            self.files.save(entry)
+            controllers.files.save(entry)
 
         # Reset changed fields now that everything is saved.
         # Entry is not brand_new, it now has a key and it's
