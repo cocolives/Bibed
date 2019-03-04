@@ -33,6 +33,11 @@ from bibed.gtk import Gtk, Gio, Pango
 from bibed.gui.helpers import widgets_hide, widgets_show
 
 
+AUTHOR_COL_TITLE = _('Author(s)')
+TITLE_COL_TITLE = _('Title')
+IN_OR_BY_COL_TITLE = _('In, by or how')
+
+
 class BibedEntryTreeViewMixin:
     ''' This class exists only to separate entry-related actions
         from pure-treeview ones. '''
@@ -104,17 +109,17 @@ class BibedEntryTreeViewMixin:
         )
 
         self.col_author = self.setup_text_column(
-            'author', _('Author(s)'), BibAttrs.AUTHOR,
+            'author', AUTHOR_COL_TITLE, BibAttrs.AUTHOR,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
         self.col_title = self.setup_text_column(
-            'title', _('Title'), BibAttrs.TITLE, resizable=True,
+            'title', TITLE_COL_TITLE, BibAttrs.TITLE, resizable=True,
             ellipsize=Pango.EllipsizeMode.MIDDLE,
             attributes={'foreground': BibAttrs.COLOR},
         )
         self.col_in_or_by = self.setup_text_column(
-            'in_or_by', _('In, by or how'), BibAttrs.IN_OR_BY,
+            'in_or_by', IN_OR_BY_COL_TITLE, BibAttrs.IN_OR_BY,
             ellipsize=Pango.EllipsizeMode.END,
             attributes={'foreground': BibAttrs.COLOR},
         )
