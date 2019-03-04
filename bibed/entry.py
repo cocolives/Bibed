@@ -961,7 +961,9 @@ class BibedEntry(EntryActionStatusMixin):
                         self.database.filetype,
                         parenthesis=True)))
 
-        return '\n\n'.join(tooltips)
+        final_tooltip_string = '\n\n'.join(tooltips)
+
+        return final_tooltip_string
 
     # ——————————————————————————————————————————————————— Completion properties
 
@@ -1042,7 +1044,7 @@ class BibedEntry(EntryActionStatusMixin):
             LOGGER.debug('{0}.update_store_row({1})'.format(self, fields))
             # If we have no database, entry is not yet created.
             # The data store will be updated later by add_entry().
-            self.database.data_store.update_entry(self, fields)
+            BibedEntry.files.data.update_entry(self, fields)
 
     def pivot_key(self):
         ''' Special method to update an entry key in the data store. '''
