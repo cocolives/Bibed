@@ -1259,6 +1259,10 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
         LOGGER.debug('Field {} changed and OK, marking it.'.format(field_name))
 
+        # Multiple updates to same widget will be
+        # recorded only once, thanks to the set.
+        self.changed_fields.add(field_name)
+
         if self.get_field_value(field_name) == '':
             # In cas of a new entry, don't save it if has no field filled.
             # If the user fills a field, then empties if, we must consider
@@ -1274,8 +1278,6 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                 except (ValueError, KeyError):
                     pass
 
-                return
-
         # Generate a key on the fly as usable fields change.
         # Display it as place holder only so that the user
         # can still type one. If none is typed, the auto-generation
@@ -1288,10 +1290,6 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                         self.get_entry_for_generator(EntryKeyGenerator)
                     )
                 )
-
-        # Multiple updates to same widget will be
-        # recorded only once, thanks to the set.
-        self.changed_fields.add(field_name)
 
     def on_save_clicked(self, widget, *args, **kwargs):
 
