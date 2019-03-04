@@ -619,11 +619,14 @@ class BibedWindow(Gtk.ApplicationWindow):
         if state & Gdk.WindowState.WITHDRAWN:
             return
 
-        is_maximized = int(state & Gdk.WindowState.MAXIMIZED)
+        is_maximized = GLib.Variant.new_boolean(
+            int(state & Gdk.WindowState.MAXIMIZED))
 
-        self.action_maximize.set_state(GLib.Variant.new_boolean(is_maximized))
+        if is_maximized != self.action_maximize.get_state():
 
-        memories.main_window_is_maximized = is_maximized
+            self.action_maximize.set_state(is_maximized)
+
+            memories.main_window_is_maximized = is_maximized
 
     def on_maximize_toggle(self, action, value):
 
