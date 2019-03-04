@@ -625,11 +625,15 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
 
         field_name = 'key'
 
-        hbox = widget_properties(
-            Gtk.HBox(),
+        key_grid = widget_properties(
+            Gtk.Grid(),
             expand=False,
             halign=Gtk.Align.CENTER,
-            classes=['linked']
+        )
+
+        key_hbox = widget_properties(
+            Gtk.HBox(),
+            classes=['linked'],
         )
 
         fields_labels = defaults.fields.labels
@@ -639,15 +643,17 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
             fields_docs, fields_labels, field_name, self.entry
         )
 
-        self.fields[field_name] = entry
+        self.fields[field_name] = widget_properties(
+            entry,
+            expand=Gtk.Orientation.VERTICAL,
+            valign=Gtk.Align.FILL,
+        )
 
         # Special: align label next to entry.
         label.set_xalign(1.0)
-        entry.set_size_request(250, -1)
+
         # HEADS UP: don't connect here, else the first set_text()
         #           triggers a false-positive 'changed' signal.
-
-        # entry.set_placeholder_text('')
 
         btn_rename = widget_properties(Gtk.Button(), expand=False)
         btn_rename.connect('clicked', self.on_rename_clicked)
@@ -655,6 +661,8 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         btn_rename.add(image)
         btn_rename.set_tooltip_markup('Rename entry key')
+
+        entry.set_size_request(350, -1)
 
         if self.entry.key is None:
             btn_rename.set_sensitive(False)
@@ -684,9 +692,11 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
                       self.on_field_changed,
                       field_name)
 
-        hbox.add(label)
-        hbox.add(entry)
-        hbox.add(btn_rename)
+        key_hbox.add(entry)
+        key_hbox.add(btn_rename)
+
+        key_grid.attach(label, 0, 0, 1, 1)
+        key_grid.attach(key_hbox, 1, 0, 1, 1)
 
         # TODO: if self.entry.get_field('ids') is not None:
         #       build “aliases” label + entry + button to
@@ -698,7 +708,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
         #       replaced with an entry + button to move the
         #       entry, with a popover like for the key.
 
-        self.box.add(hbox)
+        self.box.add(key_grid)
 
     def setup_stack(self):
 
