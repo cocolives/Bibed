@@ -129,11 +129,15 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         matched_databases = self.window.matched_databases
 
         try:
-            filter_text = self.window.search.get_text()
+            filter_text = self.window.search.get_text().strip().lower()
 
         except AttributeError:
             # The window is not yet constructed
             return True
+
+        # Simplify tests.
+        if filter_text == '':
+            filter_text = None
 
         row = model[iter]
 
@@ -146,22 +150,34 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
             return True
 
         else:
-            if not selected_databases_ids:
-                # No data should match when no file is selected.
-                return False
+            if filter_text is not None:
+                # If we are searching for text (searchbar is active), there are
+                # two special cases: all files selected and no file selected.
 
-            elif row[BibAttrs.DBID] not in selected_databases_ids:
-                # The current row is not part of displayed
-                # files. No need to go further.
+                if not selected_databases_ids:
+                    # If no file is selected, match all system files.
+
+                    selected_databases_ids = [
+                        db.objectid
+                        for db in controllers.files.system_databases
+                    ]
+
+                elif len(selected_databases_ids) == controllers.files.num_user:
+                    # If all files are selected, add system files to the selection.
+                    # This is the only way to get a “full” search across all DBs.
+
+                    selected_databases_ids += [
+                        db.objectid
+                        for db in controllers.files.system_databases
+                    ]
+
+            if row[BibAttrs.DBID] not in selected_databases_ids:
+                # The current row is not part of selected
+                # databases. No need to go further.
                 return False
 
         if filter_text is None:
             matched_databases.add(row[BibAttrs.DBID])
-            return True
-
-        filter_text = filter_text.strip().lower()
-
-        if not filter_text:
             return True
 
         words = filter_text.split()
