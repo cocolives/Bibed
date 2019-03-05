@@ -65,8 +65,14 @@ class AttributeDictFromYaml(AttributeDict):
 
         return self.__save()
 
-    def write_now(self):
+    # Method alias
+    write = save
+
+    def save_now(self):
         return self.__save()
+
+    # Method alias
+    write_now = save_now
 
     def __save(self):
 
