@@ -88,7 +88,9 @@ def set_process_title(title):
 
 
 def touch_file(filename):
-    ''' Create a file (containing a newline) if missing. '''
+    ''' Create a file (putting a newline inside) if missing.
+        Return the filename string passed as argument.
+    '''
 
     # TODO: touch the file if already existing.
 
@@ -100,6 +102,8 @@ def touch_file(filename):
             f.write('\n')
 
         LOGGER.debug('touch_file(): created “{}”.'.format(filename))
+
+    return filename
 
 
 def xdg_get_system_data_dirs():
