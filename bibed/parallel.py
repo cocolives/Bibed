@@ -4,9 +4,7 @@ import logging
 import threading
 from threading import Thread, Event
 
-from bibed.ltrace import lprint
-
-from bibed.gtk import Gtk
+# from bibed.ltrace import lprint
 
 
 LOGGER = logging.getLogger(__name__)
@@ -52,6 +50,8 @@ def run_and_wait_on(func, *args, **kwargs):
 
     thread = BibedEventThread(event, target=func, args=args, kwargs=kwargs)
     thread.start()
+
+    from bibed.gtk import Gtk
 
     while not event.is_set():
         while Gtk.events_pending():
