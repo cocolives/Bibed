@@ -42,14 +42,14 @@ LOGGER = logging.getLogger(__name__)
 
 class PyinotifyEventHandler(pyinotify.ProcessEvent):
 
-    app = None
+    store = None
 
     def process_IN_MODIFY(self, event):
 
         if __debug__:
             LOGGER.debug('Modify event start ({}).'.format(event.pathname))
 
-        PyinotifyEventHandler.app.on_file_modify(event)
+        PyinotifyEventHandler.store.on_file_modify(event)
 
         if __debug__:
             LOGGER.debug('Modify event end ({}).'.format(event.pathname))
@@ -77,13 +77,13 @@ class BibedFileStoreNoWatchContextManager:
             # the inotify watch has already been removed.
             self.reenable_inotify = False
 
-        self.store.file_write_lock.acquire()
+        self.store.lock()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
 
         # assert lprint_caller_name()
 
-        self.store.file_write_lock.release()
+        self.store.unlock()
 
         if self.reenable_inotify:
             self.store.inotify_add_watch(self.filename)
@@ -123,17 +123,14 @@ class BibedFileStore(Gio.ListStore):
         # assert lprint_function_name()
         # assert lprint(blocking)
 
-        self.file_write_lock.acquire(blocking=blocking)
+        return self.file_write_lock.acquire(blocking=blocking)
 
     def unlock(self):
 
         # assert lprint_function_name()
 
         try:
-            self.file_write_lock.release()
-
-        except RuntimeError:
-            pass
+            return self.file_write_lock.release()
 
         except Exception as e:
             LOGGER.exception(e)
@@ -225,11 +222,11 @@ class BibedFileStore(Gio.ListStore):
 
         # assert lprint_function_name()
 
-        PyinotifyEventHandler.app = self
+        PyinotifyEventHandler.store = self
 
         self.wm = pyinotify.WatchManager()
-        self.notifier = pyinotify.ThreadedNotifier(
-            self.wm, PyinotifyEventHandler())
+        self.notifier = pyinotify.ThreadedNotifier(self.wm,
+                                                   PyinotifyEventHandler())
         self.notifier.start()
 
         self.wdd = {}
@@ -635,7 +632,7 @@ class BibedFileStore(Gio.ListStore):
 
         # We try to re-lock to avoid conflict if reloading
         # manually while an inotify reload occurs.
-        self.lock(blocking=False)
+        unlock = self.lock(blocking=False)
 
         filename = database.filename
         selected = database.selected
@@ -651,7 +648,8 @@ class BibedFileStore(Gio.ListStore):
 
         result = self.load(filename, filetype).selected = selected
 
-        self.unlock()
+        if unlock:
+            self.unlock()
 
         return result
 
