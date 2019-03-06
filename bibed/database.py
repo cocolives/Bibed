@@ -260,7 +260,7 @@ class BibedDatabase(GObject.GObject):
 
         LOGGER.debug('{0}.add_entry({1}) done.'.format(self, entry))
 
-    def delete_entry(self, entry, old_index=None):
+    def delete_entry(self, entry):
         ''' Delete an entry from the current database.
 
             This operation will update the underlying Gtk datastore.

@@ -1,7 +1,7 @@
 
 import os
 import re
-from datetime import date, timedelta
+from datetime import date
 
 from bibed.exceptions import BibedStringException
 from bibed.locale import _
