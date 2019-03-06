@@ -78,7 +78,7 @@ class BibedDatabase(GObject.GObject):
     data = None
 
     @classmethod
-    def move_entry(cls, entry, destination_database, write=True):
+    def move_entry(cls, entry, destination_database, write=True, now=False):
         ''' Move an entry from a database to another.
 
             internally, this inserts the entry into the destination database,
@@ -112,8 +112,13 @@ class BibedDatabase(GObject.GObject):
         destination_database.add_entry(entry)
 
         if write:
-            destination_database.write()
-            source_database.write()
+            if now:
+                destination_database.write_now()
+                source_database.write_now()
+
+            else:
+                destination_database.write()
+                source_database.write()
 
         LOGGER.debug('{0}.move_entry({1}) to {2} done (add+delete).'.format(
                      source_database, entry, destination_database))
