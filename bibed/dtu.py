@@ -4,9 +4,14 @@ import datetime
 import dateutil.parser
 import dateutil.tz
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 LOGGER = logging.getLogger(__name__)
+
+
+def isotoday():
+
+    return date.today().isoformat()
 
 
 def seconds_to_string(elapsed):

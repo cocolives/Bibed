@@ -1,16 +1,15 @@
 
 import os
 import re
-from datetime import date
 
 from bibed.exceptions import BibedStringException
 from bibed.locale import _
 from bibed.gtk import GLib
 
 
-def isotoday():
+def format_import_data(data):
 
-    return date.today().isoformat()
+    return data[:32] + (data[32:] and _('[…]'))
 
 
 def utf8_normalise_translation_map(translation_map):
