@@ -720,10 +720,10 @@ class BibedWindow(Gtk.ApplicationWindow):
             else:
                 LOGGER.warning('Data pasted but global paste is not enabled.')
 
-        if ctrl and keyval == Gdk.KEY_c:
+        elif ctrl and keyval == Gdk.KEY_c:
             self.treeview.copy_entries_keys_formatted_to_clipboard()
 
-        if ctrl and keyval == Gdk.KEY_k:
+        elif ctrl and keyval == Gdk.KEY_k:
             self.treeview.copy_entries_keys_raw_to_clipboard()
 
         elif ctrl and keyval == Gdk.KEY_u:
