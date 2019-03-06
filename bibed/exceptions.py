@@ -55,6 +55,10 @@ class NoDatabaseForFilenameError(BibedFileStoreError):
     pass
 
 
+class NoSystemDatabaseError(BibedFileStoreError):
+    pass
+
+
 class FileNotFoundError(BibedFileStoreError):
     pass
 

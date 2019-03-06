@@ -11,6 +11,7 @@ from bibed.exceptions import (
     BibKeyNotFoundError,
     NoDatabaseForDBIDError,
     NoDatabaseForFilenameError,
+    NoSystemDatabaseError,
 )
 
 from bibed.ltrace import (  # NOQA
@@ -33,7 +34,7 @@ from bibed.preferences import memories
 from bibed.database import BibedDatabase
 from bibed.entry import BibedEntry
 
-from bibed.gtk import Gio, GLib, Gtk
+from bibed.gtk import Gio, Gtk
 
 
 LOGGER = logging.getLogger(__name__)
@@ -467,6 +468,8 @@ class BibedFileStore(Gio.ListStore):
             if database.filetype & FileTypes.TRASH:
                 return database
 
+        raise NoSystemDatabaseError('did you call controllers.files.load_system_files()?')
+
     @property
     def queue(self):
 
@@ -474,12 +477,16 @@ class BibedFileStore(Gio.ListStore):
             if database.filetype & FileTypes.QUEUE:
                 return database
 
+        raise NoSystemDatabaseError('did you call controllers.files.load_system_files()?')
+
     @property
     def imported(self):
 
         for database in self:
             if database.filetype & FileTypes.IMPORTED:
                 return database
+
+        raise NoSystemDatabaseError('did you call controllers.files.load_system_files()?')
 
     # ————————————————————————————————————————————————————————— File operations
 
