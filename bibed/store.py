@@ -116,6 +116,9 @@ class BibedFileStore(Gio.ListStore):
         # Stores the GLib.idle_add() source.
         self.save_trigger_source = None
 
+        BibedDatabase.files = self
+        BibedEntry.files = self
+
         self.setup_inotify()
 
     def lock(self, blocking=True):
@@ -690,8 +693,6 @@ class BibedDataStore(Gtk.ListStore):
         if controllers is not None:
             controllers.files.data = self
             BibedDatabase.data = self
-            BibedDatabase.files = controllers.files
-            BibedEntry.files = controllers.files
 
     def __str__(self):
         return 'BibedDataStore'
