@@ -24,9 +24,9 @@ from bibed.constants import (
     TEXT_LENGHT_FOR_CR_IN_TOOLTIPS,
 )
 
+from bibed.dtu import isotoday
 from bibed.strings import (
     asciize,
-    isotoday,
     bibtex_clean,
     friendly_filename,
     latex_to_pango_markup,
@@ -411,13 +411,15 @@ class BibedEntry(EntryActionStatusMixin):
 
     def set_field(self, name, value):
 
-        if value in (None, '', ):
+        if value in (None, '', [], ) or len(value) == 0:
             # remove field. Doing this here is
             # required by field mechanics in GUI.
             try:
                 del self.bib_dict[name]
+
             except KeyError:
                 pass
+
             return
 
         name = self.__internal_translate(name)
@@ -432,19 +434,25 @@ class BibedEntry(EntryActionStatusMixin):
             setter(value)
 
     def set_field_keywords(self, value):
+        ''' Either an str instance, or [str, ] (must be a list in that case). '''
 
-        kw = self.__internal_split_tokens(value)
+        if isinstance(value, str):
+            kw = self.__internal_split_tokens(value)
+
+        else:
+            assert isinstance(value, list)
+            kw = value
 
         self.__internal_keywords = kw + [self.read_status] + [self.quality]
 
         # Flatten for bibtexparser
-        final_keywords = ','.join(
+        flattened_keywords = (','.join(
             # If no read_status or quality, we need to “re-cleanup”
             kw for kw in self.__internal_keywords if kw.strip() != ''
-        )
+        )).strip()
 
-        if final_keywords != '':
-            self.bib_dict['keywords'] = final_keywords
+        if flattened_keywords != '':
+            self.bib_dict['keywords'] = flattened_keywords
 
         else:
             # remove now-empty field.
