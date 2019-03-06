@@ -174,13 +174,6 @@ def asciize(stest, aggressive=False, maxlenght=128, custom_keep=None, replace_by
     return stest
 
 
-def seconds_to_string(elapsed):
-
-    # See https://stackoverflow.com/a/12344609/654755
-
-    return str(timedelta(seconds=elapsed))
-
-
 def friendly_filename(filename):
 
     # the base name, without extension.

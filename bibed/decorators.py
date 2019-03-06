@@ -4,7 +4,7 @@ import functools
 import logging
 
 from bibed.gtk import GLib, Gtk
-from bibed.strings import seconds_to_string
+from bibed.dtu import seconds_to_string
 
 LOGGER = logging.getLogger(__name__)
 FUNC_IDLE_CALLS = {}

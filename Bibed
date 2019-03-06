@@ -59,7 +59,7 @@ if __name__ == '__main__':
     # Needs to be after setup_logging(),
     # else we miss a lot of message.
     from bibed.parallel import run_and_wait_on
-    from bibed.strings import seconds_to_string
+    from bibed.dtu import seconds_to_string
     from bibed.gtk import Gtk  # NOQA
     from bibed.gui.splash import start_splash
     from bibed.app import BibedApplication
