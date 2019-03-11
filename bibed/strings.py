@@ -173,11 +173,14 @@ def asciize(stest, aggressive=False, maxlenght=128, custom_keep=None, replace_by
     return stest
 
 
-def friendly_filename(filename):
+def friendly_filename(filename, translate=True):
 
-    # the base name, without extension.
-    # Translated on the fly, for system databases names.
-    return _(os.path.basename(filename)).rsplit('.', 1)[0]
+    if translate:
+        # the base name, without extension.
+        # Translated on the fly, for system databases names.
+        return _(os.path.basename(filename)).rsplit('.', 1)[0]
+
+    return os.path.basename(filename).rsplit('.', 1)[0]
 
 
 def to_lower_if_not_none(data):
