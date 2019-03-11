@@ -1,9 +1,8 @@
 import os
-import time
 import logging
 import pyinotify
 
-from threading import RLock
+from threading import Timer, Event, RLock
 
 from bibed.exceptions import (
     AlreadyLoadedException,
@@ -15,9 +14,9 @@ from bibed.exceptions import (
 )
 
 from bibed.ltrace import (  # NOQA
-    ldebug, lprint,
-    lprint_caller_name,
+    ldebug, lprint, lcolorize,
     lprint_function_name,
+    lprint_caller_name,
 )
 
 from bibed.constants import (
@@ -46,13 +45,15 @@ class PyinotifyEventHandler(pyinotify.ProcessEvent):
 
     def process_IN_MODIFY(self, event):
 
-        if __debug__:
-            LOGGER.debug('Modify event start ({}).'.format(event.pathname))
+        # if __debug__:
+        #     LOGGER.debug(lcolorize(
+        #         'Modify event start ({}).'.format(event.pathname)))
 
         PyinotifyEventHandler.store.on_file_modify(event)
 
-        if __debug__:
-            LOGGER.debug('Modify event end ({}).'.format(event.pathname))
+        # if __debug__:
+        #     LOGGER.debug(lcolorize(
+        #         'Modify event end ({}).'.format(event.pathname)))
 
         return True
 
@@ -77,13 +78,15 @@ class BibedFileStoreNoWatchContextManager:
             # the inotify watch has already been removed.
             self.reenable_inotify = False
 
-        self.store.lock()
+        # We are writing a file, block everyone.
+        self.store.is_usable.clear()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
 
         # assert lprint_caller_name()
 
-        self.store.unlock()
+        # It's OK now, folks!
+        self.store.is_usable.set()
 
         if self.reenable_inotify:
             self.store.inotify_add_watch(self.filename)
@@ -109,9 +112,15 @@ class BibedFileStore(Gio.ListStore):
         self.num_user   = 0
         self.num_system = 0
 
-        # Global lock to avoid concurrent writes,
-        # which are destructive on flat files.
-        self.file_write_lock = RLock()
+        # Global event to avoid writing files while they
+        # need to be reloaded, or that sort of things.
+        self.is_usable = Event()
+        self.is_usable_timer = None
+
+        # We can always use files, except in rare moments where they are
+        # written / modified by another process. See importer.py and
+        # on_file_modify() method for details.
+        self.is_usable.set()
 
         # Stores the GLib.idle_add() source.
         self.save_trigger_source = None
@@ -120,23 +129,6 @@ class BibedFileStore(Gio.ListStore):
         BibedEntry.files = self
 
         self.setup_inotify()
-
-    def lock(self, blocking=True):
-
-        # assert lprint_function_name()
-        # assert lprint(blocking)
-
-        return self.file_write_lock.acquire(blocking=blocking)
-
-    def unlock(self):
-
-        # assert lprint_function_name()
-
-        try:
-            return self.file_write_lock.release()
-
-        except Exception as e:
-            LOGGER.exception(e)
 
     # ———————————————————————————————————————————————————————————— System files
 
@@ -222,7 +214,10 @@ class BibedFileStore(Gio.ListStore):
     # ————————————————————————————————————————————————————————————————— Inotify
 
     def setup_inotify(self):
-
+        ''' Instanciate a :class:`~pyinotify.WatchManager` and a
+            :class:`~pyinotify.ThreadedNotifier` with a
+            :class:`PyinotifyEventHandler` instance.
+        '''
         # assert lprint_function_name()
 
         PyinotifyEventHandler.store = self
@@ -236,16 +231,14 @@ class BibedFileStore(Gio.ListStore):
 
     def inotify_add_watch(self, filename):
 
-        # assert lprint_function_name()
-        # assert lprint(filename)
+        # assert lprint_function_name(filename=filename)
 
         self.wdd.update(self.wm.add_watch(filename, pyinotify.IN_MODIFY))
 
     def inotify_remove_watch(self, filename, delete=False):
 
         # assert lprint_caller_name(levels=2)
-        # assert lprint_function_name()
-        # assert lprint(filename)
+        # assert lprint_function_name(filename=filename, delete=delete)
 
         try:
             self.wm.rm_watch(self.wdd[filename])
@@ -260,40 +253,41 @@ class BibedFileStore(Gio.ListStore):
             del self.wdd[filename]
 
     def on_file_modify(self, event):
-        ''' Acquire lock and launch delayed updater. '''
+        ''' Notify store unusable and launch delayed reloader. '''
 
-        # assert lprint_function_name()
-        # assert lprint(event)
+        # assert lprint_function_name(pathname=event.pathname)
 
-        if self.file_write_lock.acquire(blocking=False) is False:
-            # This occurs mainly if many inotify events come at once.
-            # In rare cases we could be writing while an external change occurs.
-            # This would be too bad. But having one lock per file is too much.
-            return
+        # The other (main or background) process will try to use the system
+        # files too soon (as soon as messages are received).
+        # We need to make it wait until last MODIFY inotify event has settled.
 
-        LOGGER.debug('Programming reload of {0} when idle.'.format(
-                     event.pathname))
+        self.is_usable.clear()
 
-        GLib.idle_add(self.on_file_modify_callback, event)
+        if self.is_usable_timer is not None:
+            self.is_usable_timer.cancel()
+
+            LOGGER.debug(
+                f'RE-programming reload of {event.pathname} in a little while.')
+
+        else:
+            LOGGER.debug(
+                f'Programming reload of {event.pathname} in a little while.')
+
+        self.is_usable_timer = Timer(
+            1.0, self.on_file_modify_callback, args=(event, )
+        )
+        self.is_usable_timer.start()
 
     def on_file_modify_callback(self, event):
         ''' Reload file with a dedicated message. '''
 
-        # assert lprint_function_name()
+        # assert lprint_function_name(filename=event.pathname)
 
-        filename = event.pathname
+        self.reload(self.get_database(filename=event.pathname, wait=False))
 
-        # assert lprint(filename)
-
-        time.sleep(1)
-
-        self.reload(
-            filename,
-            '“{}” reloaded because of external change.'.format(
-                filename))
-
-        # Remove the callback from IDLE list.
-        return False
+        # Now that file is reloaded, signify files are usable.
+        self.is_usable.set()
+        self.is_usable_timer = None
 
     def no_watch(self, filename):
 
@@ -368,10 +362,25 @@ class BibedFileStore(Gio.ListStore):
             except NoDatabaseForFilenameError:
                 raise BibKeyNotFoundError
 
-    def get_database(self, filename=None, filetype=None, dbid=None):
-        ''' Get a database, either for a filename *or* a filetype. '''
+    def get_database(self, filename=None,
+                     filetype=None, dbid=None,
+                     auto_load=False, wait=True):
+        ''' Get a database, either for a filename *or* a filetype.
 
-        # assert lprint_function_name()
+            :param wait: should the method wait for `is_usable` or not. There
+                is only **one** case where it should not: when files are
+                already unusable and the current call is done in the inotify
+                callback that's run to make them usable again.
+        '''
+
+        # assert lprint_function_name(filename=filename, filetype=filetype,
+        #                             dbid=dbid, auto_load=auto_load)
+
+        # The current method is used a lot in messaging.
+        # Wait as much as possible for the files to settle
+        # before trying to get a database.
+        if wait:
+            self.is_usable.wait()
 
         assert (
             filename is not None
@@ -397,6 +406,9 @@ class BibedFileStore(Gio.ListStore):
                 for database in self:
                     if database.filename == filename:
                         return database
+
+                if auto_load:
+                    return self.load(filename)
 
                 raise NoDatabaseForFilenameError(filename)
 
@@ -630,13 +642,6 @@ class BibedFileStore(Gio.ListStore):
 
         # assert lprint_function_name()
 
-        # TODO: use a context manager to be sure we unlock.
-        #       reloading could fail if file content is unparsable.
-
-        # We try to re-lock to avoid conflict if reloading
-        # manually while an inotify reload occurs.
-        unlock = self.lock(blocking=False)
-
         filename = database.filename
         selected = database.selected
 
@@ -650,9 +655,6 @@ class BibedFileStore(Gio.ListStore):
                    remember_close=False)
 
         result = self.load(filename, filetype).selected = selected
-
-        if unlock:
-            self.unlock()
 
         return result
 
