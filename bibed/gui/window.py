@@ -1037,7 +1037,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                     moved_count,
                 ).format(
                     count=moved_count,
-                    destination=destination,
+                    destination=destination.display_name,
                     unchanged=_(', and {count} already there').format(unchanged_count)
                     if unchanged_count else ''))
 
@@ -1174,7 +1174,7 @@ class BibedWindow(Gtk.ApplicationWindow):
                 message_base = _('{entry} modified in {database}.')
 
             message = message_base.format(
-                entry=response, database=response.database.friendly_filename)
+                entry=response, database=response.database.display_name)
 
             self.do_status_change(message)
 
