@@ -3,6 +3,7 @@ import sys
 import os
 import gzip
 import logging
+import logging.handlers
 
 from bibed.user import BIBED_LOG_FILE
 
