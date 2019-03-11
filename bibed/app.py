@@ -580,17 +580,8 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         # finish empty When last file has been closed.
         self.window.block_signals()
 
-        # This will close system files too.
-        controllers.files.close_all(
+        controllers.stop(remember_close=False)
 
-            # Save is done along-the-way at each user action that needs it.
-            save_before=False,
-
-            # This will allow automatic reopen on next launch.
-            remember_close=False,
-        )
-
-        wait_for_queued_events()
 
         self.quit()
 

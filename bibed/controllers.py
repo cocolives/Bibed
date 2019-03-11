@@ -1,6 +1,6 @@
 
 from bibed.foundations import Anything, Singleton
-# from bibed.parallel import parallel_status
+from bibed.decorators import wait_for_queued_events
 from bibed.store import BibedFileStore
 
 
@@ -11,6 +11,13 @@ class GlobalControllers(Anything, metaclass=Singleton):
     def __init__(self):
 
         self.files = BibedFileStore()
+
+    def stop(self, remember_close=True):
+
+        self.files.close_all(save_before=False,
+                             remember_close=remember_close)
+
+        wait_for_queued_events()
 
 
 # We expect to have:
