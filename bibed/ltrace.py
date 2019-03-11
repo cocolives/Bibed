@@ -1,5 +1,7 @@
 import sys
 import inspect
+from threading import current_thread
+from multiprocessing import current_process
 
 from bibed.styles import (
     stylize,
@@ -13,6 +15,27 @@ from bibed.styles import (
 )
 
 
+__all__ = (
+    'ldebug',
+    'lprint_caller_name',
+    'lprint_function_name',
+    'ltrace_frame_informations',
+    'lprint',
+    'lcolorize',
+)
+
+
+def lcolorize(message):
+    ''' Change message color, depending on current process and current thread names. '''
+
+    _ = current_thread().name
+
+    if current_process().name != 'Bibed':
+        return stylize(ST_IMPORTANT, message)
+
+    return message
+
+
 def ldebug(message, *args, **kwargs):
     ''' function meant to be wrapped in an assert call. '''
 
@@ -22,10 +45,7 @@ def ldebug(message, *args, **kwargs):
 
 
 def lprint_caller_name(levels=None):
-    ''' Print the stack previous level function name (eg. “caller”).
-
-        .. note:: if you want to print current function name (the one where
-            the `ltrace_caller_name` call is in), just wrap it in a lamda.
+    ''' Print the stack previous level(s) function name (eg. “caller(s)”).
 
         .. todo:: re-integrate :func:`ltrace_func` from
             :mod:`licorn.foundations.ltrace` to ease debugging.
@@ -49,7 +69,7 @@ def lprint_caller_name(levels=None):
     return True
 
 
-def lprint_function_name(level=None, prefix=None):
+def lprint_function_name(level=None, prefix=None, *args, **kwargs):
     ''' Print the stack previous level function name (eg. “caller”).
 
         .. note:: if you want to print current function name (the one where
@@ -67,6 +87,24 @@ def lprint_function_name(level=None, prefix=None):
 
     assert int(level)
 
+    def args_and_kwargs():
+
+        aka_string = ''
+
+        if args:
+            aka_string += ', '.join(args)
+
+        if args and kwargs:
+            aka_string += ', '
+
+        if kwargs:
+            aka_string += ', '.join(
+                '{}={}'.format(key, value)
+                for key, value in kwargs.items()
+            )
+
+        return aka_string
+
     # for frame, filename, line_num, func, source_code,
     # source_index in inspect.stack():
     stack = inspect.stack()
@@ -74,7 +112,8 @@ def lprint_function_name(level=None, prefix=None):
     try:
         sys.stderr.write('{0}{1} ({2}:{3})\n'.format(
             prefix,
-            stylize(ST_ATTR, stack[level][3] + '()'),
+            stylize(ST_ATTR, stack[level][3] + '({})'.format(
+                args_and_kwargs())),
             stylize(ST_PATH, stack[level][1]),
             stylize(ST_COMMENT, stack[level][2])
         ))
@@ -88,7 +127,8 @@ def lprint_function_name(level=None, prefix=None):
     return True
 
 
-def ltrace_frame_informations(with_var_info=False, func=repr, full=False, level=None):
+def ltrace_frame_informations(with_var_info=False,
+                              func=repr, full=False, level=None):
     """ Returns informations about the current calling function. """
 
     if level is None:
