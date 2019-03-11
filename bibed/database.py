@@ -179,10 +179,10 @@ class BibedDatabase(GObject.GObject):
 
     def __str__(self):
 
-        return 'BibedDatabase({}@{}{})'.format(
-            self.friendly_filename,
-            self.filetype,
-            ' <selected>' if self.selected else '')
+        return '{name}'.format(
+            name=friendly_filename(self.filename, translate=False),
+            sel='*' if self.selected else '',
+        )
 
     def __len__(self):
 
@@ -228,6 +228,15 @@ class BibedDatabase(GObject.GObject):
         # assert lprint_function_name()
 
         return self.entries.values()
+
+    @property
+    def display_name(self):
+
+        return '{sel}{name}{ssel}'.format(
+            name=friendly_filename(self.filename),
+            sel='<b>' if self.selected else '',
+            ssel='</b>' if self.selected else '',
+        )
 
     @property
     def friendly_filename(self):
@@ -314,7 +323,7 @@ class BibedDatabase(GObject.GObject):
 
         dirname = os.path.dirname(self.filename)
         basename = os.path.basename(self.filename)
-        coolname = friendly_filename(basename)
+        coolname = friendly_filename(basename, translate=False)
 
         # Using microseconds in backup filename should avoid collisions.
         # Using time will also help for cleaning old backups.
@@ -358,7 +367,7 @@ class BibedDatabase(GObject.GObject):
 
                     LOGGER.info(
                         '{0}.backup(): wiped old backup file “{1}”.'.format(
-                            self, full_path))
+                            self.friendly_filename, full_path))
 
         # TODO: make backups in .bibed_save/ ? (PREFERENCE ON/OFF)
         # TODO: clean old backup files. (PREFERENCE [number])
