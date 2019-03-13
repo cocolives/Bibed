@@ -394,7 +394,7 @@ class BibedEntry(EntryActionStatusMixin):
 
         # We should use properties for these attributes.
         if name == 'keywords':
-            return ', '.join(self.keywords)
+            return ', '.join([x for x in self.keywords if x.strip()])
 
         name = self.__internal_translate(name)
 
