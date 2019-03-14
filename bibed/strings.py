@@ -1,10 +1,26 @@
 
 import os
 import re
+import base64
 
 from bibed.exceptions import BibedStringException
 from bibed.locale import _
 from bibed.gtk import GLib
+
+
+def b32encode(data):
+
+    return base64.b32encode(data.encode('utf8')).decode('utf-8')
+
+
+def b32decode(data):
+    try:
+        return base64.b32decode(
+            data.encode('utf-8')
+        ).decode('utf-8')
+
+    except Exception:
+        return data
 
 
 def format_import_data(data):
