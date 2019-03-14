@@ -265,7 +265,7 @@ class BibedEntryTreeViewMixin:
 
         return self.get_entries_by_paths([path], only_rows=only_row)[0]
 
-    def get_entries_by_paths(self, paths, with_global_id=False, return_iter=False, only_rows=False):
+    def get_entries_by_paths(self, paths, return_iter=False, only_rows=False):
 
         # Are we on the list store, or a filter ?
         model   = self.get_model()
