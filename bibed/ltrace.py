@@ -110,12 +110,14 @@ def lprint_function_name(level=None, prefix=None, *args, **kwargs):
     stack = inspect.stack()
 
     try:
-        sys.stderr.write('{0}{1} ({2}:{3})\n'.format(
+        sys.stderr.write('{0}{1} ({2}:{3} from {4}.{5})\n'.format(
             prefix,
             stylize(ST_ATTR, stack[level][3] + '({})'.format(
                 args_and_kwargs())),
             stylize(ST_PATH, stack[level][1]),
-            stylize(ST_COMMENT, stack[level][2])
+            stylize(ST_COMMENT, stack[level][2]),
+            stylize(ST_NAME, current_process().name),
+            stylize(ST_NAME, current_thread().name),
         ))
     except IndexError:
         sys.stderr.write('{0}{1}\n'.format(
