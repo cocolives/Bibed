@@ -302,8 +302,12 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
 
     def close_splash(self):
 
-        self.splash.destroy()
-        self.splash = None
+        # In case of parallel launches of the app,
+        # sometimes the splash is not displayed.
+
+        if self.splash:
+            self.splash.destroy()
+            self.splash = None
 
     def session_prepare(self):
 
