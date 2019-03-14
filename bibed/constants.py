@@ -99,6 +99,7 @@ ENTRY_COLORS = {
         FileTypes.SYSTEM    : '#000',
         FileTypes.TRASH     : '#999',
         FileTypes.QUEUE     : '#6c6',
+        FileTypes.IMPORTED  : '#1FA055',  # Vert Malachite
         FileTypes.TRANSIENT : '#afa',
         FileTypes.USER      : '#000',
 
@@ -118,6 +119,7 @@ ENTRY_COLORS = {
         FileTypes.SYSTEM    : '#fff',
         FileTypes.TRASH     : '#999',
         FileTypes.QUEUE     : '#6c6',
+        FileTypes.IMPORTED  : '#1FA055',  # Vert Malachite
         FileTypes.TRANSIENT : '#afa',
         FileTypes.USER      : '#fff',
 
