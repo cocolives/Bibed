@@ -595,3 +595,20 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
 
         for handler in self.logging_handlers:
             handler.close()
+
+    def on_pre_file_modify(self, event):
+
+        # assert lprint_function_name()
+
+        if controllers.files.is_usable.is_set():
+            self.window.on_pre_file_modify(event)
+
+    def on_post_file_modify(self, event):
+
+        # assert lprint_function_name()
+
+        # Make the file data appear again in treeview.
+        self.filter.refilter()
+
+        # Try to restore selection, if applicable.
+        self.window.on_post_file_modify(event)

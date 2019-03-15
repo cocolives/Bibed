@@ -2,7 +2,7 @@ import os
 import logging
 import pyinotify
 
-from threading import Timer, Event, RLock
+from threading import Timer, Event
 
 from bibed.exceptions import (
     AlreadyLoadedException,
