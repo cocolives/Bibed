@@ -1013,14 +1013,7 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
         # TODO: look for old key in other entries comments, note, addendum…
         #       there are probably other fields where the key can be.
 
-        # put old key in 'aliases'
-        if 'ids' in self.entry.fields():
-            old_ids = self.entry.ids
-            old_ids.insert(0, self.entry.key)
-            self.entry.ids = old_ids
-
-        else:
-            self.entry.ids = [self.entry.key]
+        self.entry.archive_key()
 
         # This will be done in update_entry_and_save_file()
         # Just for the consistency with "new entry case"
@@ -1102,8 +1095,6 @@ class BibedEntryDialog(Gtk.Dialog, EntryFieldCheckMixin, EntryFieldBuildMixin):
             # probably means she has switched on something very different.
             # Thus, we select this database only, forgetting the previously
             # selected ones. This is intended.
-
-            assert lprint('select', self.entry.database)
             self.parent.set_selected_databases([self.entry.database])
 
         # Help next entry creation if conditions do not change.
