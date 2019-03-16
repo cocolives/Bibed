@@ -372,7 +372,7 @@ class BibedDatabase(GObject.GObject):
 
                     LOGGER.info(
                         '{0}.backup(): wiped old backup file “{1}”.'.format(
-                            self.friendly_filename, full_path))
+                            self, full_path))
 
         # TODO: make backups in .bibed_save/ ? (PREFERENCE ON/OFF)
         # TODO: clean old backup files. (PREFERENCE [number])
