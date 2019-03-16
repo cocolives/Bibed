@@ -78,7 +78,10 @@ class BibedDatabase(GObject.GObject):
     data = None
 
     @classmethod
-    def move_entry(cls, entry, destination_database, write=True, now=False):
+    def move_entry(cls, entry,
+                   destination_database,
+                   auto_generate_key=False,
+                   write=True, now=False):
         ''' Move an entry from a database to another.
 
             internally, this inserts the entry into the destination database,
@@ -91,6 +94,11 @@ class BibedDatabase(GObject.GObject):
 
             :param entry: a :class:`~bibed.entry.BibedEntry` instance.
             :param destination_database: a :class:`bibed.database.BibedDatabase` instance.
+            :param auto_generate_key: a boolean indicating if entry key should
+                be recomputed on the fly during the move operation. This is set
+                to ``True`` in :meth:`BibedFileStore.dequeue` method, where
+                generic ``uuid4`` key should be turned into a “real” and
+                human-friendly BIB key.
             :param save: boolean, which can be disabled in case of multiple
                 move operations, for the caller to merge write() calls and
                 optimize resources consumption.
@@ -109,6 +117,10 @@ class BibedDatabase(GObject.GObject):
         #       add*() and delete*() methods already do what's needed.
 
         source_database.delete_entry(entry)
+
+        if auto_generate_key:
+            entry.generate_new_key(archive=False)
+
         destination_database.add_entry(entry)
 
         if write:
@@ -120,8 +132,8 @@ class BibedDatabase(GObject.GObject):
                 destination_database.write()
                 source_database.write()
 
-        LOGGER.debug('{0}.move_entry({1}) to {2} done (add+delete).'.format(
-                     source_database, entry, destination_database))
+        LOGGER.debug(f'{source_database}.move_entry({entry}) '
+                     f'to {destination_database} done.')
 
     def __init__(self, filename, filetype):
         ''' Create a :class:`~bibed.database.BibedDatabase` instance.
