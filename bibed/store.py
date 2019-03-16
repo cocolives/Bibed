@@ -1,4 +1,5 @@
 import os
+import uuid
 import logging
 import pyinotify
 
@@ -26,7 +27,7 @@ from bibed.constants import (
     BIBED_SYSTEM_QUEUE_NAME,
     BIBED_SYSTEM_TRASH_NAME,
 )
-
+from bibed.parallel import parallel_status
 from bibed.system import touch_file
 from bibed.user import get_bibed_user_dir
 from bibed.preferences import memories
@@ -41,19 +42,19 @@ LOGGER = logging.getLogger(__name__)
 
 class PyinotifyEventHandler(pyinotify.ProcessEvent):
 
-    store = None
+    updaters = []
+    ignored = []
 
     def process_IN_MODIFY(self, event):
 
-        # if __debug__:
-        #     LOGGER.debug(lcolorize(
-        #         'Modify event start ({}).'.format(event.pathname)))
+        # print(f'IGNORED: {PyinotifyEventHandler.ignored}')
 
-        PyinotifyEventHandler.store.on_file_modify(event)
+        if event.pathname in PyinotifyEventHandler.ignored:
+            print(f'IGNORED MODIFY on {event.pathname} (from {parallel_status()})')
+            return True
 
-        # if __debug__:
-        #     LOGGER.debug(lcolorize(
-        #         'Modify event end ({}).'.format(event.pathname)))
+        for updater in PyinotifyEventHandler.updaters:
+            updater.on_file_modify(event)
 
         return True
 
@@ -68,7 +69,11 @@ class BibedFileStoreNoWatchContextManager:
 
     def __enter__(self):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name(filename=self.filename)
+
+        # We are writing a file, block everyone.
+        self.store.can_use_file[self.filename].clear()
+        PyinotifyEventHandler.ignored.append(self.filename)
 
         try:
             self.store.inotify_remove_watch(self.filename)
@@ -76,17 +81,19 @@ class BibedFileStoreNoWatchContextManager:
         except KeyError:
             # When called from store.close_database(),
             # the inotify watch has already been removed.
-            self.reenable_inotify = False
+            LOGGER.warning(
+                f'Removing inotify watch for {self.filename} failed!')
 
-        # We are writing a file, block everyone.
-        self.store.is_usable.clear()
+            self.reenable_inotify = False
 
     def __exit__(self, exc_type, exc_val, exc_tb):
 
-        # assert lprint_caller_name()
+        # assert lprint_function_name(filename=self.filename)
+
+        PyinotifyEventHandler.ignored.remove(self.filename)
 
         # It's OK now, folks!
-        self.store.is_usable.set()
+        self.store.can_use_file[self.filename].set()
 
         if self.reenable_inotify:
             self.store.inotify_add_watch(self.filename)
@@ -115,18 +122,10 @@ class BibedFileStore(Gio.ListStore):
         self.num_user   = 0
         self.num_system = 0
 
-        # Global event to avoid writing files while they
-        # need to be reloaded, or that sort of things.
-        self.is_usable = Event()
-        self.is_usable_timer = None
-
-        # We can always use files, except in rare moments where they are
-        # written / modified by another process. See importer.py and
-        # on_file_modify() method for details.
-        self.is_usable.set()
-
-        # Stores the GLib.idle_add() source.
-        self.save_trigger_source = None
+        # Events and timers to avoid writing
+        # files while they need to be reloaded.
+        self.can_use_file = {}
+        self.reload_timers = {}
 
         BibedDatabase.files = self
         BibedEntry.files = self
@@ -223,7 +222,7 @@ class BibedFileStore(Gio.ListStore):
         '''
         # assert lprint_function_name()
 
-        PyinotifyEventHandler.store = self
+        PyinotifyEventHandler.updaters.append(self)
 
         self.wm = pyinotify.WatchManager()
         self.notifier = pyinotify.ThreadedNotifier(self.wm,
@@ -234,14 +233,17 @@ class BibedFileStore(Gio.ListStore):
 
     def inotify_add_watch(self, filename):
 
+        # assert lprint_caller_name(levels=2)
         # assert lprint_function_name(filename=filename)
+
+        assert filename not in self.wdd
 
         self.wdd.update(self.wm.add_watch(filename, pyinotify.IN_MODIFY))
 
-    def inotify_remove_watch(self, filename, delete=False):
+    def inotify_remove_watch(self, filename):
 
         # assert lprint_caller_name(levels=2)
-        # assert lprint_function_name(filename=filename, delete=delete)
+        # assert lprint_function_name(filename=filename)
 
         try:
             self.wm.rm_watch(self.wdd[filename])
@@ -252,49 +254,58 @@ class BibedFileStore(Gio.ListStore):
             # would produce resource-consuming off/on/off cycle.
             pass
 
-        if delete:
+        else:
             del self.wdd[filename]
 
     def on_file_modify(self, event):
         ''' Notify store unusable and launch delayed reloader. '''
 
+        # assert lprint_caller_name(levels=5)
         # assert lprint_function_name(pathname=event.pathname)
+
+        filename = event.pathname
+
+        if self.application:
+            self.application.on_pre_file_modify(filename)
 
         # The other (main or background) process will try to use the system
         # files too soon (as soon as messages are received).
         # We need to make it wait until last MODIFY inotify event has settled.
 
-        self.is_usable.clear()
+        self.can_use_file[filename].clear()
 
-        if self.is_usable_timer is not None:
-            self.is_usable_timer.cancel()
+        if filename in self.reload_timers:
+            self.reload_timers[filename].cancel()
 
             LOGGER.debug(
-                f'RE-programming reload of {event.pathname} in a little while.')
+                f'RE-programming reload of {filename} in a little while.')
 
         else:
             LOGGER.debug(
-                f'Programming reload of {event.pathname} in a little while.')
+                f'Programming reload of {filename} in a little while.')
 
-        self.is_usable_timer = Timer(
-            1.0, self.on_file_modify_callback, args=(event, )
+        self.reload_timers[filename] = Timer(
+            1.0, self.on_file_modify_callback, args=(filename, )
         )
-        self.is_usable_timer.start()
+        self.reload_timers[filename].start()
 
-    def on_file_modify_callback(self, event):
+    def on_file_modify_callback(self, filename):
         ''' Reload file with a dedicated message. '''
 
-        # assert lprint_function_name(filename=event.pathname)
+        # assert lprint_function_name(filename=filename)
 
-        self.reload(self.get_database(filename=event.pathname, wait=False))
+        self.reload(self.get_database(filename=filename, wait=False))
 
         # Now that file is reloaded, signify files are usable.
-        self.is_usable.set()
-        self.is_usable_timer = None
+        del self.reload_timers[filename]
+        self.can_use_file[filename].set()
+
+        if self.application:
+            self.application.on_post_file_modify(filename)
 
     def no_watch(self, filename):
 
-        # assert lprint_function_name()
+        # assert lprint_function_name(filename=filename)
 
         return BibedFileStoreNoWatchContextManager(self, filename)
 
@@ -370,20 +381,19 @@ class BibedFileStore(Gio.ListStore):
                      auto_load=False, wait=True):
         ''' Get a database, either for a filename *or* a filetype.
 
-            :param wait: should the method wait for `is_usable` or not. There
-                is only **one** case where it should not: when files are
-                already unusable and the current call is done in the inotify
-                callback that's run to make them usable again.
+            :param filetype: should be used only to find system files, which
+                have their own individual type. User files, which all have the
+                same type, should be looked up either by their ID or their
+                filename.
+            :param wait: should the method wait for `can_use_file[filename]`
+                or not. There is only **one** case where it should not: when
+                files are already unusable and the current call is done in
+                the inotify callback that's run to make them usable again. In
+                all other cases, :param:`wait` should be left alone.
         '''
 
         # assert lprint_function_name(filename=filename, filetype=filetype,
         #                             dbid=dbid, auto_load=auto_load)
-
-        # The current method is used a lot in messaging.
-        # Wait as much as possible for the files to settle
-        # before trying to get a database.
-        if wait:
-            self.is_usable.wait()
 
         assert (
             filename is not None
@@ -401,6 +411,9 @@ class BibedFileStore(Gio.ListStore):
             if dbid:
                 for database in self:
                     if database.objectid == dbid:
+                        if wait:
+                            self.can_use_file[database.filename].wait()
+
                         return database
 
                 raise NoDatabaseForDBIDError(dbid)
@@ -408,6 +421,12 @@ class BibedFileStore(Gio.ListStore):
             else:
                 for database in self:
                     if database.filename == filename:
+                        # The current method is used a lot in messaging.
+                        # Wait as much as possible for the files to settle
+                        # before trying to get a database.
+                        if wait:
+                            self.can_use_file[filename].wait()
+
                         return database
 
                 if auto_load:
@@ -417,6 +436,13 @@ class BibedFileStore(Gio.ListStore):
 
         for database in self:
             if database.filetype == filetype:
+
+                if wait:
+                    # HEADS UP: this will work as expected only for system
+                    #           files. Anyway, the call paramater `filetype`
+                    #           should be used only for system files.
+                    self.can_use_file[database.filename].wait()
+
                 return database
 
         raise NoDatabaseForFilenameError(filetype)
@@ -505,13 +531,17 @@ class BibedFileStore(Gio.ListStore):
 
     # ————————————————————————————————————————————————————————— File operations
 
-    def load(self, filename, filetype=None):
+    def load(self, filename, filetype=None, operate_event=True):
 
         # assert lprint_function_name()
         # assert lprint(filename, filetype)
 
         if self.has(filename):
             raise AlreadyLoadedException
+
+        if operate_event:
+            self.can_use_file[filename] = Event()
+            self.can_use_file[filename].clear()
 
         if filetype is None:
             filetype = FileTypes.USER
@@ -550,6 +580,9 @@ class BibedFileStore(Gio.ListStore):
             memories.add_open_file(filename)
             memories.add_recent_file(filename)
 
+        if operate_event:
+            self.can_use_file[filename].set()
+
         return database
 
     def save(self, thing):
@@ -571,9 +604,14 @@ class BibedFileStore(Gio.ListStore):
         else:
             raise NotImplementedError(type(thing))
 
+        # self.can_use_file[database_to_write.filename].clear()
         database_to_write.write()
+        # self.can_use_file[database_to_write.filename].set()
 
-    def close(self, db_to_close, save_before=False, remember_close=True):
+    def close(self, db_to_close,
+              save_before=False,
+              remember_close=True,
+              operate_event=True):
 
         # assert lprint_function_name()
         # assert lprint(filename, save_before, remember_close)
@@ -582,6 +620,10 @@ class BibedFileStore(Gio.ListStore):
         index_to_remove = None
         impact_data_store = True
         inotify = True
+
+        if operate_event:
+            filename = db_to_close.filename
+            self.can_use_file[filename].clear()
 
         for index, database in enumerate(self):
 
@@ -601,7 +643,7 @@ class BibedFileStore(Gio.ListStore):
                 break
 
         if inotify:
-            self.inotify_remove_watch(database_to_remove.filename, delete=True)
+            self.inotify_remove_watch(database_to_remove.filename)
 
         if save_before:
             # self.clear_save_callback()
@@ -619,6 +661,9 @@ class BibedFileStore(Gio.ListStore):
 
         if impact_data_store and remember_close:
             memories.remove_open_file(database_to_remove.filename)
+
+        if operate_event:
+            del self.can_use_file[filename]
 
         del database_to_remove, db_to_close
 
@@ -652,12 +697,18 @@ class BibedFileStore(Gio.ListStore):
         # (this happens in background process)
         filetype = database.filetype
 
+        self.can_use_file[filename].clear()
+
         # self.window.treeview.set_editable(False)
         self.close(database,
                    save_before=False,
-                   remember_close=False)
+                   remember_close=False,
+                   operate_event=False)
 
-        result = self.load(filename, filetype).selected = selected
+        result = self.load(filename, filetype,
+                           operate_event=False).selected = selected
+
+        self.can_use_file[filename].set()
 
         return result
 
