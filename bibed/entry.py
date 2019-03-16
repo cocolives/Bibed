@@ -1054,7 +1054,27 @@ class BibedEntry(EntryActionStatusMixin):
             # The data store will be updated later by add_entry().
             BibedEntry.files.data.update_entry(self, fields)
 
+    def archive_key(self):
+        ''' Put old key in BIB key aliases. '''
 
+        if 'ids' in self.fields():
+            old_ids = self.ids
+            old_ids.insert(0, self.key)
+            self.ids = old_ids
+
+        else:
+            self.ids = [self.key]
+
+    def generate_new_key(self, archive=True):
+
+        if archive:
+            self.archive_key()
+
+        new_key = EntryKeyGenerator.generate_new_key(self)
+
+        LOGGER.info(f'Entry {self} generated a new key: {new_key}.')
+
+        self.key = new_key
 
     def toggle_quality(self):
 
