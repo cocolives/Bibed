@@ -2,6 +2,8 @@
 import logging
 
 import threading
+import multiprocessing
+
 from threading import Thread, Event
 
 # from bibed.ltrace import lprint
@@ -36,10 +38,11 @@ class BibedEventThread(Thread):
 
 def parallel_status():
 
-    return '{}, {} alive: {}'.format(
-        threading.current_thread(),
+    return '{}.{} ({} alive: {})'.format(
+        multiprocessing.current_process().name,
+        threading.current_thread().name,
         threading.active_count(),
-        threading.enumerate(),
+        ', '.join(t.name for t in threading.enumerate()),
     )
 
 
