@@ -206,9 +206,14 @@ class BibedDatabase(GObject.GObject):
 
     def get_entry_by_key(self, key):
 
-        # assert lprint_function_name()
+        # assert lprint_function_name(key=key, filename=self.filename)
 
-        return self.entries[key]
+        try:
+            return self.entries[key]
+
+        except KeyError:
+            LOGGER.error(f'Key {key} not found in {self.filename}!')
+            raise
 
     def keys(self):
 
