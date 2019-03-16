@@ -1054,11 +1054,7 @@ class BibedEntry(EntryActionStatusMixin):
             # The data store will be updated later by add_entry().
             BibedEntry.files.data.update_entry(self, fields)
 
-    def pivot_key(self):
-        ''' Special method to update an entry key in the data store. '''
 
-        self.database.data_store.update_entry(
-            self, {BibAttrs.KEY: self.key}, old_keys=self.ids)
 
     def toggle_quality(self):
 

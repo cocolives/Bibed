@@ -19,7 +19,7 @@ from bibed.ltrace import (  # NOQA
 
 from bibed.locale import _
 from bibed.decorators import run_at_most_every
-from bibed.constants import FileTypes
+from bibed.constants import FileTypes, BibAttrs
 from bibed.strings import friendly_filename
 from bibed.preferences import gpod
 from bibed.entry import BibedEntry
@@ -329,7 +329,9 @@ class BibedDatabase(GObject.GObject):
 
         self.entries[entry.key] = entry
 
-        entry.pivot_key()
+        if BibedDatabase.data is not None:
+            BibedDatabase.data.update_entry(
+                entry, {BibAttrs.KEY: entry.key}, old_keys=entry.ids)
 
         LOGGER.debug('{0}.update_entry_key({1}) done.'.format(self, entry))
 
