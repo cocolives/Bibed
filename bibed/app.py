@@ -115,6 +115,9 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         # This must be done after the data store has loaded.
         controllers.files.load_system_files()
 
+        # Needed for inotify pre/post.
+        controllers.files.application = self
+
         # Keep the filter data sortable along the way.
         self.filter = controllers.data.filter_new()
         # self.filter = Gtk.TreeModelFilter(controllers.data)
@@ -219,6 +222,9 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
     # ———————————————————————————————————————————————————————————— do “actions”
 
     def do_startup(self):
+
+        # assert lprint_function_name()
+
         Gtk.Application.do_startup(self)
 
         # Comes from GtkCssAwareMixin.

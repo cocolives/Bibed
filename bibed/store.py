@@ -108,6 +108,9 @@ class BibedFileStore(Gio.ListStore):
         # == controllers.data
         self.data = None
 
+        # needed for inotify pre/post.
+        self.application = None
+
         # cached number of files.
         self.num_user   = 0
         self.num_system = 0
