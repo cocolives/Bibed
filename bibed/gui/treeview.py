@@ -260,7 +260,14 @@ class BibedMainTreeView(Gtk.TreeView, BibedEntryTreeViewMixin):
                 # Gtk.TreeRowReference.new(model, path)
                 return [model[model.get_iter(path)] for path in paths]
         else:
-            return None
+            return []
+
+    def set_selected_rows(self, paths):
+
+        for path in paths:
+            self.selection.select_path(path)
+
+        self.scroll_to_cell(paths[-1], None, True, 0.5, 0.0)
 
     # ————————————————————————————————————————————————————————————————— Signals
 

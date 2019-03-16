@@ -299,12 +299,35 @@ class BibedEntryTreeViewMixin:
 
         return entries
 
+    def get_paths_for_entries(self, entries):
+
+        # Are we on the list store, or a filter ?
+        model   = self.get_model()
+
+        key_index  = BibAttrs.KEY
+        entries_keys = [entry.key for entry in entries]
+
+        paths = []
+
+        for row in model:
+            if row[key_index] in entries_keys:
+                paths.append(model.get_path(row.iter))
+
+        return paths
+
     def get_selected_entries(self):
         ''' Used in Gtk.SelectionMode.MULTIPLE. '''
+
+        # assert lprint_function_name()
 
         return self.get_entries_by_paths(
             self.get_selected_rows(paths_only=True),
         )
+
+    def set_selected_entries(self, entries):
+        ''' Used on post file modify (inotify reload event). '''
+
+        self.set_selected_rows(self.get_paths_for_entries(entries))
 
     # ————————————————————————————————————————————————————————————— Gtk signals
 

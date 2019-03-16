@@ -590,11 +590,7 @@ class BibedWindow(Gtk.ApplicationWindow):
             for button in btns_off:
                 button.set_sensitive(False)
 
-        try:
-            selected_count = len(self.treeview.get_selected_rows())
-
-        except TypeError:
-            selected_count = 0
+        selected_count = len(self.treeview.get_selected_rows())
 
         if selected_count > 1:
             set_sensitive(btns_multi_on, btns_multi_off)
@@ -794,10 +790,12 @@ class BibedWindow(Gtk.ApplicationWindow):
             self.btn_preferences.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_l:
+            # “Location” (== show opened databases popover)
             self.btn_file_select.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_m:
-            if controllers.files.num_user:
+            if controllers.files.num_user \
+                    and len(self.treeview.get_selected_rows()) >= 1:
                 self.btn_move.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_n:
@@ -805,7 +803,8 @@ class BibedWindow(Gtk.ApplicationWindow):
                 self.btn_add.emit('clicked')
 
         elif ctrl and keyval == Gdk.KEY_d:
-            if len(self.treeview.get_selected_rows()) == 1:
+            selected = self.treeview.get_selected_entries()
+            if len(selected) == 1 and not selected[0].is_queued:
                 self.btn_dupe.emit('clicked')
 
         elif not ctrl and keyval == Gdk.KEY_Delete:
@@ -845,7 +844,7 @@ class BibedWindow(Gtk.ApplicationWindow):
 
                 rows = self.treeview.get_selected_rows()
 
-                if rows not in (None, []):
+                if len(rows):
                     self.treeview.unselect_all()
 
                 else:
