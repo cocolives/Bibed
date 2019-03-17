@@ -21,6 +21,8 @@ from bibed.strings import friendly_filename
 from bibed.preferences import defaults, preferences, memories, gpod
 from bibed.entry import (
     EntryKeyGenerator,
+)
+from bibed.fields import (
     EntryFieldCheckMixin,
     EntryFieldBuildMixin,
 )
