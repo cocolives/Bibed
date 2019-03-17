@@ -602,14 +602,14 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         for handler in self.logging_handlers:
             handler.close()
 
-    def on_pre_file_modify(self, event):
+    def on_pre_file_modify(self, filename):
 
         # assert lprint_function_name()
 
-        if controllers.files.is_usable.is_set():
-            self.window.on_pre_file_modify(event)
+        if controllers.files.can_use_file[filename].is_set():
+            self.window.on_pre_file_modify(filename)
 
-    def on_post_file_modify(self, event):
+    def on_post_file_modify(self, filename):
 
         # assert lprint_function_name()
 
@@ -617,4 +617,4 @@ class BibedApplication(Gtk.Application, GtkCssAwareMixin, BibedDaemonMixin):
         self.filter.refilter()
 
         # Try to restore selection, if applicable.
-        self.window.on_post_file_modify(event)
+        self.window.on_post_file_modify(filename)

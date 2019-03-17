@@ -1207,6 +1207,16 @@ class BibedWindow(Gtk.ApplicationWindow):
         self.preferences_dialog.destroy()
         self.preferences_dialog = None
 
+    def on_pre_file_modify(self, filename):
+
+        self.pre_file_modify_selection = self.treeview.get_selected_entries()
+
+    def on_post_file_modify(self, filename):
+
+        self.treeview.set_selected_entries(self.pre_file_modify_selection)
+
+        del self.pre_file_modify_selection
+
     # ————————————————————————————————————————————————————————————— GET proxies
 
     def get_bib_filter(self):
